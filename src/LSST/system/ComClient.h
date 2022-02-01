@@ -35,6 +35,8 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
+/// A class used for testing ComServer by making a connection to the server
+/// and running commands.
 class ComClient {
 public:
     typedef std::shared_ptr<ComClient> Ptr;
