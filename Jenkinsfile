@@ -79,7 +79,7 @@ node {
                 M1M3sim.inside("--entrypoint=''") {
                     sh """
                         source $SALUSER_HOME/.setup_salobj.sh
-                        ltd upload --product ts-criocpp --git-ref """ + BRANCH + """ --dir $WORKSPACE/ts_cRIOcpp/doc/html
+                        ltd upload --product ts-m2cellcpp --git-ref """ + BRANCH + """ --dir $WORKSPACE/ts_m2cellcpp/doc/html
                     """
                 }
             }

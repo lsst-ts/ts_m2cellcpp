@@ -39,53 +39,47 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
-ComServer::Ptr ComServer::create(IoServicePtr const& ioService, int port) {
-    return ComServer::Ptr(new ComServer(ioService, port));
+ComServer::Ptr ComServer::create(IoContextPtr const& ioContext, int port) {
+    return ComServer::Ptr(new ComServer(ioContext, port));
 }
 
-
-ComServer::ComServer(IoServicePtr const& ioService, int port)
-    :   _ioService(ioService), _port(port),
-        _acceptor(*_ioService, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), _port)) {
+ComServer::ComServer(IoContextPtr const& ioContext, int port)
+        : _ioContext(ioContext),
+          _port(port),
+          _acceptor(*_ioContext, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), _port)) {
     // Set the socket reuse option to allow recycling ports after catastrophic
     // failures.
     _acceptor.set_option(boost::asio::socket_base::reuse_address(true));
 }
 
-
 void ComServer::run() {
     Log::log(Log::DEBUG, "ComServer::run()");
-    // Begin accepting immediately. Otherwise it will finish when it 
+    // Begin accepting immediately. Otherwise it will finish when it
     // discovers that there are outstanding operations.
     _beginAccept();
 
     // Launch all threads in the pool
     int threadCount = stoi(Config::get().getValue("server", "threads"));
     vector<shared_ptr<thread>> threads(threadCount);
-    for (auto&& ptr: threads) {
-        ptr = shared_ptr<thread>(new thread([&]() {
-            _ioService->run();
-        }));
+    for (auto&& ptr : threads) {
+        ptr = shared_ptr<thread>(new thread([&]() { _ioContext->run(); }));
     }
     _state = RUNNING;
-    Log::log(Log::DEBUG, "ComServer::run() RUNNING"); 
+    Log::log(Log::DEBUG, "ComServer::run() RUNNING");
 
     // Wait for all threads in the pool to exit.
-    for (auto&& ptr: threads) {
+    for (auto&& ptr : threads) {
         ptr->join();
     }
     Log::log(Log::DEBUG, "ComServer::run() finished");
     _state = STOPPED;
 }
 
-
 void ComServer::_beginAccept() {
-    ComConnection::Ptr const connection = ComConnection::create(_ioService);
+    ComConnection::Ptr const connection = ComConnection::create(_ioContext);
     _acceptor.async_accept(connection->socket(),
-        bind(&ComServer::_handleAccept, shared_from_this(), connection, _1)
-    );
+                           bind(&ComServer::_handleAccept, shared_from_this(), connection, _1));
 }
-
 
 void ComServer::_handleAccept(ComConnection::Ptr const& connection, boost::system::error_code const& ec) {
     if (ec.value() == 0) {
@@ -96,17 +90,18 @@ void ComServer::_handleAccept(ComConnection::Ptr const& connection, boost::syste
     _beginAccept();
 }
 
-
 string ComServer::prettyState(State state) {
     switch (state) {
-    case CREATED:
-        return "CREATED";
-    case RUNNING:
-        return "RUNNING";
-    case STOPPED:
-        return "STOPPED";        
+        case CREATED:
+            return "CREATED";
+        case RUNNING:
+            return "RUNNING";
+        case STOPPED:
+            return "STOPPED";
     }
     return "unknown";
 }
 
-}}} // namespace LSST::m2cellcpp::system
+}  // namespace system
+}  // namespace m2cellcpp
+}  // namespace LSST

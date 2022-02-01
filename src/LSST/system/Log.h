@@ -36,12 +36,7 @@ namespace system {
 /// A placeholder class to be used until normal logging can be setup.
 class Log {
 public:
-    enum LogLvl {
-        DEBUG = 1,
-        INFO,
-        WARN,
-        ERROR
-    };
+    enum LogLvl { DEBUG = 1, INFO, WARN, ERROR };
 
     Log() = default;
     Log(Log const&) = delete;
@@ -54,7 +49,8 @@ public:
     }
 };
 
+}  // namespace system
+}  // namespace m2cellcpp
+}  // namespace LSST
 
-}}} // namespace LSST::m2cellcpp::system
-
-#endif // LSST_M2CELLCPP_SYSTEM_COMCLIENT_H
+#endif  // LSST_M2CELLCPP_SYSTEM_COMCLIENT_H

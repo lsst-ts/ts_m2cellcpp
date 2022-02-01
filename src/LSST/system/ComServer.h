@@ -36,18 +36,14 @@ namespace m2cellcpp {
 namespace system {
 
 /// Class ComServer is used communicating with TCP/IP clients.
-class ComServer : public std::enable_shared_from_this<ComServer>  {
+class ComServer : public std::enable_shared_from_this<ComServer> {
 public:
     typedef std::shared_ptr<ComServer> Ptr;
-    enum State {
-        CREATED = 0,
-        RUNNING,
-        STOPPED
-    };
+    enum State { CREATED = 0, RUNNING, STOPPED };
 
     /// A factory method to prevent issues with enable_shared_from_this.
     /// @return A pointer to the created ComServer object.
-    static Ptr create(IoServicePtr const& ioService, int port);
+    static Ptr create(IoContextPtr const& ioContext, int port);
 
     ComServer() = delete;
     ComServer(ComServer const&) = delete;
@@ -64,20 +60,22 @@ public:
 
 private:
     /// Private constructor to force use of create().
-    ComServer(IoServicePtr const& ioService, int port);
+    ComServer(IoContextPtr const& ioContext, int port);
 
     /// Begin (asynchronously) accepting connection requests.
     void _beginAccept();
-    
+
     /// Handle a connection request.
     void _handleAccept(ComConnection::Ptr const& connection, boost::system::error_code const& ec);
 
     std::atomic<State> _state{CREATED};
-    IoServicePtr _ioService;
+    IoContextPtr _ioContext;
     int _port;
     boost::asio::ip::tcp::acceptor _acceptor;
 };
 
-}}} // namespace LSST::m2cellcpp::system
+}  // namespace system
+}  // namespace m2cellcpp
+}  // namespace LSST
 
-#endif // LSST_M2CELLCPP_SYSTEM_COMSERVER_H
+#endif  // LSST_M2CELLCPP_SYSTEM_COMSERVER_H

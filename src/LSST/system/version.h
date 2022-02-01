@@ -25,9 +25,11 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
-/// @return version 
+/// @return version
 const char *version();
 
-}}}  // namespace LSST::m2cellcpp::system
+}  // namespace system
+}  // namespace m2cellcpp
+}  // namespace LSST
 
 #endif /* LSST_M2CELLCPP_VERSION_H */

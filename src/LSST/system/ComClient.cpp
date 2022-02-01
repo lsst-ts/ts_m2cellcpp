@@ -32,16 +32,14 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
-
-ComClient::ComClient(IoServicePtr const& ioService, string const& servIp, int port) 
-    : _ioService(ioService), _socket(*_ioService) {
+ComClient::ComClient(IoContextPtr const& ioContext, string const& servIp, int port)
+        : _ioContext(ioContext), _socket(*_ioContext) {
     _setup(servIp, port);
 }
 
-
 void ComClient::_setup(string const& servIp, int port) {
     Log::log(Log::DEBUG, string("ComClient setup " + servIp + " " + to_string(port)));
-    io::ip::tcp::resolver resolv(*_ioService);
+    io::ip::tcp::resolver resolv(*_ioContext);
     boost::system::error_code ec;
     string strPort = to_string(port);
     io::ip::tcp::resolver::results_type endpoints = resolv.resolve(servIp, strPort, ec);
@@ -52,7 +50,6 @@ void ComClient::_setup(string const& servIp, int port) {
     }
     io::connect(_socket, endpoints);
 }
-
 
 void ComClient::writeCommand(string const& cmd) {
     boost::system::error_code ec;
@@ -65,7 +62,6 @@ void ComClient::writeCommand(string const& cmd) {
     Log::log(Log::DEBUG, "ComClient::writeCommand " + cmd);
 }
 
-
 string ComClient::readCommand() {
     io::streambuf streamB;
     boost::system::error_code ec;
@@ -74,7 +70,7 @@ string ComClient::readCommand() {
         _socket.close();
         Log::log(Log::ERROR, string("readCommand error ec=") + ec.message());
         throw boost::system::system_error(ec);
-    }    
+    }
 
     // TODO Put this streambuf to string conversion in a utility function.
     using boost::asio::buffers_begin;
@@ -85,5 +81,6 @@ string ComClient::readCommand() {
     return cmd;
 }
 
-}}} // namespace LSST::m2cellcpp::system
-
+}  // namespace system
+}  // namespace m2cellcpp
+}  // namespace LSST

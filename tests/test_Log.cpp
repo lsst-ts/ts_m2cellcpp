@@ -28,6 +28,4 @@
 using namespace LSST::m2cellcpp::system;
 using Catch::Matchers::StartsWith;
 
-TEST_CASE("Test Log", "[Log]") {
-    REQUIRE_NOTHROW(Log::log(Log::DEBUG, "dbg"));
-}
+TEST_CASE("Test Log", "[Log]") { REQUIRE_NOTHROW(Log::log(Log::DEBUG, "dbg")); }

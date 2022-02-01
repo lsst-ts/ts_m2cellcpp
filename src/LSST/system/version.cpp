@@ -26,4 +26,6 @@ namespace system {
 
 const char *version() { return VERSION; }
 
-}}}  // namespace LSST::m2cellcpp::system
+}  // namespace system
+}  // namespace m2cellcpp
+}  // namespace LSST

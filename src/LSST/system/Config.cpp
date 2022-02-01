@@ -27,7 +27,6 @@
 
 // Project headers
 
-
 using namespace std;
 
 namespace LSST {
@@ -36,8 +35,7 @@ namespace system {
 
 // static Config members
 Config::Ptr Config::_thisPtr;
-std::mutex  Config::_thisMtx;
-
+std::mutex Config::_thisMtx;
 
 void Config::setup(std::string const& source) {
     lock_guard<mutex> lock(_thisMtx);
@@ -45,9 +43,8 @@ void Config::setup(std::string const& source) {
         Log::log(Log::WARN, "Config already setup");
         return;
     }
-    _thisPtr = Ptr(new Config(source)); 
+    _thisPtr = Ptr(new Config(source));
 }
-
 
 Config::Config(std::string const& source) {
     if (source == "UNIT_TEST") {
@@ -58,20 +55,17 @@ Config::Config(std::string const& source) {
     }
 }
 
-
-Config& Config::get() { 
+Config& Config::get() {
     if (_thisPtr == nullptr) {
         throw runtime_error("Config has not been setup.");
     }
-    return *_thisPtr; 
+    return *_thisPtr;
 }
-
 
 void Config::_setValuesUnitTests() {
-   _setValue("server", "port", "12678");
-   _setValue("server", "threads", "1");
+    _setValue("server", "port", "12678");
+    _setValue("server", "threads", "1");
 }
-
 
 void Config::_setValue(string const& section, string const& key, string const& val) {
     string secKey = section + ":" + key;
@@ -83,7 +77,6 @@ void Config::_setValue(string const& section, string const& key, string const& v
     Log::log(Log::INFO, " Config set " + secKey + "=" + val);
 }
 
-
 string Config::getValue(string const& section, string const& key) {
     string secKey = section + ":" + key;
     auto iter = _map.find(secKey);
@@ -91,8 +84,9 @@ string Config::getValue(string const& section, string const& key) {
         throw invalid_argument("ERROR Configure unknown key " + secKey);
     }
     string ret = iter->second;
-    return ret; 
+    return ret;
 }
 
-
-}}} // namespace LSST::m2cellcpp::system
+}  // namespace system
+}  // namespace m2cellcpp
+}  // namespace LSST

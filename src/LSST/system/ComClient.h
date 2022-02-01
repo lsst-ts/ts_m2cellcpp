@@ -41,10 +41,10 @@ class ComClient {
 public:
     typedef std::shared_ptr<ComClient> Ptr;
 
-    ComClient(IoServicePtr const& ioService, std::string const& servIp, int port);
+    ComClient(IoContextPtr const& ioContext, std::string const& servIp, int port);
     ComClient() = delete;
     ComClient(ComClient const&) = delete;
-    ComClient &operator=(ComClient const&) = delete;
+    ComClient& operator=(ComClient const&) = delete;
 
     ~ComClient() = default;
 
@@ -58,12 +58,14 @@ public:
     std::string readCommand();
 
 private:
-    IoServicePtr _ioService; ///< Maintains the io service that holds _socket.
+    IoContextPtr _ioContext;  ///< Maintains the io_context that holds _socket.
     boost::asio::ip::tcp::socket _socket;
 
     void _setup(std::string const& servIp, int port);
 };
 
-}}} // namespace LSST::m2cellcpp::system
+}  // namespace system
+}  // namespace m2cellcpp
+}  // namespace LSST
 
-#endif // LSST_M2CELLCPP_SYSTEM_COMCLIENT_H
+#endif  // LSST_M2CELLCPP_SYSTEM_COMCLIENT_H

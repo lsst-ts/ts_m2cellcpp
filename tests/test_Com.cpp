@@ -36,7 +36,6 @@
 #include "system/ComServer.h"
 #include "system/Log.h"
 
-
 using namespace std;
 using namespace LSST::m2cellcpp::system;
 using Catch::Matchers::StartsWith;
@@ -45,7 +44,7 @@ TEST_CASE("Test Com echo", "[Com]") {
     Config::setup("UNIT_TEST");
 
     // Start the server
-    IoServicePtr ioContext = make_shared<boost::asio::io_service>(); 
+    IoContextPtr ioContext = make_shared<boost::asio::io_context>();
     string strPort = Config::get().getValue("server", "port");
     int port = stoi(strPort);
     auto serv = ComServer::create(ioContext, port);
@@ -53,16 +52,16 @@ TEST_CASE("Test Com echo", "[Com]") {
     REQUIRE(serv->getState() == ComServer::CREATED);
     Log::log(Log::DEBUG, "server started");
 
-    thread servThrd([serv, &done](){
+    thread servThrd([serv, &done]() {
         Log::log(Log::INFO, "server run " + serv->prettyState(serv->getState()));
         serv->run();
-        Log::log(Log::INFO, "server finish"); 
-        done = true; 
+        Log::log(Log::INFO, "server finish");
+        done = true;
     });
 
-    for (int j=0; (serv->getState() != ComServer::RUNNING) && j<10; ++j) {
+    for (int j = 0; (serv->getState() != ComServer::RUNNING) && j < 10; ++j) {
         sleep(1);
-    }    
+    }
     REQUIRE(serv->getState() == ComServer::RUNNING);
     Log::log(Log::DEBUG, "server running");
 
@@ -77,9 +76,9 @@ TEST_CASE("Test Com echo", "[Com]") {
 
     // Server stop
     ioContext->stop();
-    for (int j=0; !done && j<10; ++j) {
+    for (int j = 0; !done && j < 10; ++j) {
         sleep(1);
-        Log::log(Log::INFO, "server wait " + to_string(done)); 
+        Log::log(Log::INFO, "server wait " + to_string(done));
     }
     Log::log(Log::DEBUG, "server stopped");
     servThrd.join();

@@ -36,9 +36,8 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
-
 /// Eventually, this class will read in a configuration file,
-/// maybe yaml or json. Until then, it will just store a map 
+/// maybe yaml or json. Until then, it will just store a map
 /// of values and return those values requested.
 /// This class should be the first thing defined in the program
 /// as everything else will need it.
@@ -48,9 +47,9 @@ public:
 
     /// Setup the global instance of Config.
     /// Calling this function is expected to be the first
-    /// thing that happens in the executable 
+    /// thing that happens in the executable
     /// (probably after Log setup).
-    /// @param source the source for configuration values. 
+    /// @param source the source for configuration values.
     ///     "UNIT_TEST" indicates a set of default values for unit tests.
     /// @throws invalid_argument when source is invalid.
     static void setup(std::string const& source);
@@ -76,9 +75,11 @@ private:
 
     static Ptr _thisPtr;
     static std::mutex _thisMtx;
-    std::map<std::string, std::string> _map; ///< map of section:key -> values.
+    std::map<std::string, std::string> _map;  ///< map of section:key -> values.
 };
 
-}}} // namespace LSST::m2cellcpp::system
+}  // namespace system
+}  // namespace m2cellcpp
+}  // namespace LSST
 
-#endif // LSST_M2CELLCPP_SYSTEM_CONFIG_H
+#endif  // LSST_M2CELLCPP_SYSTEM_CONFIG_H

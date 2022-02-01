@@ -37,7 +37,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
-typedef std::shared_ptr<boost::asio::io_service> IoServicePtr;
+typedef std::shared_ptr<boost::asio::io_context> IoContextPtr;
 
 /// This class is used to handle commands and responses over a connection
 /// until that connection is terminated.
@@ -46,8 +46,8 @@ public:
     typedef std::shared_ptr<ComConnection> Ptr;
 
     /// Factory method used to prevent issues with enable_shared_from_this.
-    /// @param io_service A service object for the network I/O operations
-    static Ptr create(IoServicePtr const& io_service);
+    /// @param ioContext asio object for the network I/O operations
+    static Ptr create(IoContextPtr const& ioContext);
 
     ComConnection() = delete;
     ComConnection(ComConnection const&) = delete;
@@ -66,7 +66,7 @@ public:
 
 private:
     /// @see ComConnection::create()
-    ComConnection(IoServicePtr const& ioService);
+    ComConnection(IoContextPtr const& ioContext);
 
     /// &&& maybe change to receiveCommand
     void _receiveRequest();
@@ -75,7 +75,6 @@ private:
     /// @param ec An error code to be evaluated.
     /// @param xfer The number of bytes received from a client.
     void _readCommand(boost::system::error_code const& ec, size_t xfer);
-
 
     /// The callback on finishing (either successfully or not) of asynchronous
     /// reads. The request will be parsed, analyzed and if everything is right
@@ -94,13 +93,14 @@ private:
 
     /// A socket for communication with clients
     boost::asio::ip::tcp::socket _socket;
-    IoServicePtr _ioService;
+    IoContextPtr _ioContext;
 
     boost::asio::streambuf _streamBuf;
     std::string _buffer;
-
 };
 
-}}} // namespace LSST::m2cellcpp::system
+}  // namespace system
+}  // namespace m2cellcpp
+}  // namespace LSST
 
-#endif // LSST_M2CELLCPP_SYSTEM_COMCONNECTION_H
+#endif  // LSST_M2CELLCPP_SYSTEM_COMCONNECTION_H
