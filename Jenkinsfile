@@ -65,8 +65,6 @@ pipeline {
             // is 1003 on TSSW Jenkins instance. In this post stage, it is the
             // jenkins to do the following clean up instead of the root in the
             // docker container.
-            // Remove the ".conda/" and ".eups/" because the deleteDir() can not
-            // remove the hidden directories.
             withEnv(["HOME=${env.WORKSPACE}"]) {
                 sh """
                     chown -R 1003:1003 ${HOME}/
