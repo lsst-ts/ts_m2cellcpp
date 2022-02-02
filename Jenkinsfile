@@ -1,88 +1,83 @@
 #!/usr/bin/env groovy
 
-properties(
-    [
-    buildDiscarder
-        (logRotator (
-            artifactDaysToKeepStr: '',
-            artifactNumToKeepStr: '',
-            daysToKeepStr: '14',
-            numToKeepStr: ''
-        ) ),
-    disableConcurrentBuilds(),
-    parameters
-        ( [
-            booleanParam(defaultValue: false, description: 'Adds --no-cache to Docker build command', name: 'noCache'),
-            booleanParam(defaultValue: false, description: 'Calls make clean before building the code', name: 'clean')
-        ] )
-    ]
-)
+pipeline {
 
-node {
-
-
-    def SALUSER_HOME = "/home/saluser"
-    def BRANCH = (env.CHANGE_BRANCH != null) ? env.CHANGE_BRANCH : env.BRANCH_NAME
-
-    stage('Cloning sources')
-    {
-        dir("ts_m2cellcpp") {
-            checkout scm
+    agent {
+        docker {
+          image 'lsstsqre/centos:w_latest'
+          args '-u root'
         }
     }
 
-    stage('Building dev container')
-    {
-        M1M3sim = docker.build("lsstts/m2cellcpp:" + env.BRANCH_NAME.replace("/", "_"), (params.noCache ? "--no-cache " : " ") + "ts_m2cellcpp")
+    options {
+      disableConcurrentBuilds()
     }
 
-    stage("Running tests")
-    {
-        withEnv(["SALUSER_HOME=" + SALUSER_HOME]) {
-             M1M3sim.inside("--entrypoint=''") {
-                 if (params.clean) {
-                 sh """
-                    cd $WORKSPACE/ts_m2cellcpp
-                    make clean
-                 """
-                 }
-                 sh """
-                    source $SALUSER_HOME/.crio_setup.sh
-    
-                    cd $WORKSPACE/ts_m2cellcpp
-
-                    make
-                    make junit
-                 """
-             }
-        }
-
-        junit 'ts_m2cellcpp/tests/*.xml'
+    triggers {
+        pollSCM('H H(0-7) * * 1')
     }
 
-    stage('Build documentation')
-    {
-         M1M3sim.inside("--entrypoint=''") {
-             sh """
-                source $SALUSER_HOME/.setup_salobj.sh
-                cd $WORKSPACE/ts_m2cellcpp
-                make doc
-             """
-         }
+    environment {
+        // Position of LSST stack directory
+        LSST_STACK = "/opt/lsst/software/stack"
+        // XML report path
+        XML_REPORT = "tests/*.xml"
     }
 
-    if (BRANCH == "master" || BRANCH == "develop")
-    {
-        stage('Publish documentation')
-        {
-            withCredentials([usernamePassword(credentialsId: 'lsst-io', usernameVariable: 'LTD_USERNAME', passwordVariable: 'LTD_PASSWORD')]) {
-                M1M3sim.inside("--entrypoint=''") {
+    stages {
+
+        stage ('Install the Dependencies') {
+            steps {
+                // When using the docker container, we need to change
+                // the HOME path to WORKSPACE to have the authority
+                // to install the packages.
+                withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
-                        source $SALUSER_HOME/.setup_salobj.sh
-                        ltd upload --product ts-m2cellcpp --git-ref """ + BRANCH + """ --dir $WORKSPACE/ts_m2cellcpp/doc/html
+                        source ${env.LSST_STACK}/loadLSST.bash
+                        conda install -y yaml-cpp catch2
                     """
                 }
             }
         }
+
+        stage('Unit Tests') {
+            steps {
+                withEnv(["HOME=${env.WORKSPACE}"]) {
+                    sh """
+                        source ${env.LSST_STACK}/loadLSST.bash
+
+                        make
+                        make run_tests
+                        make junit
+                    """
+                }
+                // The path of xml needed by JUnit is relative to
+                // the workspace.
+                junit "${env.XML_REPORT}"
+            }
+        }
+    }
+
+    post {
+        always {
+            // Change the ownership of workspace to Jenkins for the clean up
+            // This is to work around the condition that the user ID of jenkins
+            // is 1003 on TSSW Jenkins instance. In this post stage, it is the
+            // jenkins to do the following clean up instead of the root in the
+            // docker container.
+            // Remove the ".conda/" and ".eups/" because the deleteDir() can not
+            // remove the hidden directories.
+            withEnv(["HOME=${env.WORKSPACE}"]) {
+                sh """
+                    chown -R 1003:1003 ${HOME}/
+                """
+            }
+        }
+
+        cleanup {
+            // clean up the workspace
+            deleteDir()
+        }
     }
 }
+
