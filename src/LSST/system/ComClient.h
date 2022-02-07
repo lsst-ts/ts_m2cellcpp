@@ -29,7 +29,7 @@
 #include "system/ComConnection.h"
 
 // Third party headers
-#include "boost/asio.hpp"
+#include <boost/asio.hpp>
 
 namespace LSST {
 namespace m2cellcpp {
