@@ -21,7 +21,8 @@ endif
 #LIBS += $(shell pkg-config yaml-cpp --libs) -ldl -lpthread
 LIBS += $(shell pkg-config yaml-cpp --libs) -ldl
 
-BOOST_CPPFLAGS := -I/usr/include/boost169
+#BOOST_CPPFLAGS := -I/usr/include/boost169
+BOOST_CPPFLAGS := -I$(CONDA_PREFIX)/include/
 CPP_FLAGS += $(shell pkg-config yaml-cpp --cflags)
 
 VERSION := $(shell git describe --tags --dirty)

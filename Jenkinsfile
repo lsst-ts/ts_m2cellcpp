@@ -34,7 +34,7 @@ pipeline {
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
                         source ${env.LSST_STACK}/loadLSST.bash
-                        conda install -y yaml-cpp catch2 boost asio
+                        conda install -y catch2 boost asio
                     """
                 }
             }

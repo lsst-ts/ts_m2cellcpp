@@ -35,4 +35,5 @@ clean:
 
 %.cpp.d: %.cpp
 	@echo '[DPP] $<'
+	@echo ${co}$(CPP) $(BOOST_CPPFLAGS) $(CPP_FLAGS) -M $< -MF $@ -MT '$(patsubst %.cpp,%.o,$<) $@'
 	${co}$(CPP) $(BOOST_CPPFLAGS) $(CPP_FLAGS) -M $< -MF $@ -MT '$(patsubst %.cpp,%.o,$<) $@'
