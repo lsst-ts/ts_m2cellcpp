@@ -11,6 +11,7 @@ TEST_SRCS := $(shell ls test_*.cpp 2>/dev/null | grep -v test_version)
 BINARIES := $(patsubst %.cpp,%,$(TEST_SRCS))
 ALL_BINARIES := $(BINARIES) $(TEST_REQ_READLINE)
 DEPS := $(patsubst %.cpp,%.cpp.d,$(TEST_SRCS))
+GCOVR_A := $(patsubst %,%.cpp.gcda,$(ALL_BINARIES)) $(patsubst %,%.cpp.gcno,$(ALL_BINARIES))
 JUNIT_FILES := $(shell ls *.xml 2>/dev/null)
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -36,7 +37,7 @@ junit: compile
 	@$(foreach b,$(ALL_BINARIES),echo '[JUT] ${b}'; ./${b} -r junit -o ${b}.xml;)
 
 clean:
-	@$(foreach df,$(ALL_BINARIES) $(patsubst %,%.cpp.o,$(ALL_BINARIES)) $(DEPS) $(JUNIT_FILES),echo '[RM ] ${df}'; $(RM) ${df};)
+	@$(foreach df,$(ALL_BINARIES) $(patsubst %,%.cpp.o,$(ALL_BINARIES)) $(DEPS) $(GCOVR_A) $(JUNIT_FILES),echo '[RM ] ${df}'; $(RM) ${df};)
 
 ../lib/libm2cellcpp.a: FORCE
 	@$(MAKE) -C ../ lib/libm2cellcpp.a SIMULATOR=1

@@ -10,6 +10,8 @@ OBJS = $(patsubst %.cpp,%.cpp.o,$(CPP_SRCS))
 
 CPP_DEPS = $(patsubst %.cpp,%.cpp.d,$(CPP_SRCS))
 
+GCOVR_A := $(patsubst %.cpp,%.cpp.gcda,$(CPP_SRCS)) $(patsubst %.cpp,%.cpp.gcno,$(CPP_SRCS))
+
 ifneq ($(MAKECMDGOALS),clean)
   -include ${CPP_DEPS}
 endif
@@ -26,7 +28,7 @@ libm2cellcpp.a: $(OBJS)
 	${co}$(AR) rs $@ $^
 
 clean:
-	@$(foreach file,$(OBJS) $(CPP_DEPS) libcRIOcpp.a $(shell find -name '*.d'), echo '[RM ] ${file}'; $(RM) -r $(file);)
+	@$(foreach file,$(OBJS) $(CPP_DEPS) $(GCOVR_A) libcRIOcpp.a $(shell find -name '*.d'), echo '[RM ] ${file}'; $(RM) -r $(file);)
 
 # file targets
 %.cpp.o: %.cpp.d
