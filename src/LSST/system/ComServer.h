@@ -35,7 +35,8 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
-/// Class ComServer is used communicating with TCP/IP clients.
+/// Class ComServer is used for communicating with TCP/IP clients.
+/// unit test: test_com.cpp
 class ComServer : public std::enable_shared_from_this<ComServer> {
 public:
     typedef std::shared_ptr<ComServer> Ptr;

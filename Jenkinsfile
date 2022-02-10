@@ -22,6 +22,10 @@ pipeline {
         LSST_STACK = "/opt/lsst/software/stack"
         // XML report path
         XML_REPORT = "tests/*.xml"
+        // Authority to publish the document online
+        user_ci = credentials('lsst-io')
+        LTD_USERNAME = "${user_ci_USR}"
+        LTD_PASSWORD = "${user_ci_PSW}"
     }
 
     stages {
@@ -49,11 +53,27 @@ pipeline {
                         make
                         make run_tests
                         make junit
+
+                        cd tests
+                        gcovr -r ../src/ . --xml-pretty > ${HOME}/${env.XML_REPORT_COVERAGE}
                     """
                 }
                 // The path of xml needed by JUnit is relative to
                 // the workspace.
                 junit "${env.XML_REPORT}"
+            }
+        }
+
+        stage('Publish documentation') {
+            steps {
+                withEnv(["HOME=${env.WORKSPACE}"]) {
+                    sh """
+                        source ${env.LSST_STACK}/loadLSST.bash
+
+                        make doc
+                        ltd upload --product ${env.DOCUMENT_NAME} --git-ref ${BRANCH} --dir doc/html
+                    """
+                }
             }
         }
     }

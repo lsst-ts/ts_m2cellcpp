@@ -34,6 +34,7 @@ namespace m2cellcpp {
 namespace system {
 
 /// A placeholder class to be used until normal logging can be setup.
+/// unit test: test_Log.cpp
 class Log {
 public:
     enum LogLvl { DEBUG = 1, INFO, WARN, ERROR };

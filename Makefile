@@ -15,7 +15,7 @@ lib/libm2cellcpp.a: FORCE
 
 # Other Targets
 clean:
-	@$(foreach file,doc,echo '[RM ] ${file}'; $(RM) -r $(file);)
+	@$(foreach file,doc/html doc/latex,echo '[RM ] ${file}'; $(RM) -r $(file);)
 	@$(foreach dir,src tests,$(MAKE) -C ${dir} $@;)
 
 tests: tests/Makefile tests/*.cpp

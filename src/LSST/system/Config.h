@@ -39,8 +39,9 @@ namespace system {
 /// Eventually, this class will read in a configuration file,
 /// maybe yaml or json. Until then, it will just store a map
 /// of values and return those values requested.
-/// This class should be the first thing defined in the program
-/// as everything else will need it.
+/// Config::setup() should be called as early in the program
+/// as possible as many objects will require this class.
+/// unit test: test_config.cpp
 class Config {
 public:
     typedef std::shared_ptr<Config> Ptr;
@@ -54,8 +55,8 @@ public:
     /// @throws invalid_argument when source is invalid.
     static void setup(std::string const& source);
 
-    /// Get a copy of the pointer to the global configuration.
-    /// Calling this before setup() throw.
+    /// Get access to the global configuration.
+    /// Calling this before setup() will throw.
     /// @return a reference to the global Config object.
     /// @throws runtime_error when setup() has not been called.
     static Config& get();
@@ -73,7 +74,7 @@ private:
 
     void _setValue(std::string const& section, std::string const& key, std::string const& val);
 
-    static Ptr _thisPtr;
+    static Ptr _thisPtr; ///< Pointer to the global instance of Config.
     static std::mutex _thisMtx;
     std::map<std::string, std::string> _map;  ///< map of section:key -> values.
 };

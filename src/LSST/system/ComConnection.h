@@ -41,6 +41,8 @@ typedef std::shared_ptr<boost::asio::io_context> IoContextPtr;
 
 /// This class is used to handle commands and responses over a connection
 /// until that connection is terminated.
+///
+/// unit test: test_com.cpp
 class ComConnection : public std::enable_shared_from_this<ComConnection> {
 public:
     typedef std::shared_ptr<ComConnection> Ptr;

@@ -37,6 +37,7 @@ namespace system {
 
 /// A class used for testing ComServer by making a connection to the server
 /// and running commands.
+/// unit test: test_com.cpp
 class ComClient {
 public:
     typedef std::shared_ptr<ComClient> Ptr;
