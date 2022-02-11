@@ -38,7 +38,7 @@ pipeline {
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
                         source ${env.LSST_STACK}/loadLSST.bash
-                        conda install -y catch2 boost asio
+                        conda install -y catch2 boost asio gcovr doxygen
                     """
                 }
             }
@@ -53,9 +53,6 @@ pipeline {
                         make
                         make run_tests
                         make junit
-
-                        cd tests
-                        gcovr -r ../src/ . --xml-pretty > ${HOME}/${env.XML_REPORT_COVERAGE}
                     """
                 }
                 // The path of xml needed by JUnit is relative to
@@ -64,6 +61,22 @@ pipeline {
             }
         }
 
+        stage('Code Coverage') {
+            steps {
+                withEnv(["HOME=${env.WORKSPACE}"]) {
+                    sh """
+                        source ${env.LSST_STACK}/loadLSST.bash
+
+                        mkdir jenkinsReportCov/
+                        make tests
+                        cd tests
+                        gcovr -r ../src/ . --xml-pretty > ${HOME}/${env.XML_REPORT_COVERAGE}
+                    """
+                }
+            }
+        }
+
+
         stage('Publish documentation') {
             steps {
                 withEnv(["HOME=${env.WORKSPACE}"]) {
@@ -71,8 +84,8 @@ pipeline {
                         source ${env.LSST_STACK}/loadLSST.bash
 
                         make doc
-                        ltd upload --product ${env.DOCUMENT_NAME} --git-ref ${BRANCH} --dir doc/html
                     """
+                    //    ltd upload --product ${env.DOCUMENT_NAME} --git-ref ${BRANCH} --dir doc/html
                 }
             }
         }
@@ -80,6 +93,9 @@ pipeline {
 
     post {
         always {
+            // Publish the coverage report
+            cobertura coberturaReportFile: 'jenkinsReportCov/*.xml'
+
             // Change the ownership of workspace to Jenkins for the clean up
             // This is to work around the condition that the user ID of jenkins
             // is 1003 on TSSW Jenkins instance. In this post stage, it is the
