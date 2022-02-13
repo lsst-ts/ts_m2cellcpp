@@ -4,8 +4,6 @@ all: compile
 
 .PHONY: FORCE compile run junit clean
 
-#&&&TEST_REQ_READLINE := test_CliApp test_FPGACliApp
-#&&&TEST_SRCS := $(shell ls test_*.cpp 2>/dev/null | grep -v test_CliApp | grep -v test_FPGACliApp)
 TEST_REQ_READLINE := test_version
 TEST_SRCS := $(shell ls test_*.cpp 2>/dev/null | grep -v test_version)
 BINARIES := $(patsubst %.cpp,%,$(TEST_SRCS))
@@ -17,11 +15,6 @@ JUNIT_FILES := $(shell ls *.xml 2>/dev/null)
 ifneq ($(MAKECMDGOALS),clean)
     -include $(DEPS)
 endif
-
-#&&&
-#TEST_CPPFLAGS := -I"/usr/include" \
-#	-I"../include" \
-#	$(pkg-config --cflags catch2 2>/dev/null)
 
 TEST_CPPFLAGS := -I"/usr/include" \
 	-I"../src/LSST" \

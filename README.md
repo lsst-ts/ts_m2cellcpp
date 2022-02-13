@@ -54,12 +54,11 @@ make run_tests
 make clean
 unset NOGCOVR
 make run_tests
-cd tests
-gcovr ../src -r .
+gcovr -r src/ .
 ```
 The `unset NOGOVR` and `make clean` can be skipped if NOGCOVR was never set.
 
 If the Cobertura xml report is needed, change the `gcovr` command to
 ```
-gcovr -r ../src --xml-pretty > coverageReport.xml
+gcovr -r src/ --xml-pretty > coverageReport.xml
 ```

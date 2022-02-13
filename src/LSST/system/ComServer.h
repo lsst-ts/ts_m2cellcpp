@@ -24,6 +24,8 @@
 // System headers
 #include <atomic>
 #include <memory>
+#include <map>
+#include <mutex>
 
 // Third party headers
 #include <boost/asio.hpp>
@@ -34,6 +36,8 @@
 namespace LSST {
 namespace m2cellcpp {
 namespace system {
+
+class ComConnection;
 
 /// Class ComServer is used for communicating with TCP/IP clients.
 /// unit test: test_com.cpp
@@ -49,10 +53,20 @@ public:
     ComServer() = delete;
     ComServer(ComServer const&) = delete;
     ComServer& operator=(ComServer const&) = delete;
-    ~ComServer() = default;
+    ~ComServer();
 
     /// Run the server, this is a blocking opperation.
     void run();
+
+    /// Cause the server to stop responding to client requests.
+    /// This also shutsdown all connections using this server.
+    void shutdown();
+
+    /// Remove 'connId' from the set of ComConnections.
+    void eraseConnection(uint64_t connId);
+
+    /// @return the number of active ComConnections.
+    int connectionCount() const;
 
     State getState() const { return _state; }
 
@@ -69,10 +83,22 @@ private:
     /// Handle a connection request.
     void _handleAccept(ComConnection::Ptr const& connection, boost::system::error_code const& ec);
 
-    std::atomic<State> _state{CREATED};
-    IoContextPtr _ioContext;
-    int _port;
+    std::atomic<State> _state{CREATED}; ///< Current state of the machine.
+    IoContextPtr _ioContext; ///< Pointer to the asio io_context
+    int _port; 
     boost::asio::ip::tcp::acceptor _acceptor;
+
+    std::atomic<bool> _shutdown{false}; ///< set to true the first time shutdown is called.
+
+    /// A map of all current connections made by this server.
+    std::map<uint64_t, std::weak_ptr<ComConnection>> _connections;
+    mutable std::mutex _mapMtx; ///< protects _connections
+
+    /// The source for connections Ids for the _connectionsMap.
+    /// It should take hundreds or thousands of years for it
+    /// uint64_t to wrap around.
+    uint64_t _connIdSeq{0};  
+
 };
 
 }  // namespace system

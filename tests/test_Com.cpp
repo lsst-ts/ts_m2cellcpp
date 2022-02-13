@@ -43,6 +43,10 @@ using Catch::Matchers::StartsWith;
 TEST_CASE("Test Com echo", "[Com]") {
     Config::setup("UNIT_TEST");
 
+    REQUIRE(ComServer::prettyState(ComServer::CREATED) == "CREATED");
+    REQUIRE(ComServer::prettyState(ComServer::RUNNING) == "RUNNING");
+    REQUIRE(ComServer::prettyState(ComServer::STOPPED) == "STOPPED");
+
     // Start the server
     IoContextPtr ioContext = make_shared<boost::asio::io_context>();
     string strPort = Config::get().getValue("server", "port");
@@ -52,7 +56,7 @@ TEST_CASE("Test Com echo", "[Com]") {
     REQUIRE(serv->getState() == ComServer::CREATED);
     Log::log(Log::DEBUG, "server started");
 
-    thread servThrd([serv, &done]() {
+    thread servThrd([&serv, &done]() {
         Log::log(Log::INFO, "server run " + serv->prettyState(serv->getState()));
         serv->run();
         Log::log(Log::INFO, "server finish");
@@ -65,14 +69,40 @@ TEST_CASE("Test Com echo", "[Com]") {
     REQUIRE(serv->getState() == ComServer::RUNNING);
     Log::log(Log::DEBUG, "server running");
 
-    // Client echo test
-    ComClient client(ioContext, "127.0.0.1", port);
-    string cmd("This is test 1");
-    client.writeCommand(cmd);
-    Log::log(Log::DEBUG, "wrote cmd=" + cmd);
-    auto str = client.readCommand();
-    Log::log(Log::DEBUG, "read str=" + str);
-    REQUIRE(cmd == str);
+    // Client echo test 1
+    {
+        ComClient client(ioContext, "127.0.0.1", port);
+        string cmd("This is test 1");
+        client.writeCommand(cmd);
+        Log::log(Log::DEBUG, "wrote cmd=" + cmd);
+        auto str = client.readCommand();
+        Log::log(Log::DEBUG, "read str=" + str);
+        REQUIRE(cmd == str);
+    }
+    
+    // Client echo test 2
+    {
+        ComClient client(ioContext, "127.0.0.1", port);
+        string cmd("Something different 42");
+        client.writeCommand(cmd);
+        Log::log(Log::DEBUG, "wrote cmd=" + cmd);
+        auto str = client.readCommand();
+        Log::log(Log::DEBUG, "read str=" + str);
+        REQUIRE(cmd == str);
+    }
+
+    serv->shutdown();
+    REQUIRE(serv->connectionCount() == 0);
+
+    // Client expected failure
+    {
+        ComClient client(ioContext, "127.0.0.1", port);
+        string cmd("expected failure");
+        client.writeCommand(cmd);
+        Log::log(Log::DEBUG, "wrote cmd=" + cmd);
+        REQUIRE_THROWS(client.readCommand());
+        REQUIRE_THROWS(client.writeCommand(cmd));
+    }
 
     // Server stop
     ioContext->stop();
@@ -84,4 +114,6 @@ TEST_CASE("Test Com echo", "[Com]") {
     servThrd.join();
     REQUIRE(done == true);
     REQUIRE(serv->getState() == ComServer::STOPPED);
+    serv.reset();
+    Log::log(Log::DEBUG, "server reset");
 }

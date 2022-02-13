@@ -33,6 +33,7 @@
 // Third party headers
 
 // Project headers
+#include "system/ComServer.h"
 #include "system/Config.h"
 #include "system/Log.h"
 
@@ -60,16 +61,26 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
-ComConnection::Ptr ComConnection::create(IoContextPtr const& ioContext) {
-    return ComConnection::Ptr(new ComConnection(ioContext));
+ComConnection::Ptr ComConnection::create(IoContextPtr const& ioContext, uint64_t connId,
+                                         shared_ptr<ComServer> const& server) {
+    return ComConnection::Ptr(new ComConnection(ioContext, connId, server));
 }
 
-ComConnection::ComConnection(IoContextPtr const& ioContext) : _socket(*ioContext), _ioContext(ioContext) {}
+ComConnection::ComConnection(IoContextPtr const& ioContext, uint64_t connId, shared_ptr<ComServer> const& server) 
+  : _socket(*ioContext), _ioContext(ioContext), _connId(connId), _server(server) {
+}
 
-void ComConnection::beginProtocol() { _receiveRequest(); }
+ComConnection::~ComConnection() {
+    shutdown();
+}
 
-void ComConnection::_receiveRequest() {
-    Log::log(Log::DEBUG, "ComConnection::_receiveRequest");
+void ComConnection::beginProtocol() { _receiveCommand(); }
+
+void ComConnection::_receiveCommand() {
+    Log::log(Log::DEBUG, "ComConnection::_receiveCommand");
+    if (_shutdown) {
+        return;
+    }
     boost::asio::async_read_until(_socket, _streamBuf, getDelimiter(),
                                   bind(&ComConnection::_readCommand, shared_from_this(), _1, _2));
 }
@@ -101,7 +112,24 @@ void ComConnection::_sendResponse(string const& command) {
 void ComConnection::_responseSent(boost::system::error_code const& ec, size_t xfer) {
     Log::log(Log::DEBUG, "ComConnection::_responseSent xfer=" + to_string(xfer));
     if (::isErrorCode(ec, __func__)) return;
-    _receiveRequest();
+    _receiveCommand();
+}
+
+
+void ComConnection::shutdown() {
+    if (_shutdown.exchange(true) == true) {
+        return;
+    }
+    // Tell the server to stop tracking this connection
+    auto serv = _server.lock();
+    if (serv != nullptr) {
+        serv->eraseConnection(_connId);
+    } else {
+        Log::log(Log::ERROR, "ComConnection::shutdown server already destroyed");
+    }
+    boost::system::error_code ec;
+    _socket.shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
+    ::isErrorCode(ec, __func__);
 }
 
 }  // namespace system

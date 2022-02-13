@@ -47,7 +47,7 @@ public:
     ComClient(ComClient const&) = delete;
     ComClient& operator=(ComClient const&) = delete;
 
-    ~ComClient() = default;
+    ~ComClient();
 
     /// Send a command to the server.
     /// @throw boost::system::system_error on error.
@@ -57,6 +57,9 @@ public:
     /// @return the text response
     /// @throw boost::system::system_error on other errors.
     std::string readCommand();
+
+    /// Close the connection.
+    void close();
 
 private:
     IoContextPtr _ioContext;  ///< Maintains the io_context that holds _socket.

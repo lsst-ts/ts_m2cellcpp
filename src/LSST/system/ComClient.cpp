@@ -37,12 +37,26 @@ ComClient::ComClient(IoContextPtr const& ioContext, string const& servIp, int po
     _setup(servIp, port);
 }
 
+ComClient::~ComClient() {
+    Log::log(Log::DEBUG, "ComClient::~ComClient");
+    boost::system::error_code ec;
+    _socket.shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
+    if (ec) {
+        Log::log(Log::ERROR, "~ComClient shutdown ec:" + ec.message());
+    }
+    _socket.close();
+}
+
 void ComClient::_setup(string const& servIp, int port) {
     Log::log(Log::DEBUG, string("ComClient setup " + servIp + " " + to_string(port)));
     io::ip::tcp::resolver resolv(*_ioContext);
     boost::system::error_code ec;
     string strPort = to_string(port);
     io::ip::tcp::resolver::results_type endpoints = resolv.resolve(servIp, strPort, ec);
+    if (ec) {
+        Log::log(Log::ERROR, "ComClient::_setup ec:" + ec.message());
+        throw boost::system::system_error(ec);
+    }
     for (io::ip::tcp::endpoint const& endpoint : endpoints) {
         stringstream os;
         os << endpoint;
@@ -80,6 +94,7 @@ string ComClient::readCommand() {
     Log::log(Log::DEBUG, "ComClient::readCommand " + cmd);
     return cmd;
 }
+
 
 }  // namespace system
 }  // namespace m2cellcpp

@@ -37,6 +37,9 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
+class ComServer;
+
+/// io_context pointer definition.
 typedef std::shared_ptr<boost::asio::io_context> IoContextPtr;
 
 /// This class is used to handle commands and responses over a connection
@@ -47,15 +50,19 @@ class ComConnection : public std::enable_shared_from_this<ComConnection> {
 public:
     typedef std::shared_ptr<ComConnection> Ptr;
 
+    // Delimiter for all messages
+    static std::string getDelimiter() { return "\r\n"; }
+
     /// Factory method used to prevent issues with enable_shared_from_this.
     /// @param ioContext asio object for the network I/O operations
-    static Ptr create(IoContextPtr const& ioContext);
+    static Ptr create(IoContextPtr const& ioContext, uint64_t connId, 
+                      std::shared_ptr<ComServer> const& server);
 
     ComConnection() = delete;
     ComConnection(ComConnection const&) = delete;
     ComConnection& operator=(ComConnection const&) = delete;
 
-    ~ComConnection() = default;
+    ~ComConnection();
 
     /// @return network socket associated with the connection.
     boost::asio::ip::tcp::socket& socket() { return _socket; }
@@ -63,15 +70,16 @@ public:
     /// Answer incoming communication.
     void beginProtocol();
 
-    // Delimiter for all messages
-    static std::string getDelimiter() { return "\r\n"; }
+    /// Shutdown this connection
+    void shutdown();
 
 private:
     /// @see ComConnection::create()
-    ComConnection(IoContextPtr const& ioContext);
+    ComConnection(IoContextPtr const& ioContext, uint64_t connId, 
+                  std::shared_ptr<ComServer> const& server);
 
-    /// &&& maybe change to receiveCommand
-    void _receiveRequest();
+    /// Receive a command from a client.
+    void _receiveCommand();
 
     /// Read the command sent.
     /// @param ec An error code to be evaluated.
@@ -97,8 +105,18 @@ private:
     boost::asio::ip::tcp::socket _socket;
     IoContextPtr _ioContext;
 
+    /// Identifier for this connection
+    uint64_t _connId;
+
+    /// Weak pointer to the server so it can be informed that this
+    /// connection is done.
+    std::weak_ptr<ComServer> _server;
+
     boost::asio::streambuf _streamBuf;
     std::string _buffer;
+
+    std::atomic<bool> _shutdown{false};
+
 };
 
 }  // namespace system

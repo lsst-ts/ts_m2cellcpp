@@ -52,6 +52,10 @@ ComServer::ComServer(IoContextPtr const& ioContext, int port)
     _acceptor.set_option(boost::asio::socket_base::reuse_address(true));
 }
 
+ComServer::~ComServer() {
+    Log::log(Log::DEBUG, "ComServer::~ComServer()");
+}
+
 void ComServer::run() {
     Log::log(Log::DEBUG, "ComServer::run()");
     // Begin accepting immediately. Otherwise it will finish when it
@@ -76,18 +80,67 @@ void ComServer::run() {
 }
 
 void ComServer::_beginAccept() {
-    ComConnection::Ptr const connection = ComConnection::create(_ioContext);
+    if (_state == STOPPED || _shutdown) {
+        return;
+    }
+    auto connId = _connIdSeq++;
+    ComConnection::Ptr const connection = ComConnection::create(_ioContext, connId, shared_from_this());
+    {
+        lock_guard<mutex> lg(_mapMtx);
+        _connections.emplace(connId, connection);
+    }
     _acceptor.async_accept(connection->socket(),
                            bind(&ComServer::_handleAccept, shared_from_this(), connection, _1));
 }
 
 void ComServer::_handleAccept(ComConnection::Ptr const& connection, boost::system::error_code const& ec) {
+    if (_state == STOPPED || _shutdown) {
+        return;
+    }
     if (ec.value() == 0) {
         connection->beginProtocol();
     } else {
-        Log::log(Log::ERROR, string(__func__) + "  ec:" + ec.message());
+        Log::log(Log::ERROR, "ComServer::_handleAccept ec:" + ec.message());
     }
     _beginAccept();
+}
+
+
+void ComServer::shutdown() {
+    Log::log(Log::INFO, "ComServer::shutdown");
+    if (_shutdown.exchange(true) == true) {
+        return;
+    }
+    vector<weak_ptr<ComConnection>> vect;
+    {
+        lock_guard<mutex> lg(_mapMtx);
+        for(auto&& elem:_connections) {
+            vect.push_back(elem.second);
+        }
+    }
+
+    for(auto&& item:vect) {
+        std::shared_ptr<ComConnection> conn = item.lock();
+        if (conn != nullptr) {
+            conn->shutdown();
+        }
+    }
+}
+
+
+void ComServer::eraseConnection(uint64_t connId) {
+    lock_guard<mutex> lg(_mapMtx);
+    auto iter = _connections.find(connId);
+    if (iter == _connections.end()) {
+        Log::log(Log::WARN, string("connection not found ") + to_string(connId));
+        return;
+    }
+    _connections.erase(iter);
+}
+
+int ComServer::connectionCount() const {
+    lock_guard<mutex> lg(_mapMtx);
+    return _connections.size();
 }
 
 string ComServer::prettyState(State state) {
