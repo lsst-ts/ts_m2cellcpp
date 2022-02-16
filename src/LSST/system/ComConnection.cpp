@@ -95,10 +95,8 @@ void ComConnection::_readCommand(boost::system::error_code const& ec, size_t xfe
 
     Log::log(Log::INFO, "received command: " + command + " streamBuf size=" + to_string(command.size()));
 
-    // TODO: put command on a queue to be hanlded
-
-    // TODO: instead of echo, send response that the command was received
-    //      (will there be another response when the command is completed?)
+    // TODO: DM-33713: instead of just echo, identify the incoming command
+    //      and arguments and send an appropriate response.
     _sendResponse(command);
 }
 
@@ -111,10 +109,11 @@ void ComConnection::_sendResponse(string const& command) {
 
 void ComConnection::_responseSent(boost::system::error_code const& ec, size_t xfer) {
     Log::log(Log::DEBUG, "ComConnection::_responseSent xfer=" + to_string(xfer));
-    if (::isErrorCode(ec, __func__)) return;
+    if (::isErrorCode(ec, __func__)) {
+        return;
+    }
     _receiveCommand();
 }
-
 
 void ComConnection::shutdown() {
     if (_shutdown.exchange(true) == true) {

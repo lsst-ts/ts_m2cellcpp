@@ -25,7 +25,6 @@ else
   CPP := g++ -std=c++17 -fPIE -pthread -Wall -fmessage-length=0 ${c_opts} $(GCOVR_FLAGS)
 endif
 
-#LIBS += $(shell pkg-config yaml-cpp --libs) -ldl -lpthread
 LIBS += $(shell pkg-config yaml-cpp --libs) -ldl
 
 BOOST_CPPFLAGS := -I$(CONDA_PREFIX)/include/

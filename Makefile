@@ -2,9 +2,6 @@ include Makefile.inc
 
 .PHONY: all clean deploy tests FORCE doc main
 
-# Add inputs and outputs from these tool invocations to the build variables 
-#
-
 # All Target
 all: lib/libm2cellcpp.a
 

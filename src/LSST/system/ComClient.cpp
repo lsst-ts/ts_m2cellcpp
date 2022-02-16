@@ -86,7 +86,7 @@ string ComClient::readCommand() {
         throw boost::system::system_error(ec);
     }
 
-    // TODO Put this streambuf to string conversion in a utility function.
+    // TODO: DM-33715 Put this streambuf to string conversion in a utility function.
     using boost::asio::buffers_begin;
     auto buf = streamB.data();
     size_t msgSz = streamB.size() - ComConnection::getDelimiter().size();
