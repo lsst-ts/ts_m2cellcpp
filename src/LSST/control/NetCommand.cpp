@@ -37,13 +37,6 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-/* &&&
-NetCommand::Ptr NetCommand::create(JsonPtr const& inJson_) {
-    Ptr cmd = Ptr(new NetCommand(inJson_));
-    return cmd;
-}
-*/
-
 NetCommand::NetCommand(JsonPtr const& inJson_)
         : inJson(inJson_) {
     if (inJson == nullptr) {

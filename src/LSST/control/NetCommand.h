@@ -154,7 +154,7 @@ public:
 
     /// @return a version of NCmdAck to be used to generate commands.
     /// This returns basically a dummy version of the class that
-    /// is only to be used
+    /// is only to be used to create new instances.
     static Ptr createFactoryVersion() { return Ptr(new NCmdAck()); }
 
     /// @return the name of the command this specific class handles.
