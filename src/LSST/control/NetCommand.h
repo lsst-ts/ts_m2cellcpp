@@ -18,8 +18,8 @@
  * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
-#ifndef LSST_M2CELLCPP_SYSTEM_COMMAND_H
-#define LSST_M2CELLCPP_SYSTEM_COMMAND_H
+#ifndef LSST_M2CELLCPP_CONTROL_NETCOMMAND_H
+#define LSST_M2CELLCPP_CONTROL_NETCOMMAND_H
 
 // System headers
 #include <memory>
@@ -53,30 +53,24 @@ public:
 /// items have been parsed successfully, and throw 
 /// NetCommandException when required items are missing/invalid.
 ///
-/// The NetCommandFactory requires dummy versions of all the 
-/// child classes it should understand. It uses the dummy classes
+/// The NetCommandFactory requires `FactoryVersions` of all the 
+/// child classes it should understand. It uses the `FactoryVersion`
 /// to identify the incoming "id" strings and then create the
 /// correct child class.
-///
 /// While this (base class) does not implement it, all child classes
 /// must have `static Ptr createFactoryVersion()` defined to
-/// return a dummy instance of the child class. 
+/// return a `FactoryVersion` instance of the child class. 
 /// See `NCmdAck::createFactoryVersion()` for an example.
 ///
 /// Since basic communications errors should not crash the program,
 /// This class and its ilk should throw NetCommandException
-/// when problems arise so they can be caught before causing undu 
+/// when problems arise so they can be caught before causing undue 
 /// harm. (This does not apply to segfaults or serious underlying 
 /// issues that should cause termination.)
 class NetCommand : public std::enable_shared_from_this<NetCommand> {
 public:
     using Ptr = std::shared_ptr<NetCommand>;
     using JsonPtr = std::shared_ptr<nlohmann::json>;
-
-    /// Create a NetCommand object from the received json object.
-    /// Hidden constructor to ensure proper construction of
-    /// enable_shared_From_this object.
-    static Ptr create(JsonPtr const& inJson);
 
     NetCommand(NetCommand const&) = delete;
     NetCommand& operator=(NetCommand const&) = delete;
@@ -85,10 +79,9 @@ public:
     /// Try to parse inStr and return a json object.
     /// @return a json object if the
     static JsonPtr parse(std::string const& inStr);
-    //&&&static std::shared_ptr<nlohmann::json> parse(std::string const& inStr);
 
     /// @return the name of the command this specific class handles.
-    virtual std::string getCommandName() const { return "cmd_"; } // &&& make pure virtual
+    virtual std::string getCommandName() const =0;
 
     /// @ return a new NetCommand child class object based on 'inJson'.
     /// This method is meant for use by NetCommandFactory. The child
@@ -97,9 +90,9 @@ public:
     /// NCmdEcho should return a NCmdEcho object, etc.
     /// @return A shared pointer to a child class of NetCommand.
     /// @throws NetCommandException if there are any problems.
-    virtual Ptr createNewNetCommand(JsonPtr const& inJson) { return nullptr; } // &&& make pure virtual
+    virtual Ptr createNewNetCommand(JsonPtr const& inJson)=0;
 
-    std::string getId() const { return _id; } //&&& change to getName()
+    std::string getName() const { return _name; }
 
     uint64_t getSeqId() const { return _seqId; }
 
@@ -110,6 +103,7 @@ public:
 
     /// Run the action function and set some respJson values.
     /// @return true if the action() was successful.
+    /// This will probably need to run in its own thread.
     bool run();
 
     /// @return a json string version of the acknowledgment, aka 'ack'.
@@ -119,11 +113,13 @@ public:
     std::string getRespJsonStr();
 
 protected:
+    /// Protected to ensure proper construction of enable_shared_From_this object.
+    /// @param json must contain "id" and "seq_id" fields.
     NetCommand(JsonPtr const& json);
 
     /// Execute the action this particular NetCommand needs to take.
     /// @return true if successful.
-    virtual bool action() { return false; }; //&&& make pure virtual
+    virtual bool action()=0;
 
     /// This consturctor is ONLY to be used in createFactoryVersion()/
     /// This constructor makes a dummy version of the object that is only
@@ -139,7 +135,7 @@ protected:
     /// json used to create the final response
     nlohmann::json respJson = {{"id","fail"},{"seq_id",0},{"user_info", ""}};
 private:
-    std::string _id = "none"; ///< Name of the command. //&&& rename this to _name, "id" changes meaning
+    std::string _name = "none"; ///< Name of the command.
     uint64_t _seqId = 0; ///< Sequence number of command.
 };
 
@@ -151,7 +147,7 @@ class NCmdAck : public NetCommand {
 public:
     using Ptr = std::shared_ptr<NCmdAck>;
 
-    /// &&& doc
+    /// @return a new NCmdAck object based on inJson.
     static Ptr create(JsonPtr const& inJson);
 
     virtual ~NCmdAck() = default;
@@ -177,11 +173,16 @@ private:
 };
 
 
+/// NCmdNoAck is used to reply with a "noack" message.
+/// This class is used to respond to NetCommand requests
+/// that have an error in the initial request. This
+/// includes unknown commands, missing parameters,
+/// and seq_id issues.
 class NCmdNoAck : public NetCommand {
 public:
     using Ptr = std::shared_ptr<NCmdNoAck>;
 
-    /// &&& doc
+    /// @return a new NCmdNoAck object based on inJson.
     static Ptr create(JsonPtr const& inJson);
 
     virtual ~NCmdNoAck() = default;
@@ -204,12 +205,13 @@ private:
     NCmdNoAck() : NetCommand() {}
 };
 
-
+/// This class sends back the `inJson["msg"]` value as `respJson["msg"]`.
+/// `inJson["msg"]` is a required field for this command.
 class NCmdEcho : public NetCommand {
 public:
     using Ptr = std::shared_ptr<NCmdEcho>;
 
-    /// &&& doc
+    /// @return a new NCmdEcho object based on inJson.
     static Ptr create(JsonPtr const& inJson);
 
     virtual ~NCmdEcho() = default;
@@ -235,42 +237,8 @@ private:
 };
 
 
-/// This class receives json strings and returns the appropriate NetCommand instance.
-///&&& doc
-class NetCommandFactory : public std::enable_shared_from_this<NetCommandFactory> {
-public:
-    using Ptr = std::shared_ptr<NetCommandFactory>;
-
-    /// Private constructor to ensure proper enabled_shared_from_this construction.
-    static Ptr create();
-
-    /// Add a NetCommand to the map of know commands.
-    /// @throws NetCommandException if the cmd is already in the map.
-    void addNetCommand(NetCommand::Ptr const& cmd);
-
-    /// Get the NetCommand appropriate for the jsonStr.
-    /// @return Appropriate NetCommand. _defaultNoAck is returned on 
-    ///         unknown commands that have a parsable id and seq_id.
-    /// @throws NetCommandException if there are any problems.
-    NetCommand::Ptr getCommandFor(std::string const& jsonStr);
-
-    /// Used to change the value of _defaultNoAck if NCmdNoAck is incorrect.
-    void setDefaultNoAck();
-
-private:
-    NetCommandFactory() = default;
-
-    /// The command to use when there are lesser parsing problems
-    /// or unknown commands.
-    NetCommand::Ptr _defaultNoAck{NCmdNoAck::createFactoryVersion()};
-
-    std::mutex _mtx; ///< protects _cmdMap, _prevSeqId;
-    std::map<std::string, std::shared_ptr<NetCommand>> _cmdMap;
-    uint64_t _prevSeqId = 0; ///< Value of the previous seqId.
-};
-
 }  // namespace control
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif // LSST_M2CELLCPP_SYSTEM_COMMAND_H
+#endif // LSST_M2CELLCPP_CONTROL_NETCOMMAND_H

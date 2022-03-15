@@ -23,7 +23,6 @@
 #include "control/NetCommand.h"
 
 // System headers
-#include <string>
 
 // Third party headers
 
@@ -38,10 +37,12 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
+/* &&&
 NetCommand::Ptr NetCommand::create(JsonPtr const& inJson_) {
     Ptr cmd = Ptr(new NetCommand(inJson_));
     return cmd;
 }
+*/
 
 NetCommand::NetCommand(JsonPtr const& inJson_)
         : inJson(inJson_) {
@@ -49,9 +50,9 @@ NetCommand::NetCommand(JsonPtr const& inJson_)
         throw NetCommandException("NetCommand constructor inJson=null");
     }
     try {
-        _id = inJson->at("id");
+        _name = inJson->at("id");
         _seqId = inJson->at("seq_id");
-        Log::log(Log::DEBUG, string("NetCommand constructor id=") + _id + " seqId=" + to_string(_seqId));
+        Log::log(Log::DEBUG, string("NetCommand constructor id=") + _name + " seqId=" + to_string(_seqId));
     } catch (json::exception const& ex) {
         string eMsg = string("NetCommand constructor error in ") + inJson->dump() + " what=" + ex.what();
         Log::log(Log::ERROR, eMsg);
@@ -59,7 +60,7 @@ NetCommand::NetCommand(JsonPtr const& inJson_)
     }
     
     ackJson["seq_id"] = _seqId;
-    ackJson["user_info"] = string("invalid:") + _id;
+    ackJson["user_info"] = string("invalid:") + _name;
     respJson["seq_id"] = _seqId;
 }
 
@@ -89,7 +90,7 @@ NetCommand::JsonPtr NetCommand::parse(string const& inStr) {
 }
 
 bool NetCommand::run() {
-    Log::log(Log::DEBUG, string("NetCommand run action for seqId=") + to_string(_seqId) + " " + getId());
+    Log::log(Log::DEBUG, string("NetCommand run action for seqId=") + to_string(_seqId) + " " + getName());
     bool result = action();
     if (result) {
         respJson["id"] = "success";
@@ -174,56 +175,6 @@ bool NCmdEcho::action() {
     respJson["msg"] = _msg;
     return true;
 }
-
-
-NetCommandFactory::Ptr NetCommandFactory::create() {
-    NetCommandFactory::Ptr factory = NetCommandFactory::Ptr(new NetCommandFactory());
-    return factory;
-}
-
-void NetCommandFactory::addNetCommand(NetCommand::Ptr const& cmd) {
-    lock_guard<mutex> lg(_mtx);
-    string cmdName = cmd->getCommandName();
-    auto result = _cmdMap.emplace(cmdName, cmd);
-    if (result.second == false) {
-        string eMsg = string("addNetCommand failed as this command was already in the map ") + cmdName;
-        Log::log(Log::ERROR, eMsg);
-        throw NetCommandException(eMsg);
-    }
-}
-
-NetCommand::Ptr NetCommandFactory::getCommandFor(std::string const& jsonStr) {
-    auto inJson = NetCommand::parse(jsonStr);
-    lock_guard<mutex> lg(_mtx);
-    // If parse didn't throw, there must be a valid id and seq_id.
-    string cmdId = inJson->at("id");
-    uint64_t seqId = inJson->at("seq_id");
-    NetCommand::Ptr cmdOut;
-    // Check if seqId is valid (must be larger than the previous one)
-    if (seqId <= _prevSeqId) {
-        string badSeqId = string("Bad seq_id ") + to_string(seqId) + " " + cmdId 
-                        + " previous seq_id was " + to_string(_prevSeqId);
-        Log::log(Log::WARN, string("getCommandFor seq_id ") + to_string(seqId) + " " + cmdId  
-                 + badSeqId + " returning " + _defaultNoAck->getCommandName());
-        cmdOut = _defaultNoAck->createNewNetCommand(inJson);
-        cmdOut->setAckUserInfo(badSeqId);
-        return cmdOut;
-    } 
-    _prevSeqId = seqId;
-    auto iter = _cmdMap.find(cmdId);
-    if (iter == _cmdMap.end()) {
-        Log::log(Log::WARN, string("getCommandFor seq_id ") + cmdId + " not found. Returning defaultNoAck" 
-                 + _defaultNoAck->getCommandName());
-        cmdOut = _defaultNoAck->createNewNetCommand(inJson);
-        cmdOut->setAckUserInfo(string("Original command not found " + cmdId)); 
-    } else {
-        auto& cmdFactory = iter->second;
-        // If there are errors in 'inJson', this should throw NetCommandException.
-        cmdOut = cmdFactory->createNewNetCommand(inJson);
-    }
-    return cmdOut;
-}
-
 
 
 }  // namespace control

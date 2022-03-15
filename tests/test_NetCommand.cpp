@@ -23,7 +23,7 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include "control/NetCommand.h"
+#include "control/NetCommandFactory.h"
 #include "system/Log.h"
 
 using namespace std;
@@ -38,10 +38,9 @@ TEST_CASE("Test NetCommand", "[NetCommand]") {
         NetCommand::JsonPtr jsn = NetCommand::parse(jStr);
         REQUIRE(jsn->at("id") == "cmd_ack");
         REQUIRE(jsn->at("seq_id") == 5);
-        NetCommand::Ptr cmd1 = NetCommand::create(jsn);
-        REQUIRE(cmd1->getId() == "cmd_ack");
+        NetCommand::Ptr cmd1 = NCmdAck::create(jsn);
+        REQUIRE(cmd1->getName() == "cmd_ack");
         REQUIRE(cmd1->getSeqId() == 5);
-        REQUIRE(cmd1->run() == false);
     }
 
     {
@@ -66,7 +65,6 @@ TEST_CASE("Test NetCommand", "[NetCommand]") {
     Log::log(Log::DEBUG, note);
     try {
         thrown = false;
-        Log::log(Log::DEBUG, note + "&&& a");
         string jStr = "{\"seq_id\": 1 }";
         auto jsn = NetCommand::parse(jStr);
     } catch (NetCommandException const& ex) {
@@ -91,7 +89,7 @@ TEST_CASE("Test NetCommand", "[NetCommand]") {
     Log::log(Log::DEBUG, note);
     try {
         thrown = false;
-        auto cmd = NetCommand::create(nullptr);
+        auto cmd = NCmdAck::create(nullptr);
     } catch (NetCommandException const& ex) {
         Log::log(Log::DEBUG, note + ex.what());
         thrown = true;
@@ -101,8 +99,8 @@ TEST_CASE("Test NetCommand", "[NetCommand]") {
     note = "create test";
     Log::log(Log::DEBUG, note);
     {
-        auto js1 = NetCommand::JsonPtr(new nlohmann::json{{"id", "noack"}, {"seq_id", 7}});
-        auto cmd = NetCommand::create(js1);
+        auto js1 = NetCommand::JsonPtr(new nlohmann::json{{"id", "cmd_ack"}, {"seq_id", 7}});
+        auto cmd = NCmdAck::create(js1);
         REQUIRE(cmd != nullptr);
     }
 
@@ -110,8 +108,8 @@ TEST_CASE("Test NetCommand", "[NetCommand]") {
     Log::log(Log::DEBUG, note);
     try {
         thrown = false;
-        auto js1 = NetCommand::JsonPtr(new nlohmann::json{{"id", "noack"}});
-        auto cmd = NetCommand::create(js1);
+        auto js1 = NetCommand::JsonPtr(new nlohmann::json{{"id", "cmd_ack"}});
+        auto cmd = NCmdAck::create(js1);
     } catch (NetCommandException const& ex) {
         Log::log(Log::DEBUG, note + ex.what());
         thrown = true;
@@ -123,7 +121,7 @@ TEST_CASE("Test NetCommand", "[NetCommand]") {
     try {
         thrown = false;
         auto js1 = NetCommand::JsonPtr(new nlohmann::json{{"seq_id", 7}});
-        auto cmd = NetCommand::create(js1);
+        auto cmd = NCmdAck::create(js1);
     } catch (NetCommandException const& ex) {
         Log::log(Log::DEBUG, note + ex.what());
         thrown = true;
@@ -156,7 +154,6 @@ TEST_CASE("Test NetCommandFactory", "[Factory]") {
         REQUIRE(ackJ["seq_id"] == 1);
         REQUIRE(ackJ["id"] == "ack");
         REQUIRE(inNCmd->run() == true);
-        //&&& change action call???
         auto respStr = inNCmd->getRespJsonStr();
         auto respJ = nlohmann::json::parse(respStr);
         REQUIRE(respJ["seq_id"] == 1);
@@ -222,8 +219,23 @@ TEST_CASE("Test NetCommandFactory", "[Factory]") {
     }
 
     {
-    string note = "Echo missing message jStr ";
-    Log::log(Log::DEBUG, note);   
-    //&&& TODO
+        string note = "Echo missing message jStr ";
+        Log::log(Log::DEBUG, note);   
+        string jStr = "{\"id\":\"cmd_echo\",\"seq_id\": 4, \"msgg\":\"This is an echomsg\" }";
+        auto inNCmd = factory->getCommandFor(jStr);
+        REQUIRE(inNCmd != nullptr);
+        auto inNCmdNoAck = dynamic_pointer_cast<NCmdNoAck>(inNCmd);
+        REQUIRE(inNCmdNoAck != nullptr);
+        auto ackStr = inNCmd->getAckJsonStr();
+        auto ackJ = nlohmann::json::parse(ackStr);
+        REQUIRE(ackJ["seq_id"] == 4);
+        REQUIRE(ackJ["id"] == "noack");
+        REQUIRE(inNCmd->run() == false);
+        auto respStr = inNCmd->getRespJsonStr();
+        auto respJ = nlohmann::json::parse(respStr);
+        REQUIRE(respJ["seq_id"] == 4);
+        REQUIRE(respJ["id"] == "fail");
+        Log::log(Log::DEBUG, string("ackJson=") + ackJ.dump()); 
+        Log::log(Log::DEBUG, string("respJson=") + respJ.dump()); 
     }
 }
