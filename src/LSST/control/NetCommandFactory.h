@@ -39,7 +39,7 @@ namespace control {
 ///
 /// An instance of this class is meant to be created for each ComConnection. The
 /// ComServer instance that creates the connection will supply a list of NetCommand
-/// classes that the server is expected to handle using `addNetCommand`. Different 
+/// classes that the server is expected to handle using `addNetCommand`. Different
 /// servers can then be used to handle different sets of commands.
 ///
 /// The list of commands is represented by a list of `FactoryVersion` of NetCommand
@@ -57,7 +57,7 @@ public:
     void addNetCommand(NetCommand::Ptr const& cmd);
 
     /// Get the NetCommand appropriate for the jsonStr.
-    /// @return Appropriate NetCommand. _defaultNoAck is returned on 
+    /// @return Appropriate NetCommand. _defaultNoAck is returned on
     ///         unknown commands that have a parsable id and seq_id.
     /// @throws NetCommandException if there are any problems.
     NetCommand::Ptr getCommandFor(std::string const& jsonStr);
@@ -72,13 +72,13 @@ private:
     /// or unknown commands.
     NetCommand::Ptr _defaultNoAck{NCmdNoAck::createFactoryVersion()};
 
-    std::mutex _mtx; ///< protects _cmdMap, _prevSeqId;
+    std::mutex _mtx;  ///< protects _cmdMap, _prevSeqId;
     std::map<std::string, std::shared_ptr<NetCommand>> _cmdMap;
-    uint64_t _prevSeqId = 0; ///< Value of the previous seqId.
+    uint64_t _prevSeqId = 0;  ///< Value of the previous seqId.
 };
 
 }  // namespace control
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif // LSST_M2CELLCPP_CONTROL_NETCOMMANDFACTORY_H
+#endif  // LSST_M2CELLCPP_CONTROL_NETCOMMANDFACTORY_H

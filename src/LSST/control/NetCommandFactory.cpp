@@ -62,19 +62,19 @@ NetCommand::Ptr NetCommandFactory::getCommandFor(std::string const& jsonStr) {
     NetCommand::Ptr cmdOut;
     // Check if seqId is valid (must be larger than the previous one)
     if (seqId <= _prevSeqId) {
-        string badSeqId = string("Bad seq_id ") + to_string(seqId) + " " + cmdId 
-                        + " previous seq_id was " + to_string(_prevSeqId);
-        Log::log(Log::WARN, string("getCommandFor seq_id ") + to_string(seqId) + " " + cmdId  
-                 + badSeqId + " returning " + _defaultNoAck->getCommandName());
+        string badSeqId = string("Bad seq_id ") + to_string(seqId) + " " + cmdId + " previous seq_id was " +
+                          to_string(_prevSeqId);
+        Log::log(Log::WARN, string("getCommandFor seq_id ") + to_string(seqId) + " " + cmdId + badSeqId +
+                                    " returning " + _defaultNoAck->getCommandName());
         cmdOut = _defaultNoAck->createNewNetCommand(inJson);
         cmdOut->setAckUserInfo(badSeqId);
         return cmdOut;
-    } 
+    }
     _prevSeqId = seqId;
     auto iter = _cmdMap.find(cmdId);
     if (iter == _cmdMap.end()) {
-        Log::log(Log::WARN, string("getCommandFor ") + cmdId + " not found. Returning defaultNoAck"
-                 + _defaultNoAck->getCommandName());
+        Log::log(Log::WARN, string("getCommandFor ") + cmdId + " not found. Returning defaultNoAck" +
+                                    _defaultNoAck->getCommandName());
         cmdOut = _defaultNoAck->createNewNetCommand(inJson);
         cmdOut->setAckUserInfo(string("Original command not found " + cmdId));
         return cmdOut;
@@ -84,8 +84,8 @@ NetCommand::Ptr NetCommandFactory::getCommandFor(std::string const& jsonStr) {
     try {
         cmdOut = cmdFactory->createNewNetCommand(inJson);
     } catch (NetCommandException const& ex) {
-        Log::log(Log::WARN, string("getCommandFor invalid json ") + ex.what()
-                + " Returning defaultNoAck" + _defaultNoAck->getCommandName());
+        Log::log(Log::WARN, string("getCommandFor invalid json ") + ex.what() + " Returning defaultNoAck" +
+                                    _defaultNoAck->getCommandName());
         cmdOut = _defaultNoAck->createNewNetCommand(inJson);
         cmdOut->setAckUserInfo(string("Invalid json ") + ex.what());
         return cmdOut;

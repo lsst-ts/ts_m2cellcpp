@@ -37,8 +37,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-NetCommand::NetCommand(JsonPtr const& inJson_)
-        : inJson(inJson_) {
+NetCommand::NetCommand(JsonPtr const& inJson_) : inJson(inJson_) {
     if (inJson == nullptr) {
         throw NetCommandException("NetCommand constructor inJson=null");
     }
@@ -51,7 +50,7 @@ NetCommand::NetCommand(JsonPtr const& inJson_)
         Log::log(Log::ERROR, eMsg);
         throw NetCommandException(eMsg);
     }
-    
+
     ackJson["seq_id"] = _seqId;
     ackJson["user_info"] = string("invalid:") + _name;
     respJson["seq_id"] = _seqId;
@@ -93,16 +92,9 @@ bool NetCommand::run() {
     return result;
 }
 
+string NetCommand::getAckJsonStr() { return ackJson.dump(); }
 
-string NetCommand::getAckJsonStr() {
-    return ackJson.dump();
-}
-
-
-string NetCommand::getRespJsonStr() {
-    return respJson.dump();
-}
-
+string NetCommand::getRespJsonStr() { return respJson.dump(); }
 
 NCmdAck::Ptr NCmdAck::create(JsonPtr const& inJson_) {
     auto cmd = Ptr(new NCmdAck(inJson_));
@@ -114,12 +106,10 @@ NCmdAck::NCmdAck(JsonPtr const& inJson) : NetCommand(inJson) {
     ackJson["user_info"] = "ack";
 }
 
-
 NetCommand::Ptr NCmdAck::createNewNetCommand(JsonPtr const& inJson) {
     NCmdAck::Ptr cmd = NCmdAck::create(inJson);
     return cmd;
 }
-
 
 NCmdNoAck::Ptr NCmdNoAck::create(JsonPtr const& inJson_) {
     auto cmd = Ptr(new NCmdNoAck(inJson_));
@@ -131,12 +121,10 @@ NCmdNoAck::NCmdNoAck(JsonPtr const& inJson) : NetCommand(inJson) {
     ackJson["user_info"] = "noack";
 }
 
-
 NetCommand::Ptr NCmdNoAck::createNewNetCommand(JsonPtr const& inJson) {
     NCmdNoAck::Ptr cmd = NCmdNoAck::create(inJson);
     return cmd;
 }
-
 
 NCmdEcho::Ptr NCmdEcho::create(JsonPtr const& inJson_) {
     auto cmd = Ptr(new NCmdEcho(inJson_));
@@ -152,23 +140,20 @@ NCmdEcho::NCmdEcho(JsonPtr const& inJson) : NetCommand(inJson) {
         Log::log(Log::ERROR, eMsg);
         throw NetCommandException(eMsg);
     }
-    
+
     ackJson["id"] = "ack";
     ackJson["user_info"] = "echo";
 }
-
 
 NetCommand::Ptr NCmdEcho::createNewNetCommand(JsonPtr const& inJson) {
     NCmdEcho::Ptr cmd = NCmdEcho::create(inJson);
     return cmd;
 }
 
-
 bool NCmdEcho::action() {
     respJson["msg"] = _msg;
     return true;
 }
-
 
 }  // namespace control
 }  // namespace m2cellcpp
