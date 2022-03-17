@@ -63,7 +63,7 @@ public:
 /// See `NCmdAck::createFactoryVersion()` for an example.
 ///
 /// Since basic communications errors should not crash the program,
-/// This class and its ilk should throw NetCommandException
+/// this class and its ilk should throw NetCommandException
 /// when problems arise so they can be caught before causing undue
 /// harm. (This does not apply to segfaults or serious underlying
 /// issues that should cause termination.)
@@ -77,29 +77,35 @@ public:
     virtual ~NetCommand() = default;
 
     /// Try to parse inStr and return a json object.
-    /// @return a json object if the
+    /// @return a json object if `inStr` contains at least
+    ///     a valid "id" and "seq_id".
+    /// @throw NetCommandException if there are issues with parsing
+    ///     `inStr`
     static JsonPtr parse(std::string const& inStr);
 
     /// @return the name of the command this specific class handles.
     virtual std::string getCommandName() const = 0;
 
-    /// @ return a new NetCommand child class object based on 'inJson'.
+    /// @return a new NetCommand child class object based on 'inJson'.
     /// This method is meant for use by NetCommandFactory. The child
     /// class implementations should return a new object of their
     /// class. The NCmdAck class should return a NCmdAck object,
     /// NCmdEcho should return a NCmdEcho object, etc.
-    /// @return A shared pointer to a child class of NetCommand.
     /// @throws NetCommandException if there are any problems.
     virtual Ptr createNewNetCommand(JsonPtr const& inJson) = 0;
 
+    /// @return the command name.
     std::string getName() const { return _name; }
 
+    /// @return the sequence number.
     uint64_t getSeqId() const { return _seqId; }
 
     /// Set the user_info json field.
     void setAckUserInfo(std::string const& msg) { ackJson["user_info"] = msg; };
 
-    /// Run the action function and set some respJson values.
+    /// Run the action function and set respJson["id"] to success or fail.
+    /// If the action() was successful, set respJson["id"] to "success".
+    /// Otherwise, set it to "fail"
     /// @return true if the action() was successful.
     /// This will probably need to run in its own thread.
     bool run();
