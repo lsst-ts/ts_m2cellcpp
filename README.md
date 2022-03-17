@@ -6,6 +6,9 @@
   - www.boost.com
   - centos  `yum install boost-devel`
   - Ubuntu  `apt-get install libboost-all-dev`
+- nlohmann json for CPP
+  - centos `yum install json-devel`
+  - Ubuntu `apt install nlohmann-json3-dev`
 - [Catch2](https://https://github.com/catchorg/Catch2)
 - [gcovr](https://github.com/gcovr)  
 - clang-format (optional)
