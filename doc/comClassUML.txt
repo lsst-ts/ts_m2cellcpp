@@ -1,0 +1,41 @@
+# Copy and paste the following into plantuml.com
+
+@startuml
+class Config
+class ComServer
+class ComConnection
+class ComControl
+class ComTelemetry
+ComControl : theoretical, unimplemented
+ComTelemetry : theoretical, unimplemented
+
+Config .. ComServer
+ComServer *-- ComConnection
+ComConnection <|-- ComControl
+ComConnection <|-- ComTelemetry
+ComControl *-- NetCommandFactory
+ComTelemetry *-- NetCommandFactory
+
+class NetCommandException
+class NetCommandFactory
+NetCommandFactory : Create new NetCommand from one found in _cmdMap
+entity _cmdMap
+_cmdMap : <CommandName, NetCommand>
+abstract class NetCommand
+NetCommand : Children vary in action() and json parameters
+class NCmdAck
+class NCmdNoAck
+class NCmdEcho
+
+NetCommandException .. NetCommand : throws
+NetCommand <|-- NCmdAck
+NetCommand <|-- NCmdNoAck
+NetCommand <|-- NCmdEcho
+
+NetCommandException .. NetCommandFactory : throws
+
+NetCommandFactory *-- _cmdMap
+_cmdMap *-- NetCommand : factoryVersion for generating
+NetCommandFactory o-- NetCommand : created by factory
+
+@enduml

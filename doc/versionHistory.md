@@ -1,5 +1,9 @@
 # Version History
 
+0.1.2
+
+- Added UML documentation in comClassUML.txt.
+
 0.1.1
 
 - Added some NetCommand classes to handle commands from client apps.

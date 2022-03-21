@@ -36,6 +36,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
+/// This class reads and stores the system configuration.
 /// Eventually, this class will read in a configuration file,
 /// maybe yaml or json. Until then, it will just store a map
 /// of values and return those values requested.

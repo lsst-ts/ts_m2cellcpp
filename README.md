@@ -1,6 +1,6 @@
 # M2 Cell
 
-## Needed Package
+## Required Package
 
 - boost library available from mutilple sources
   - www.boost.com

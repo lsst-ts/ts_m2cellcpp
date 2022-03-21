@@ -38,6 +38,9 @@ namespace control {
 class NetCommandFactory;
 
 /// Exception specific to NetCommand and its ilk.
+/// @see class NetCommand
+///
+/// unit test: test_NetCommand.cpp
 class NetCommandException : public std::runtime_error {
 public:
     NetCommandException(std::string const& msg) : std::runtime_error(msg) {}
@@ -67,6 +70,8 @@ public:
 /// when problems arise so they can be caught before causing undue
 /// harm. (This does not apply to segfaults or serious underlying
 /// issues that should cause termination.)
+///
+/// unit test: test_NetCommand.cpp
 class NetCommand : public std::enable_shared_from_this<NetCommand> {
 public:
     using Ptr = std::shared_ptr<NetCommand>;
@@ -83,9 +88,6 @@ public:
     ///     `inStr`
     static JsonPtr parse(std::string const& inStr);
 
-    /// @return the name of the command this specific class handles.
-    virtual std::string getCommandName() const = 0;
-
     /// @return a new NetCommand child class object based on 'inJson'.
     /// This method is meant for use by NetCommandFactory. The child
     /// class implementations should return a new object of their
@@ -94,7 +96,15 @@ public:
     /// @throws NetCommandException if there are any problems.
     virtual Ptr createNewNetCommand(JsonPtr const& inJson) = 0;
 
-    /// @return the command name.
+    /// @return the name of the command this specific class handles.
+    /// Each child class should have a unique value returned for this command
+    /// that matches what is expected from clients. 
+    /// i.e. NCmdEcho::getCommandName() always returns "cmd_echo". If another
+    /// NetCommand class returns that value, they cannot be registered in the
+    /// same NetCommandFactory.
+    virtual std::string getCommandName() const = 0;
+
+    /// @return the command name that was parsed from `inJson`.
     std::string getName() const { return _name; }
 
     /// @return the sequence number.
@@ -128,7 +138,7 @@ protected:
     /// This consturctor is ONLY to be used in createFactoryVersion()/
     /// This constructor makes a dummy version of the object that is only
     /// used to create new instances of that class.
-    /// The `action()` method of dummy instances should never be run.
+    /// The `action()` method of FactoryVersion instances should never be run.
     /// @see NetCommandFactory::getCommandFor(std::string const& jsonStr)
     /// @see createNewNetCommand(JsonPtr const& inJson)
     /// @see child class createFactoryVersion()
@@ -140,13 +150,15 @@ protected:
     nlohmann::json respJson = {{"id", "fail"}, {"seq_id", 0}, {"user_info", ""}};
 
 private:
-    std::string _name = "none";  ///< Name of the command.
+    std::string _name = "none";  ///< Name of the command as parsed from `inJson`.
     uint64_t _seqId = 0;         ///< Sequence number of command.
 };
 
 /// NetCommand to simply respond with an ack, and a success.
 /// This class is meant to be useful for testing and diagnostics.
 /// id and seq_id are the only json parameters expected.
+///
+/// unit test: test_NetCommand.cpp
 class NCmdAck : public NetCommand {
 public:
     using Ptr = std::shared_ptr<NCmdAck>;
@@ -180,7 +192,11 @@ private:
 /// This class is used to respond to NetCommand requests
 /// that have an error in the initial request. This
 /// includes unknown commands, missing parameters,
-/// and seq_id issues.
+/// and seq_id issues. This command can be added to
+/// a NetCommandFactory, but it will always respond
+/// with "noack" and then "fail".
+///
+/// unit test: test_NetCommand.cpp
 class NCmdNoAck : public NetCommand {
 public:
     using Ptr = std::shared_ptr<NCmdNoAck>;
@@ -208,8 +224,10 @@ private:
     NCmdNoAck() : NetCommand() {}
 };
 
-/// This class sends back the `inJson["msg"]` value as `respJson["msg"]`.
+/// This class sends back the `inJson["msg"]` value in `respJson["msg"]`.
 /// `inJson["msg"]` is a required field for this command.
+///
+/// unit test: test_NetCommand.cpp
 class NCmdEcho : public NetCommand {
 public:
     using Ptr = std::shared_ptr<NCmdEcho>;
