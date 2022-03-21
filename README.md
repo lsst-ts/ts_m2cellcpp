@@ -1,6 +1,6 @@
 # M2 Cell
 
-## Needed Package
+## Required Package
 
 - boost library available from mutilple sources
   - www.boost.com
@@ -74,6 +74,13 @@ To produce Jenkins results, `make junit` needs to be called.  For details, pleas
 
 ```bash
 make doc
+```
+
+UML documents are available in the `/doc` subdirectory The text of these can be cut
+and pasted into `http://www.plantuml.com/plantuml/uml/`. 
+Current UML files are 
+```bash
+/doc/comClassUML.txt
 ```
 
 ### Environment variables for the make file

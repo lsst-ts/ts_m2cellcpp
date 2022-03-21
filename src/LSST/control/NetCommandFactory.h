@@ -45,6 +45,8 @@ namespace control {
 /// The list of commands is represented by a list of `FactoryVersion` of NetCommand
 /// child instances. The child instances are used to return a new instance of
 /// the same class using the virtual `createNewNetCommand` member function.
+///
+/// unit test: test_NetCommand.cpp
 class NetCommandFactory : public std::enable_shared_from_this<NetCommandFactory> {
 public:
     using Ptr = std::shared_ptr<NetCommandFactory>;

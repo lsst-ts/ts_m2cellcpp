@@ -40,6 +40,11 @@ namespace system {
 class ComConnection;
 
 /// Class ComServer is used for communicating with TCP/IP clients.
+/// This class listens on the port specified in Config. Upon
+/// receiving a connection, it creates a ComConnection object
+/// to handle the communications with the client. The server
+/// tracks open connections in _connections.
+///
 /// unit test: test_com.cpp
 class ComServer : public std::enable_shared_from_this<ComServer> {
 public:
