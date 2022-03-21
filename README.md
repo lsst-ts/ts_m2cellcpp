@@ -76,6 +76,13 @@ To produce Jenkins results, `make junit` needs to be called.  For details, pleas
 make doc
 ```
 
+UML documents are available in the `/doc` subdirectory The text of these can be cut
+and pasted into `http://www.plantuml.com/plantuml/uml/`. 
+Current UML files are 
+```bash
+/doc/comClassUML.txt
+```
+
 ### Environment variables for the make file
 
 For each of the following, setting or unsetting the environment 

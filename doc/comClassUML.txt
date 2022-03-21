@@ -1,4 +1,4 @@
-# Copy and paste the following into plantuml.com
+# Copy and paste the following into http://www.plantuml.com/plantuml/uml/
 
 @startuml
 class Config
@@ -9,7 +9,7 @@ class ComTelemetry
 ComControl : theoretical, unimplemented
 ComTelemetry : theoretical, unimplemented
 
-Config .. ComServer
+Config ..> ComServer : Configuration data
 ComServer *-- ComConnection
 ComConnection <|-- ComControl
 ComConnection <|-- ComTelemetry
@@ -27,12 +27,12 @@ class NCmdAck
 class NCmdNoAck
 class NCmdEcho
 
-NetCommandException .. NetCommand : throws
+NetCommandException <.. NetCommand : throws
 NetCommand <|-- NCmdAck
 NetCommand <|-- NCmdNoAck
 NetCommand <|-- NCmdEcho
 
-NetCommandException .. NetCommandFactory : throws
+NetCommandException <.. NetCommandFactory : throws
 
 NetCommandFactory *-- _cmdMap
 _cmdMap *-- NetCommand : factoryVersion for generating
