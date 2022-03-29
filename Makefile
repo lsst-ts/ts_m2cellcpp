@@ -1,19 +1,23 @@
-include Makefile.inc
-
-.PHONY: all clean deploy tests FORCE doc main
-
 BUILD_DIR ?= ./build
 SRC_DIRS ?= ./src
 LIB_DIR ?= ./lib
 
+include Makefile.inc
+
+.PHONY: all clean deploy tests FORCE doc main
+
+#&&& BUILD_DIR ?= ./build
+#&&& SRC_DIRS ?= ./src
+#&&& LIB_DIR ?= ./lib
+
 MKDIR_P ?= mkdir -p
 
-SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
-OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
-DEPS := $(OBJS:.o=.d)
+#&&&SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
+#&&&OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
+#&&&DEPS := $(OBJS:.o=.d)
 
-INC_DIRS := $(shell find $(SRC_DIRS) -type d)
-INC_FLAGS := $(addprefix -I,$(INC_DIRS))
+#&&&INC_DIRS := $(shell find $(SRC_DIRS) -type d)
+#&&&INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 # The -MMD and -MP flags help get the .o, .d, and other files in build/.
 CPPFLAGS ?= $(INC_FLAGS) $(CPP_FLAGS) -MMD -MP -DVERSION="\"$(VERSION)\""

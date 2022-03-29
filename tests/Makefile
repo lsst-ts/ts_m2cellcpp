@@ -1,3 +1,9 @@
+# Relative directores need to be defined before Makefile.inc is included,
+# as the subdirectories have different relative locations.
+BUILD_DIR ?= ../build
+SRC_DIRS ?= ../src
+LIB_DIR ?= ../lib
+
 include ../Makefile.inc
 
 all: compile
@@ -16,10 +22,11 @@ ifneq ($(MAKECMDGOALS),clean)
     -include $(DEPS)
 endif
 
-TEST_CPPFLAGS := -I"/usr/include" \
-	-I"../src/LSST" \
-	$(pkg-config --cflags catch2 2>/dev/null)
+#&&& TEST_CPPFLAGS := -I"/usr/include" \
+#&&& 	-I"../src/LSST" \
+#&&& 	$(pkg-config --cflags catch2 2>/dev/null)
 
+TEST_CPPFLAGS := $(INC_FLAGS) $(pkg-config --cflags catch2 2>/dev/null)
 
 compile: $(BINARIES) $(TEST_REQ_READLINE)
 
@@ -36,10 +43,16 @@ clean:
 	@$(MAKE) -C ../ lib/libm2cellcpp.a SIMULATOR=1
 
 %.cpp.o: %.cpp.d
+	@echo 'inc_flagsa= $(INC_FLAGS)'
+	@echo 'test_cppflagsa= $(TEST_CPPFLAGS)'
+	@echo 'cppa= $(CPP)'
 	@echo '[CPP] $(patsubst %.d,%,$<)'
 	${co}$(CPP) $(BOOST_CPPFLAGS) $(CPP_FLAGS) $(TEST_CPPFLAGS) -c -fmessage-length=0 -o $@ $(patsubst %.d,%,$<)
 
 %.cpp.d: %.cpp
+	@echo 'inc_flagsb= $(INC_FLAGS)'
+	@echo 'test_cppflagsb= $(TEST_CPPFLAGS)'
+	@echo 'cppb= $(CPP)'
 	@echo '[DPP] $<'
 	${co}$(CPP) $(BOOST_CPPFLAGS) $(CPP_FLAGS) $(TEST_CPPFLAGS) -M $< -MF $@ -MT '$(patsubst %.cpp,%.o,$<) $@'
 

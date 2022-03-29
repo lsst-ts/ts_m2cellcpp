@@ -3,9 +3,16 @@ ifndef VERBOSE
   co := @
 endif
 
-PROJDIR := $(realpath $(CURDIR)/..)
-SOURCEDIR := $(PROJDIR)/Sources
-BUILDDIR := $(PROJDIR)/Build
+#&&&BUILD_DIR ?= ./build
+#&&&SRC_DIRS ?= ./src
+#&&&LIB_DIR ?= ./lib
+
+SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
+OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
+DEPS := $(OBJS:.o=.d)
+
+INC_DIRS := $(shell find $(SRC_DIRS) -type d)
+INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 ifdef DEBUG
   c_opts := -g
