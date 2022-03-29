@@ -30,10 +30,10 @@ endif
 # compile x86 simulator or real cRIO stuff
 ifdef SIMULATOR
   C := gcc -Wall ${c_opts}
-  CPP := g++ -std=c++17 -fPIE -pedantic -pthread -Wall -Wno-vla ${c_opts} -DSIMULATOR $(GCOVR_FLAGS)
+  CPP := g++ -std=c++17 -fPIE -pedantic -pthread -Wall -Wno-vla ${c_opts} -DSIMULATOR $(GCOVR_FLAGS) -DWHATNOWB
 else
   C := gcc -Wall -fmessage-length=0 ${c_opts}
-  CPP := g++ -std=c++17 -fPIE -pthread -Wall -fmessage-length=0 ${c_opts} $(GCOVR_FLAGS)
+  CPP := g++ -std=c++17 -fPIE -pthread -Wall -fmessage-length=0 ${c_opts} $(GCOVR_FLAGS) -DWHATNOWA
 endif
 
 LIBS += $(shell pkg-config yaml-cpp --libs) -ldl

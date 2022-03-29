@@ -62,4 +62,4 @@ $(TEST_REQ_READLINE): %: %.cpp.o ../lib/libm2cellcpp.a
 
 ${BINARIES}: %: %.cpp.o ../lib/libm2cellcpp.a
 	@echo '[TPP] $<'
-	${co}$(CPP) -o $@ $(LIBS_FLAGS) $(LIBS) $^ $(CPP_FLAGS)
+	${co}$(CPP) -o $@ $(LIBS_FLAGS) $(LIBS) $^ $(CPP_FLAGS) -DHMMTEST

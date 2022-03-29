@@ -45,7 +45,7 @@ clean:
 	$(RM) -r $(BUILD_DIR) $(LIB_DIR)
 
 # The tests should stay out of the BUILD_DIR.
-tests: tests/Makefile $(LIB_DIR)/libm2cellcpp.a tests/*.cpp
+tests: $(LIB_DIR)/libm2cellcpp.a tests/Makefile tests/*.cpp
 	@${MAKE} -C tests
 
 run_tests: tests
@@ -60,7 +60,9 @@ doc:
 # c++ source
 $(BUILD_DIR)/%.cpp.o: %.cpp
 	$(MKDIR_P) $(dir $@)
-	$(CPP) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+	@echo 'src_cppflags= $(CPPFLAGS)'
+	@echo 'src_cxxflags= $(CXXFLAGS)'
+	$(CPP) $(CPPFLAGS) $(CXXFLAGS) -DHMMSRC -c $< -o $@
 
 # assembly, kept for reference
 #$(BUILD_DIR)/%.s.o: %.s
