@@ -3,6 +3,10 @@ ifndef VERBOSE
   co := @
 endif
 
+PROJDIR := $(realpath $(CURDIR)/..)
+SOURCEDIR := $(PROJDIR)/Sources
+BUILDDIR := $(PROJDIR)/Build
+
 ifdef DEBUG
   c_opts := -g
 else
