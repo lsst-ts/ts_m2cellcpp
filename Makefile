@@ -20,7 +20,8 @@ MKDIR_P ?= mkdir -p
 #&&&INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 # The -MMD and -MP flags help get the .o, .d, and other files in build/.
-CPPFLAGS ?= $(INC_FLAGS) $(CPP_FLAGS) -MMD -MP -DVERSION="\"$(VERSION)\""
+# Jenkins completely ignores 
+CPPARGS ?= $(INC_FLAGS) $(CPP_FLAGS) -MMD -MP -DVERSION="\"$(VERSION)\""
 
 # At some point there will be a main that depends on libm2cellcpp.a
 #main: $(LIB_DIR)/libm2cellcpp.a
@@ -62,7 +63,8 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 	$(MKDIR_P) $(dir $@)
 	@echo 'src_cppflags= $(CPPFLAGS)'
 	@echo 'src_cxxflags= $(CXXFLAGS)'
-	$(CPP) $(CPPFLAGS) $(CXXFLAGS) -DHMMSRC -c $< -o $@
+	@echo 'src_cppargs= $(CPPARGS)'
+	$(CPP) $(CPPFLAGS) $(CXXFLAGS) $(CPPARGS) -DHMMSRC -c $< -o $@
 
 # assembly, kept for reference
 #$(BUILD_DIR)/%.s.o: %.s
