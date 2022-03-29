@@ -1,5 +1,9 @@
 # Version History
 
+0.1.3
+
+- Improved Makefile to put build files in a separate directory.
+
 0.1.2
 
 - Added UML documentation in comClassUML.txt.

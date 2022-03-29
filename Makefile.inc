@@ -3,9 +3,9 @@ ifndef VERBOSE
   co := @
 endif
 
-#&&&BUILD_DIR ?= ./build
-#&&&SRC_DIRS ?= ./src
-#&&&LIB_DIR ?= ./lib
+BUILD_DIR ?= $(RELATIVE_DIR)build
+SRC_DIRS ?= $(RELATIVE_DIR)src
+LIB_DIR ?= $(RELATIVE_DIR)lib
 
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
@@ -30,10 +30,10 @@ endif
 # compile x86 simulator or real cRIO stuff
 ifdef SIMULATOR
   C := gcc -Wall ${c_opts}
-  CPP := g++ -std=c++17 -fPIE -pedantic -pthread -Wall -Wno-vla ${c_opts} -DSIMULATOR $(GCOVR_FLAGS) -DWHATNOWB
+  CPP := g++ -std=c++17 -fPIE -pedantic -pthread -Wall -Wno-vla ${c_opts} -DSIMULATOR $(GCOVR_FLAGS)
 else
   C := gcc -Wall -fmessage-length=0 ${c_opts}
-  CPP := g++ -std=c++17 -fPIE -pthread -Wall -fmessage-length=0 ${c_opts} $(GCOVR_FLAGS) -DWHATNOWA
+  CPP := g++ -std=c++17 -fPIE -pthread -Wall -fmessage-length=0 ${c_opts} $(GCOVR_FLAGS)
 endif
 
 LIBS += $(shell pkg-config yaml-cpp --libs) -ldl
