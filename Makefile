@@ -64,5 +64,3 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 
 # This helps the compiler out with dependancies.
 -include $(DEPS)
-
-
