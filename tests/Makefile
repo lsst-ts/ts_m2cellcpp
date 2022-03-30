@@ -1,3 +1,7 @@
+# Relative directores need to be defined before Makefile.inc is included,
+# as the subdirectories have different relative locations.
+RELATIVE_DIR ?= ../
+
 include ../Makefile.inc
 
 all: compile
@@ -16,10 +20,7 @@ ifneq ($(MAKECMDGOALS),clean)
     -include $(DEPS)
 endif
 
-TEST_CPPFLAGS := -I"/usr/include" \
-	-I"../src/LSST" \
-	$(pkg-config --cflags catch2 2>/dev/null)
-
+TEST_CPPFLAGS := $(INC_FLAGS) $(pkg-config --cflags catch2 2>/dev/null)
 
 compile: $(BINARIES) $(TEST_REQ_READLINE)
 
@@ -32,8 +33,9 @@ junit: compile
 clean:
 	@$(foreach df,$(ALL_BINARIES) $(patsubst %,%.cpp.o,$(ALL_BINARIES)) $(DEPS) $(GCOVR_A) $(JUNIT_FILES),echo '[RM ] ${df}'; $(RM) ${df};)
 
-../lib/libm2cellcpp.a: FORCE
-	@$(MAKE) -C ../ lib/libm2cellcpp.a SIMULATOR=1
+# There doesn't seem to be a nice way of using LIB_DIR in the make statement.
+$(LIB_DIR)/libm2cellcpp.a: FORCE
+	@$(MAKE) -C ../ ./lib/libm2cellcpp.a SIMULATOR=1
 
 %.cpp.o: %.cpp.d
 	@echo '[CPP] $(patsubst %.d,%,$<)'
