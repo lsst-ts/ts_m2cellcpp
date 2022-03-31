@@ -96,3 +96,65 @@ apply to all files.
 - `NOGCOVR` setting this removes compiler options that the `gcovr` coverage tool requires to generate reports. It does reduce compile time.
 
 - `VERBOSE` setting this should result in verbose output from the compiler.
+
+### Cross Compiling
+
+# Cross compiler installation
+
+- On the build computer, download the Linux version for x68 from https://www.ni.com/en-us/support/downloads/software-products/download/unpackaged-linux.gnu-c---c---compile-tools-x64.338443.html
+- run  the downloaded file to install - oecore-x86_64-core2-64-toolchain-6.0.sh
+
+# Building with the cross compiler
+
+- When a new shell is started: 
+  ```bash
+  source /usr/local/oecore-x86_64/environment-setup-core2-64-nilrt-linux
+  export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/x86_64-linux-gnu/pkgconfig/
+  ```
+- build with
+  ```bash
+  make tests
+  ```
+# Running cross compiler unit tests on the cRIO
+
+cRIO:
+
+```bash
+mkdir <reasonable_directory>/ts_m2cellcpp
+```
+Build machine: ("scp -r ts_m2cellcpp" copies a large set of .git files, so avoid that.)
+source statement is only needed for a new shell
+
+```bash
+source /usr/local/oecore-x86_64/environment-setup-core2-64-nilrt-linux
+cd ts_m2cellcpp
+make clean
+NOGOVR=1 make -j8 run_tests
+scp -r * admin@<crIO>:<reasonable_directory>/ts_m2cellcpp/.
+```
+cRIO: (note: "make crio_x_test" will not build anything, it just runs what it finds in the tests directory.)
+
+bash```
+cd <reasonable_directory>/ts_m2cellcpp/tests
+make crio_x_test
+```
+
+### Building on the cRIO
+
+This is not recommended as the cRIO has limited resources.
+
+Installing required packages
+- On cRIO
+-- opkg update 
+-- opkg install packagegroup-core-buildessential
+-- opkg install boost-dev      (opkg list | grep boost)
+
+- On local machine, install nlohmann, and clone Catch2
+-- copied nlohmann header files to <cRIO>:/usr/include/nlohmann/.
+-- cd Catch2     (check that the branch is v2.x)
+-- scp -r single_include/catch2/ <crIO>:/usr/include/.
+- On cRIO 
+-- cd ts_m2cellcpp
+-- make clean
+-- edit Makefile.inc and add "-lboost_system"  (no quotes) to the "CPP :=" lines
+-- make run_tests  (this will take several minutes)

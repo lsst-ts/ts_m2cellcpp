@@ -1,5 +1,9 @@
 # Version History
 
+0.1.4
+
+- Setup to use cross compiler and build on cRIO.
+
 0.1.3
 
 - Improved Makefile to put build files in a separate directory.
