@@ -102,7 +102,7 @@ apply to all files.
 # Cross compiler installation
 
 - On the build computer, download the Linux version for x68 from https://www.ni.com/en-us/support/downloads/software-products/download/unpackaged-linux.gnu-c---c---compile-tools-x64.338443.html
-- run  the downloaded file to install - oecore-x86_64-core2-64-toolchain-6.0.sh
+- run the downloaded file to install - oecore-x86_64-core2-64-toolchain-6.0.sh
 
 # Building with the cross compiler
 
@@ -122,7 +122,7 @@ cRIO:
 ```bash
 mkdir <reasonable_directory>/ts_m2cellcpp
 ```
-Build machine: ("scp -r ts_m2cellcpp" copies a large set of .git files, so avoid that.)
+Build machine: (`scp -r ts_m2cellcpp` copies a large set of .git files, so avoid that.)
 source statement is only needed for a new shell
 
 ```bash
@@ -132,7 +132,7 @@ make clean
 NOGOVR=1 make -j8 run_tests
 scp -r * admin@<crIO>:<reasonable_directory>/ts_m2cellcpp/.
 ```
-cRIO: (note: "make crio_x_test" will not build anything, it just runs what it finds in the tests directory.)
+cRIO: (note: `make crio_x_test` will not build anything, it just runs what it finds in the tests directory.)
 
 bash```
 cd <reasonable_directory>/ts_m2cellcpp/tests
