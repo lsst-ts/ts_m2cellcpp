@@ -33,6 +33,11 @@ junit: compile
 clean:
 	@$(foreach df,$(ALL_BINARIES) $(patsubst %,%.cpp.o,$(ALL_BINARIES)) $(DEPS) $(GCOVR_A) $(JUNIT_FILES),echo '[RM ] ${df}'; $(RM) ${df};)
 
+# This will not build the binaries if they do not exist. 
+# It is for running cross compiled unit tests on the cRIO.
+crio_x_test:
+	@$(foreach b,$(ALL_BINARIES),echo '[RUN] ${b}'; ./${b};)
+
 # There doesn't seem to be a nice way of using LIB_DIR in the make statement.
 $(LIB_DIR)/libm2cellcpp.a: FORCE
 	@$(MAKE) -C ../ ./lib/libm2cellcpp.a SIMULATOR=1
