@@ -27,11 +27,10 @@
 // Third party headers
 
 // Project headers
-#include "system/Log.h"
+#include "util/Log.h"
 
 using namespace std;
 using json = nlohmann::json;
-using Log = LSST::m2cellcpp::system::Log;
 
 namespace LSST {
 namespace m2cellcpp {
@@ -48,7 +47,7 @@ void NetCommandFactory::addNetCommand(NetCommand::Ptr const& cmd) {
     auto result = _cmdMap.emplace(cmdName, cmd);
     if (result.second == false) {
         string eMsg = string("addNetCommand failed as this command was already in the map ") + cmdName;
-        Log::log(Log::ERROR, eMsg);
+        LERROR(eMsg);
         throw NetCommandException(eMsg);
     }
 }
@@ -64,8 +63,8 @@ NetCommand::Ptr NetCommandFactory::getCommandFor(std::string const& jsonStr) {
     if (seqId <= _prevSeqId) {
         string badSeqId = string("Bad seq_id ") + to_string(seqId) + " " + cmdId + " previous seq_id was " +
                           to_string(_prevSeqId);
-        Log::log(Log::WARN, string("getCommandFor seq_id ") + to_string(seqId) + " " + cmdId + badSeqId +
-                                    " returning " + _defaultNoAck->getCommandName());
+        LWARN("getCommandFor seq_id ", seqId, " ", cmdId, badSeqId, " returning ", 
+              _defaultNoAck->getCommandName());
         cmdOut = _defaultNoAck->createNewNetCommand(inJson);
         cmdOut->setAckUserInfo(badSeqId);
         return cmdOut;
@@ -73,8 +72,7 @@ NetCommand::Ptr NetCommandFactory::getCommandFor(std::string const& jsonStr) {
     _prevSeqId = seqId;
     auto iter = _cmdMap.find(cmdId);
     if (iter == _cmdMap.end()) {
-        Log::log(Log::WARN, string("getCommandFor ") + cmdId + " not found. Returning defaultNoAck" +
-                                    _defaultNoAck->getCommandName());
+        LWARN("getCommandFor ", cmdId, " not found. Returning defaultNoAck", _defaultNoAck->getCommandName());
         cmdOut = _defaultNoAck->createNewNetCommand(inJson);
         cmdOut->setAckUserInfo(string("Original command not found " + cmdId));
         return cmdOut;
@@ -84,8 +82,8 @@ NetCommand::Ptr NetCommandFactory::getCommandFor(std::string const& jsonStr) {
     try {
         cmdOut = cmdFactory->createNewNetCommand(inJson);
     } catch (NetCommandException const& ex) {
-        Log::log(Log::WARN, string("getCommandFor invalid json ") + ex.what() + " Returning defaultNoAck" +
-                                    _defaultNoAck->getCommandName());
+        LWARN("getCommandFor invalid json ", ex.what(), " Returning defaultNoAck",
+              _defaultNoAck->getCommandName());
         cmdOut = _defaultNoAck->createNewNetCommand(inJson);
         cmdOut->setAckUserInfo(string("Invalid json ") + ex.what());
         return cmdOut;

@@ -21,7 +21,7 @@
 
 // Class header
 #include "system/Config.h"
-#include "system/Log.h"
+#include "util/Log.h"
 
 // System headers
 
@@ -40,7 +40,7 @@ std::mutex Config::_thisMtx;
 void Config::setup(std::string const& source) {
     lock_guard<mutex> lock(_thisMtx);
     if (_thisPtr) {
-        Log::log(Log::WARN, "Config already setup");
+        LWARN("Config already setup");
         return;
     }
     _thisPtr = Ptr(new Config(source));
@@ -71,10 +71,10 @@ void Config::_setValue(string const& section, string const& key, string const& v
     string secKey = section + ":" + key;
     auto iter = _map.find(secKey);
     if (iter != _map.end()) {
-        Log::log(Log::WARN, "Config trying to reset " + secKey + " from " + iter->second + " to " + val);
+        LWARN("Config trying to reset ", secKey, " from ", iter->second, " to ", val);
     }
     _map[secKey] = val;
-    Log::log(Log::INFO, " Config set " + secKey + "=" + val);
+    LINFO("Config set ", secKey, "=", val);
 }
 
 string Config::getValue(string const& section, string const& key) {

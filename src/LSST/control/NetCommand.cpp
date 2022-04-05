@@ -27,11 +27,10 @@
 // Third party headers
 
 // Project headers
-#include "system/Log.h"
+#include "util/Log.h"
 
 using namespace std;
 using json = nlohmann::json;
-using Log = LSST::m2cellcpp::system::Log;
 
 namespace LSST {
 namespace m2cellcpp {
@@ -44,10 +43,10 @@ NetCommand::NetCommand(JsonPtr const& inJson_) : inJson(inJson_) {
     try {
         _name = inJson->at("id");
         _seqId = inJson->at("seq_id");
-        Log::log(Log::DEBUG, string("NetCommand constructor id=") + _name + " seqId=" + to_string(_seqId));
+        LDEBUG("NetCommand constructor id=", " seqId=", _seqId);
     } catch (json::exception const& ex) {
         string eMsg = string("NetCommand constructor error in ") + inJson->dump() + " what=" + ex.what();
-        Log::log(Log::ERROR, eMsg);
+        LERROR(eMsg);
         throw NetCommandException(eMsg);
     }
 
@@ -63,26 +62,26 @@ NetCommand::JsonPtr NetCommand::parse(string const& inStr) {
         *inJson = json::parse(inStr);
     } catch (json::parse_error& ex) {
         string eMsg = string("NetCommand::parse error ") + ex.what() + " " + inStr;
-        Log::log(Log::ERROR, eMsg);
+        LERROR(eMsg);
         throw NetCommandException(eMsg);
     }
-    Log::log(Log::DEBUG, string("NetCommand::parse inStr=") + inStr + "\njson=" + inJson->dump(2));
+    LDEBUG("NetCommand::parse inStr=", inStr, "\njson=", inJson->dump(2));
     // All commands must have at least id and seq_id
     try {
         string id = inJson->at("id");
         uint64_t seqId = inJson->at("seq_id");
-        Log::log(Log::DEBUG, string("NetCommand::parse id=") + id + " seq=" + to_string(seqId));
+        LDEBUG("NetCommand::parse id=", id, " seq=", seqId);
     } catch (json::exception const& ex) {
         string eMsg = string("NetCommand::parse error missing id or seq_id in ") + inJson->dump() +
                       " what=" + ex.what();
-        Log::log(Log::ERROR, eMsg);
+        LERROR(eMsg);
         throw NetCommandException(eMsg);
     }
     return inJson;
 }
 
 bool NetCommand::run() {
-    Log::log(Log::DEBUG, string("NetCommand run action for seqId=") + to_string(_seqId) + " " + getName());
+    LDEBUG("NetCommand run action for seqId=", _seqId, " ", getName());
     bool result = action();
     if (result) {
         respJson["id"] = "success";
@@ -134,10 +133,10 @@ NCmdEcho::Ptr NCmdEcho::create(JsonPtr const& inJson_) {
 NCmdEcho::NCmdEcho(JsonPtr const& inJson) : NetCommand(inJson) {
     try {
         _msg = inJson->at("msg");
-        Log::log(Log::DEBUG, string("NCmdEcho seqId=") + to_string(getSeqId()) + " msg=" + _msg);
+        LDEBUG("NCmdEcho seqId=", getSeqId(), " msg=", _msg);
     } catch (json::exception const& ex) {
         string eMsg = string("NCmdEcho constructor error in ") + inJson->dump() + " what=" + ex.what();
-        Log::log(Log::ERROR, eMsg);
+        LERROR(eMsg);
         throw NetCommandException(eMsg);
     }
 

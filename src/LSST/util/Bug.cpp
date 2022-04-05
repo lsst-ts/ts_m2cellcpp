@@ -24,7 +24,7 @@
 #include "util/Bug.h"
 
 // LSST headers
-#include "system/Log.h"
+#include "util/Log.h"
 
 namespace LSST {
 namespace m2cellcpp {

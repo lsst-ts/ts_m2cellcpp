@@ -24,12 +24,10 @@
 #include <catch2/catch.hpp>
 
 #include "control/NetCommandFactory.h"
-#include "system/Log.h"
+#include "util/Log.h"
 
 using namespace std;
 using namespace LSST::m2cellcpp::control;
-using Log = LSST::m2cellcpp::system::Log;
-using Catch::Matchers::StartsWith;
 
 TEST_CASE("Test NetCommand", "[NetCommand]") {
     {
@@ -50,54 +48,54 @@ TEST_CASE("Test NetCommand", "[NetCommand]") {
     }
     // Test that Command Exception is thrown appropriately.
     string note("Malformed json ");
-    Log::log(Log::DEBUG, note);
+    LDEBUG(note);
     bool thrown = false;
     try {
         string jStr = "\"id\":\"cmd_ack\",\"seq_id\": 1 }";
         auto jsn = NetCommand::parse(jStr);
     } catch (NetCommandException const& ex) {
-        Log::log(Log::DEBUG, note + ex.what());
+        LDEBUG(note, ex.what());
         thrown = true;
     }
     REQUIRE(thrown);
 
     note = "Missing id ";
-    Log::log(Log::DEBUG, note);
+    LDEBUG(note);
     try {
         thrown = false;
         string jStr = "{\"seq_id\": 1 }";
         auto jsn = NetCommand::parse(jStr);
     } catch (NetCommandException const& ex) {
-        Log::log(Log::DEBUG, note + ex.what());
+        LDEBUG(note, ex.what());
         thrown = true;
     }
     REQUIRE(thrown);
 
     note = "seq_id not int ";
-    Log::log(Log::DEBUG, note);
+    LDEBUG(note);
     try {
         thrown = false;
         string jStr = "{\"id\":\"cmd_ack\",\"seq_id\":\"hello\" }";
         auto jsn = NetCommand::parse(jStr);
     } catch (NetCommandException const& ex) {
-        Log::log(Log::DEBUG, note + ex.what());
+        LDEBUG(note, ex.what());
         thrown = true;
     }
     REQUIRE(thrown);
 
     note = "json is nullptr ";
-    Log::log(Log::DEBUG, note);
+    LDEBUG(note);
     try {
         thrown = false;
         auto cmd = NCmdAck::create(nullptr);
     } catch (NetCommandException const& ex) {
-        Log::log(Log::DEBUG, note + ex.what());
+        LDEBUG(note, ex.what());
         thrown = true;
     }
     REQUIRE(thrown);
 
     note = "create test";
-    Log::log(Log::DEBUG, note);
+    LDEBUG(note);
     {
         auto js1 = NetCommand::JsonPtr(new nlohmann::json{{"id", "cmd_ack"}, {"seq_id", 7}});
         auto cmd = NCmdAck::create(js1);
@@ -105,25 +103,25 @@ TEST_CASE("Test NetCommand", "[NetCommand]") {
     }
 
     note = "constructor missing seq ";
-    Log::log(Log::DEBUG, note);
+    LDEBUG(note);
     try {
         thrown = false;
         auto js1 = NetCommand::JsonPtr(new nlohmann::json{{"id", "cmd_ack"}});
         auto cmd = NCmdAck::create(js1);
     } catch (NetCommandException const& ex) {
-        Log::log(Log::DEBUG, note + ex.what());
+        LDEBUG(note, ex.what());
         thrown = true;
     }
     REQUIRE(thrown);
 
     note = "constructor missing id ";
-    Log::log(Log::DEBUG, note);
+    LDEBUG(note);
     try {
         thrown = false;
         auto js1 = NetCommand::JsonPtr(new nlohmann::json{{"seq_id", 7}});
         auto cmd = NCmdAck::create(js1);
     } catch (NetCommandException const& ex) {
-        Log::log(Log::DEBUG, note + ex.what());
+        LDEBUG(note, ex.what());
         thrown = true;
     }
     REQUIRE(thrown);
@@ -142,7 +140,7 @@ TEST_CASE("Test NetCommandFactory", "[Factory]") {
     string jStr1 = "{\"id\":\"cmd_ack\",\"seq_id\": 1 }";
     {
         string note = "Correct NCmdAck jStr ";
-        Log::log(Log::DEBUG, note);
+        LDEBUG(note);
         auto inNCmd = factory->getCommandFor(jStr1);
         REQUIRE(inNCmd != nullptr);
         auto inNCmdAck = dynamic_pointer_cast<NCmdAck>(inNCmd);
@@ -160,7 +158,7 @@ TEST_CASE("Test NetCommandFactory", "[Factory]") {
 
     {
         string note = "Correct NCmdEcho jStr ";
-        Log::log(Log::DEBUG, note);
+        LDEBUG(note);
         string jStr = "{\"id\":\"cmd_echo\",\"seq_id\": 2, \"msg\":\"This is an echomsg\" }";
         auto inNCmd = factory->getCommandFor(jStr);
         REQUIRE(inNCmd != nullptr);
@@ -181,7 +179,7 @@ TEST_CASE("Test NetCommandFactory", "[Factory]") {
 
     {
         string note = "Incorrect NCmdAck jStr ";
-        Log::log(Log::DEBUG, note);
+        LDEBUG(note);
         string jStr = "{\"id\":\"cmd_ak\",\"seq_id\": 3 }";
         auto inNCmd = factory->getCommandFor(jStr);
         REQUIRE(inNCmd != nullptr);
@@ -200,7 +198,7 @@ TEST_CASE("Test NetCommandFactory", "[Factory]") {
 
     {
         string note = "Incorrect seq_id NCmdAck jStr ";
-        Log::log(Log::DEBUG, note);
+        LDEBUG(note);
         auto inNCmd = factory->getCommandFor(jStr1);
         REQUIRE(inNCmd != nullptr);
         auto inNCmdNoAck = dynamic_pointer_cast<NCmdNoAck>(inNCmd);
@@ -218,7 +216,7 @@ TEST_CASE("Test NetCommandFactory", "[Factory]") {
 
     {
         string note = "Echo missing message jStr ";
-        Log::log(Log::DEBUG, note);
+        LDEBUG(note);
         string jStr = "{\"id\":\"cmd_echo\",\"seq_id\": 4, \"msgg\":\"This is an echomsg\" }";
         auto inNCmd = factory->getCommandFor(jStr);
         REQUIRE(inNCmd != nullptr);
@@ -233,7 +231,7 @@ TEST_CASE("Test NetCommandFactory", "[Factory]") {
         auto respJ = nlohmann::json::parse(respStr);
         REQUIRE(respJ["seq_id"] == 4);
         REQUIRE(respJ["id"] == "fail");
-        Log::log(Log::DEBUG, string("ackJson=") + ackJ.dump());
-        Log::log(Log::DEBUG, string("respJson=") + respJ.dump());
+        LDEBUG("ackJson=", ackJ.dump());
+        LDEBUG("respJson=", respJ.dump());
     }
 }

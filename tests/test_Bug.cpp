@@ -26,7 +26,7 @@
 #include <catch2/catch.hpp>
 
 #include "util/Bug.h"
-#include "system/Log.h"
+#include "util/Log.h"
 
 using namespace std;
 using namespace LSST::m2cellcpp::util;

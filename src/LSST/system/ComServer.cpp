@@ -28,7 +28,7 @@
 
 // Project headers
 #include "system/Config.h"
-#include "system/Log.h"
+#include "util/Log.h"
 
 // LSST headers
 
@@ -53,11 +53,11 @@ ComServer::ComServer(IoContextPtr const& ioContext, int port)
 }
 
 ComServer::~ComServer() {
-    Log::log(Log::DEBUG, "ComServer::~ComServer()");
+    LDEBUG("ComServer::~ComServer()");
 }
 
 void ComServer::run() {
-    Log::log(Log::DEBUG, "ComServer::run()");
+    LDEBUG("ComServer::run()");
     // Begin accepting immediately. Otherwise it will finish when it
     // discovers that there are outstanding operations.
     _beginAccept();
@@ -69,13 +69,13 @@ void ComServer::run() {
         ptr = shared_ptr<thread>(new thread([&]() { _ioContext->run(); }));
     }
     _state = RUNNING;
-    Log::log(Log::DEBUG, "ComServer::run() RUNNING");
+    LDEBUG("ComServer::run() RUNNING");
 
     // Wait for all threads in the pool to exit.
     for (auto&& ptr : threads) {
         ptr->join();
     }
-    Log::log(Log::DEBUG, "ComServer::run() finished");
+    LDEBUG("ComServer::run() finished");
     _state = STOPPED;
 }
 
@@ -100,14 +100,14 @@ void ComServer::_handleAccept(ComConnection::Ptr const& connection, boost::syste
     if (ec.value() == 0) {
         connection->beginProtocol();
     } else {
-        Log::log(Log::ERROR, "ComServer::_handleAccept ec:" + ec.message());
+        LERROR("ComServer::_handleAccept ec:", ec.message());
     }
     _beginAccept();
 }
 
 
 void ComServer::shutdown() {
-    Log::log(Log::INFO, "ComServer::shutdown");
+    LINFO("ComServer::shutdown");
     if (_shutdown.exchange(true) == true) {
         return;
     }
@@ -132,7 +132,7 @@ void ComServer::eraseConnection(uint64_t connId) {
     lock_guard<mutex> lg(_mapMtx);
     auto iter = _connections.find(connId);
     if (iter == _connections.end()) {
-        Log::log(Log::WARN, string("connection not found ") + to_string(connId));
+        LWARN("connection not found ", to_string(connId));
         return;
     }
     _connections.erase(iter);

@@ -23,7 +23,7 @@
 #include "system/ComClient.h"
 
 // Project headers
-#include "system/Log.h"
+#include "util/Log.h"
 
 using namespace std;
 namespace io = boost::asio;
@@ -38,29 +38,29 @@ ComClient::ComClient(IoContextPtr const& ioContext, string const& servIp, int po
 }
 
 ComClient::~ComClient() {
-    Log::log(Log::DEBUG, "ComClient::~ComClient");
+    LDEBUG("ComClient::~ComClient");
     boost::system::error_code ec;
     _socket.shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
     if (ec) {
-        Log::log(Log::ERROR, "~ComClient shutdown ec:" + ec.message());
+        LERROR("~ComClient shutdown ec:", ec.message());
     }
     _socket.close();
 }
 
 void ComClient::_setup(string const& servIp, int port) {
-    Log::log(Log::DEBUG, string("ComClient setup " + servIp + " " + to_string(port)));
+    LDEBUG("ComClient setup ", servIp, " ", port);
     io::ip::tcp::resolver resolv(*_ioContext);
     boost::system::error_code ec;
     string strPort = to_string(port);
     io::ip::tcp::resolver::results_type endpoints = resolv.resolve(servIp, strPort, ec);
     if (ec) {
-        Log::log(Log::ERROR, "ComClient::_setup ec:" + ec.message());
+        LERROR("ComClient::_setup ec:", ec.message());
         throw boost::system::system_error(ec);
     }
     for (io::ip::tcp::endpoint const& endpoint : endpoints) {
         stringstream os;
         os << endpoint;
-        Log::log(Log::INFO, string("endpoint ") + os.str());
+        LINFO("endpoint ", os.str());
     }
     io::connect(_socket, endpoints);
 }
@@ -70,10 +70,10 @@ void ComClient::writeCommand(string const& cmd) {
     io::write(_socket, boost::asio::buffer(cmd + ComConnection::getDelimiter()), ec);
     if (ec) {
         _socket.close();
-        Log::log(Log::ERROR, string("writeCommand error ec=") + ec.message());
+        LERROR("writeCommand error ec=", ec.message());
         throw boost::system::system_error(ec);
     }
-    Log::log(Log::DEBUG, "ComClient::writeCommand " + cmd);
+    LDEBUG("ComClient::writeCommand ", cmd);
 }
 
 string ComClient::readCommand() {
@@ -82,7 +82,7 @@ string ComClient::readCommand() {
     io::read_until(_socket, streamB, ComConnection::getDelimiter(), ec);
     if (ec) {
         _socket.close();
-        Log::log(Log::ERROR, string("readCommand error ec=") + ec.message());
+        LERROR("readCommand error ec=", ec.message());
         throw boost::system::system_error(ec);
     }
 
@@ -91,7 +91,7 @@ string ComClient::readCommand() {
     auto buf = streamB.data();
     size_t msgSz = streamB.size() - ComConnection::getDelimiter().size();
     string cmd(buffers_begin(buf), buffers_begin(buf) + msgSz);
-    Log::log(Log::DEBUG, "ComClient::readCommand " + cmd);
+    LDEBUG("ComClient::readCommand ", cmd);
     return cmd;
 }
 

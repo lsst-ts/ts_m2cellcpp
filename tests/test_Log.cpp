@@ -25,15 +25,15 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include "system/Log.h"
+#include "util/Log.h"
 
 using namespace std;
-using namespace LSST::m2cellcpp::system;
+using namespace LSST::m2cellcpp::util;
 
 TEST_CASE("Test Log", "[Log]") {
     thread::id tid = this_thread::get_id();
     Log& lg = Log::getLog();
-    lg.setOutputDest(Log::MIRRORED); ///&&& change to BUFFER
+    lg.setOutputDest(Log::MIRRORED);
     int bufferLines = 0;
     auto file = __FILE__;
     auto line = __LINE__;
@@ -75,8 +75,29 @@ TEST_CASE("Test Log", "[Log]") {
         ++lineCount;
     }
     tmp.close();
-    REQUIRE(expectedSz == lineCount);    
+    REQUIRE(expectedSz == lineCount);
+
+    // Test log levels
+    lg.setOutputDest(Log::MIRRORED);
+    auto startSize = lg.getBuffersSize();
+    lg.setLogLvl(Log::DEBUG);
+    LTRACE("a");
+    REQUIRE(startSize == lg.getBuffersSize());
+    lg.setLogLvl(Log::INFO);
+    LDEBUG("b");
+    REQUIRE(startSize == lg.getBuffersSize());
+    lg.setLogLvl(Log::WARN);
+    LINFO("c");
+    REQUIRE(startSize == lg.getBuffersSize());
+    lg.setLogLvl(Log::ERROR);
+    LWARN("d");
+    REQUIRE(startSize == lg.getBuffersSize());
+    lg.setLogLvl(Log::CRITICAL);
+    LERROR("e");
+    REQUIRE(startSize == lg.getBuffersSize());
+    LCRITICAL("f");
+    REQUIRE(startSize + 1 == lg.getBuffersSize());
+    lg.setLogLvl(Log::DEBUG);
+    LDEBUG("g");
+    REQUIRE(startSize + 2 == lg.getBuffersSize());
 }
-
-
-
