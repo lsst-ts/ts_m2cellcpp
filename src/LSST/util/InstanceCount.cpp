@@ -37,21 +37,11 @@ namespace util {
 map<string, int> InstanceCount::_instances;
 recursive_mutex InstanceCount::_mx;
 
+InstanceCount::InstanceCount(string const& className) : _className{className} { _increment("con"); }
 
-InstanceCount::InstanceCount(string const& className) :_className{className} {
-    _increment("con");
-}
+InstanceCount::InstanceCount(InstanceCount const& other) : _className{other._className} { _increment("cpy"); }
 
-
-InstanceCount::InstanceCount(InstanceCount const& other) : _className{other._className} {
-    _increment("cpy");
-}
-
-
-InstanceCount::InstanceCount(InstanceCount &&origin) : _className{origin._className} {
-    _increment("mov");
-}
-
+InstanceCount::InstanceCount(InstanceCount&& origin) : _className{origin._className} { _increment("mov"); }
 
 void InstanceCount::_increment(string const& source) {
     lock_guard<recursive_mutex> lg(_mx);
@@ -59,9 +49,8 @@ void InstanceCount::_increment(string const& source) {
     auto ret = _instances.insert(entry);
     auto iter = ret.first;
     iter->second += 1;
-    LDEBUG("InstanceCount ", source, " ", iter->first, "=",iter->second);
+    LDEBUG("InstanceCount ", source, " ", iter->first, "=", iter->second);
 }
-
 
 InstanceCount::~InstanceCount() {
     lock_guard<recursive_mutex> lg(_mx);
@@ -74,7 +63,6 @@ InstanceCount::~InstanceCount() {
     }
 }
 
-
 int InstanceCount::getCount() {
     lock_guard<recursive_mutex> lg(_mx);
     auto iter = _instances.find(_className);
@@ -84,12 +72,9 @@ int InstanceCount::getCount() {
     return iter->second;
 }
 
+ostream& operator<<(ostream& os, InstanceCount const& instanceCount) { return instanceCount.dump(os); }
 
-ostream& operator<<(ostream &os, InstanceCount const& instanceCount) {
-    return instanceCount.dump(os);
-}
-
-ostream& InstanceCount::dump(ostream &os) const {
+ostream& InstanceCount::dump(ostream& os) const {
     lock_guard<recursive_mutex> lg(_mx);
     for (auto const& entry : _instances) {
         if (entry.second != 0) {
@@ -105,4 +90,6 @@ string InstanceCount::dump() const {
     return os.str();
 }
 
-}}} // namespace LSST::m2cellcpp::util
+}  // namespace util
+}  // namespace m2cellcpp
+}  // namespace LSST

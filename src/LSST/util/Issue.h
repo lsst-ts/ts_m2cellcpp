@@ -41,13 +41,13 @@ namespace util {
 /// unit test test_Bug.cpp
 class Issue : public std::exception {
 public:
-
     /// Context defines where exception has happened.
     class Context {
     public:
         // Constructor takes location of the context
         Context(char const* file, int line, char const* func);
         void print(std::ostream& out) const;
+
     private:
         std::string _file;
         std::string _func;
@@ -68,13 +68,13 @@ public:
     std::string const& message() const { return _message; }
 
 private:
-
     // Data members
     std::string _message;
     std::string _fullMessage;  /// Message string plus context
-
 };
 
-}}} // namespace lsst::m2cellcpp::util
+}  // namespace util
+}  // namespace m2cellcpp
+}  // namespace LSST
 
-#endif // LSST_M2CELLCPP_UTIL_ISSUE_H
+#endif  // LSST_M2CELLCPP_UTIL_ISSUE_H

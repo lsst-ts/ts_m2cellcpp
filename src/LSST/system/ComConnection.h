@@ -55,7 +55,7 @@ public:
 
     /// Factory method used to prevent issues with enable_shared_from_this.
     /// @param ioContext asio object for the network I/O operations
-    static Ptr create(IoContextPtr const& ioContext, uint64_t connId, 
+    static Ptr create(IoContextPtr const& ioContext, uint64_t connId,
                       std::shared_ptr<ComServer> const& server);
 
     ComConnection() = delete;
@@ -75,8 +75,7 @@ public:
 
 private:
     /// @see ComConnection::create()
-    ComConnection(IoContextPtr const& ioContext, uint64_t connId, 
-                  std::shared_ptr<ComServer> const& server);
+    ComConnection(IoContextPtr const& ioContext, uint64_t connId, std::shared_ptr<ComServer> const& server);
 
     /// Receive a command from a client.
     void _receiveCommand();
@@ -116,7 +115,6 @@ private:
     std::string _buffer;
 
     std::atomic<bool> _shutdown{false};
-
 };
 
 }  // namespace system

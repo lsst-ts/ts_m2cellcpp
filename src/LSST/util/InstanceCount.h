@@ -28,14 +28,13 @@
 #include <mutex>
 #include <string>
 
-
 namespace LSST {
 namespace m2cellcpp {
 namespace util {
 
-/// This a utility class to track the number of instances of any objects 
-/// or functions. 
-/// This class is useful for debugging. It can be used to track the 
+/// This a utility class to track the number of instances of any objects
+/// or functions.
+/// This class is useful for debugging. It can be used to track the
 /// number of instances of a class and concurrent function calls. It
 /// is very log intensive when being used to track more than a few
 /// things at a time, so InstanceCount instantiations should be
@@ -44,11 +43,11 @@ namespace util {
 /// To track the number of instances of a class, add the following
 /// to its member variables `InstanceCount inst("<class_name>");`.
 /// Where <class_name> is the name of the class.
-/// NOTE: If the class being tracked has non-default copy and move 
-///       constructors, or non-default operator=, then those need to 
+/// NOTE: If the class being tracked has non-default copy and move
+///       constructors, or non-default operator=, then those need to
 ///       be changed to include the instance of InstanceCounter.
-///       Default copy, move , and operator= should be fine. 
-/// 
+///       Default copy, move , and operator= should be fine.
+///
 /// Similarly, add `InstanceCount inst("<function_name>");` to
 /// track concurrent or recursive calls to a function.
 ///
@@ -64,22 +63,23 @@ class InstanceCount {
 public:
     InstanceCount(std::string const& className);
     InstanceCount(InstanceCount const& other);
-    InstanceCount(InstanceCount &&origin);
+    InstanceCount(InstanceCount&& origin);
     ~InstanceCount();
 
     InstanceCount& operator=(InstanceCount const& o) = default;
 
-    int getCount(); ///< Return the number of instances of _className.
+    int getCount();  ///< Return the number of instances of _className.
 
-    virtual std::ostream& dump(std::ostream &os) const;
+    virtual std::ostream& dump(std::ostream& os) const;
     std::string dump() const;
-    friend std::ostream& operator<<(std::ostream &out, InstanceCount const& instanceCount);
+    friend std::ostream& operator<<(std::ostream& out, InstanceCount const& instanceCount);
 
 private:
-    std::string _className; ///< Names of the of which this is a member.
-    static std::map<std::string, int> _instances; ///< Map of instances per class name.
-     /// Protects _instances. recursive_mutex used to avoid issues with 
-     /// operator<< in what should only be a debugging tool. 
+    std::string _className;  ///< Names of the of which this is a member.
+    static std::map<std::string, int>
+            _instances;  ///< Map of instances per class name.
+                         /// Protects _instances. recursive_mutex used to avoid issues with
+                         /// operator<< in what should only be a debugging tool.
     static std::recursive_mutex _mx;
 
     /// Increment the count associated with this object.
@@ -88,6 +88,8 @@ private:
     void _increment(std::string const& source);
 };
 
-}}} // namespace LSST::m2cellcpp::util
+}  // namespace util
+}  // namespace m2cellcpp
+}  // namespace LSST
 
-#endif // LSST_M2CELLCPP_UTIL_INSTANCECOUNT_H
+#endif  // LSST_M2CELLCPP_UTIL_INSTANCECOUNT_H

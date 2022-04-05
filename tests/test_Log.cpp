@@ -41,13 +41,13 @@ TEST_CASE("Test Log", "[Log]") {
     ++bufferLines;
     string buff = Log::getLog().getBufferLast();
     std::stringstream sstm;
-    sstm << file << ":" << line  << " tid:" << std::hex << tid << " DEBUG dbg=9";
+    sstm << file << ":" << line << " tid:" << std::hex << tid << " DEBUG dbg=9";
     REQUIRE(buff == sstm.str());
 
     int x = 7;
     double y = 3.14;
     REQUIRE_NOTHROW(LDEBUG("simple"));
-    REQUIRE_NOTHROW(LDEBUG("i x=", x ));
+    REQUIRE_NOTHROW(LDEBUG("i x=", x));
     REQUIRE_NOTHROW(LDEBUG("d y=", y, " x=", x));
 
     REQUIRE_NOTHROW(LTRACE("d y=", y, " x=", x));
@@ -56,7 +56,7 @@ TEST_CASE("Test Log", "[Log]") {
     REQUIRE_NOTHROW(LERROR("d y=", y, " x=", x));
     REQUIRE_NOTHROW(LCRITICAL("d y=", y, " x=", x));
 
-    uint expectedSz = 4; /// Must be smaller than number of log lines above.
+    uint expectedSz = 4;  /// Must be smaller than number of log lines above.
     lg.setMaxBuffers(expectedSz);
     REQUIRE(expectedSz == lg.getBuffersSize());
     string tmpLog("/tmp/test_Log.log");
@@ -65,7 +65,7 @@ TEST_CASE("Test Log", "[Log]") {
     // Test that normal log line gets into the file.
     LINFO("one more line");
     ++expectedSz;
-    lg.setOutputDest(Log::COUT); /// This should close tmpLog
+    lg.setOutputDest(Log::COUT);  /// This should close tmpLog
     REQUIRE(lg.getBuffersSize() == 0);
     ifstream tmp(tmpLog);
     REQUIRE(tmp.is_open() == true);

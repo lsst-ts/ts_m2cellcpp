@@ -95,7 +95,6 @@ string ComClient::readCommand() {
     return cmd;
 }
 
-
 }  // namespace system
 }  // namespace m2cellcpp
 }  // namespace LSST

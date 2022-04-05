@@ -98,7 +98,7 @@ public:
 
     /// @return the name of the command this specific class handles.
     /// Each child class should have a unique value returned for this command
-    /// that matches what is expected from clients. 
+    /// that matches what is expected from clients.
     /// i.e. NCmdEcho::getCommandName() always returns "cmd_echo". If another
     /// NetCommand class returns that value, they cannot be registered in the
     /// same NetCommandFactory.

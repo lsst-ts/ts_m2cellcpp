@@ -35,4 +35,6 @@ Bug::Bug(util::Issue::Context const& ctx, std::string const& msg) : util::Issue(
     LCRITICAL("Bug:", what());
 }
 
-}}} // namespace lsst::qserv
+}  // namespace util
+}  // namespace m2cellcpp
+}  // namespace LSST

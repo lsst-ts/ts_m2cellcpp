@@ -65,13 +65,11 @@ ComConnection::Ptr ComConnection::create(IoContextPtr const& ioContext, uint64_t
     return ComConnection::Ptr(new ComConnection(ioContext, connId, server));
 }
 
-ComConnection::ComConnection(IoContextPtr const& ioContext, uint64_t connId, shared_ptr<ComServer> const& server) 
-  : _socket(*ioContext), _ioContext(ioContext), _connId(connId), _server(server) {
-}
+ComConnection::ComConnection(IoContextPtr const& ioContext, uint64_t connId,
+                             shared_ptr<ComServer> const& server)
+        : _socket(*ioContext), _ioContext(ioContext), _connId(connId), _server(server) {}
 
-ComConnection::~ComConnection() {
-    shutdown();
-}
+ComConnection::~ComConnection() { shutdown(); }
 
 void ComConnection::beginProtocol() { _receiveCommand(); }
 

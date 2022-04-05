@@ -47,7 +47,7 @@ TEST_CASE("Test InstanceCount", "[InstanceCount]") {
             REQUIRE(instA1.getCount() == 2);
             REQUIRE(instB0.getCount() == 1);
             // Behavior here is the same as if it was inside
-            // another object being copied or moved, at 
+            // another object being copied or moved, at
             // least using the default move and copy constructors.
             {
                 InstanceCount instA2 = instA1;

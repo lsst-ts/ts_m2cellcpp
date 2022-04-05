@@ -52,9 +52,7 @@ ComServer::ComServer(IoContextPtr const& ioContext, int port)
     _acceptor.set_option(boost::asio::socket_base::reuse_address(true));
 }
 
-ComServer::~ComServer() {
-    LDEBUG("ComServer::~ComServer()");
-}
+ComServer::~ComServer() { LDEBUG("ComServer::~ComServer()"); }
 
 void ComServer::run() {
     LDEBUG("ComServer::run()");
@@ -105,7 +103,6 @@ void ComServer::_handleAccept(ComConnection::Ptr const& connection, boost::syste
     _beginAccept();
 }
 
-
 void ComServer::shutdown() {
     LINFO("ComServer::shutdown");
     if (_shutdown.exchange(true) == true) {
@@ -114,19 +111,18 @@ void ComServer::shutdown() {
     vector<weak_ptr<ComConnection>> vect;
     {
         lock_guard<mutex> lg(_mapMtx);
-        for(auto&& elem:_connections) {
+        for (auto&& elem : _connections) {
             vect.push_back(elem.second);
         }
     }
 
-    for(auto&& item:vect) {
+    for (auto&& item : vect) {
         std::shared_ptr<ComConnection> conn = item.lock();
         if (conn != nullptr) {
             conn->shutdown();
         }
     }
 }
-
 
 void ComServer::eraseConnection(uint64_t connId) {
     lock_guard<mutex> lg(_mapMtx);

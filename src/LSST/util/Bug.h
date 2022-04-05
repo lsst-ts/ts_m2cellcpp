@@ -39,6 +39,8 @@ public:
     explicit Bug(util::Issue::Context const& ctx, std::string const& msg);
 };
 
-}}} // namespace LSST::m2cellcpp::util
+}  // namespace util
+}  // namespace m2cellcpp
+}  // namespace LSST
 
-#endif // LSST_M2CELLCPP_UTIL_BUG_H
+#endif  // LSST_M2CELLCPP_UTIL_BUG_H

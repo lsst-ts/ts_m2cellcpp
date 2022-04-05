@@ -79,7 +79,7 @@ TEST_CASE("Test Com echo", "[Com]") {
         LDEBUG("read str=", str);
         REQUIRE(cmd == str);
     }
-    
+
     // Client echo test 2
     {
         ComClient client(ioContext, "127.0.0.1", port);

@@ -63,7 +63,7 @@ NetCommand::Ptr NetCommandFactory::getCommandFor(std::string const& jsonStr) {
     if (seqId <= _prevSeqId) {
         string badSeqId = string("Bad seq_id ") + to_string(seqId) + " " + cmdId + " previous seq_id was " +
                           to_string(_prevSeqId);
-        LWARN("getCommandFor seq_id ", seqId, " ", cmdId, badSeqId, " returning ", 
+        LWARN("getCommandFor seq_id ", seqId, " ", cmdId, badSeqId, " returning ",
               _defaultNoAck->getCommandName());
         cmdOut = _defaultNoAck->createNewNetCommand(inJson);
         cmdOut->setAckUserInfo(badSeqId);
