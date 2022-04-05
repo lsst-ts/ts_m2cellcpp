@@ -75,7 +75,7 @@ private:
 
     void _setValue(std::string const& section, std::string const& key, std::string const& val);
 
-    static Ptr _thisPtr; ///< Pointer to the global instance of Config.
+    static Ptr _thisPtr;  ///< Pointer to the global instance of Config.
     static std::mutex _thisMtx;
     std::map<std::string, std::string> _map;  ///< map of section:key -> values.
 };

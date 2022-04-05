@@ -20,17 +20,37 @@
  * this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <fstream>
+#include <iostream>
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
-#include <system/version.h>
+#include "util/Bug.h"
+#include "util/Log.h"
 
-#include <iostream>
+using namespace std;
+using namespace LSST::m2cellcpp::util;
 
-using namespace LSST::m2cellcpp::system;
-using Catch::Matchers::StartsWith;
-
-TEST_CASE("Version is reported", "[version]") {
-    std::cout << "Version: " << version() << std::endl;
-    REQUIRE_THAT(version(), StartsWith("v"));
+TEST_CASE("Test Bug", "[Bug]") {
+    bool thrown = false;
+    string str;
+    int line;
+    /// Only way to test is to catch
+    try {
+        line = __LINE__ + 1;
+        throw Bug(ERR_LOC, "not really a bug");
+    } catch (Bug const& ex) {
+        thrown = true;
+        str = ex.what();
+    }
+    REQUIRE(thrown);
+    /// find "test_Bug.cpp:"+to_string(line) in str.
+    string expected("test_Bug.cpp:");
+    expected += to_string(line);
+    LTRACE("expected=", expected, " what=", str);
+    bool found = false;
+    if (str.find(expected) != std::string::npos) {
+        found = true;
+    }
+    REQUIRE(found);
 }

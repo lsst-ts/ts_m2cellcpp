@@ -29,16 +29,36 @@
 #include <catch2/catch.hpp>
 
 // Project headers
-#include <system/Config.h>
+#include <util/InstanceCount.h>
 
 using namespace std;
-using namespace LSST::m2cellcpp::system;
+using namespace LSST::m2cellcpp::util;
 using Catch::Matchers::StartsWith;
 
-TEST_CASE("Test Config", "[Config]") {
-    REQUIRE_THROWS(Config::get());
-    REQUIRE_THROWS(Config::setup("junk"));
-
-    Config::setup("UNIT_TEST");
-    REQUIRE(Config::get().getValue("server", "threads") == "1");
+TEST_CASE("Test InstanceCount", "[InstanceCount]") {
+    {
+        InstanceCount instA0("a");
+        InstanceCount instB0("b");
+        REQUIRE(instA0.getCount() == 1);
+        REQUIRE(instB0.getCount() == 1);
+        {
+            InstanceCount instA1("a");
+            REQUIRE(instA0.getCount() == 2);
+            REQUIRE(instA1.getCount() == 2);
+            REQUIRE(instB0.getCount() == 1);
+            // Behavior here is the same as if it was inside
+            // another object being copied or moved, at
+            // least using the default move and copy constructors.
+            {
+                InstanceCount instA2 = instA1;
+                REQUIRE(instA0.getCount() == 3);
+                InstanceCount instB1 = move(instB0);
+                REQUIRE(instB0.getCount() == 2);
+            }
+            REQUIRE(instA0.getCount() == 2);
+            REQUIRE(instB0.getCount() == 1);
+        }
+        REQUIRE(instA0.getCount() == 1);
+        REQUIRE(instB0.getCount() == 1);
+    }
 }

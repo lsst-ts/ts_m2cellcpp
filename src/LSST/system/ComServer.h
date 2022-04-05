@@ -88,22 +88,21 @@ private:
     /// Handle a connection request.
     void _handleAccept(ComConnection::Ptr const& connection, boost::system::error_code const& ec);
 
-    std::atomic<State> _state{CREATED}; ///< Current state of the machine.
-    IoContextPtr _ioContext; ///< Pointer to the asio io_context
-    int _port; 
+    std::atomic<State> _state{CREATED};  ///< Current state of the machine.
+    IoContextPtr _ioContext;             ///< Pointer to the asio io_context
+    int _port;
     boost::asio::ip::tcp::acceptor _acceptor;
 
-    std::atomic<bool> _shutdown{false}; ///< set to true the first time shutdown is called.
+    std::atomic<bool> _shutdown{false};  ///< set to true the first time shutdown is called.
 
     /// A map of all current connections made by this server.
     std::map<uint64_t, std::weak_ptr<ComConnection>> _connections;
-    mutable std::mutex _mapMtx; ///< protects _connections
+    mutable std::mutex _mapMtx;  ///< protects _connections
 
     /// The source for connections Ids for the _connectionsMap.
     /// It should take hundreds or thousands of years for it
     /// uint64_t to wrap around.
-    uint64_t _connIdSeq{0};  
-
+    uint64_t _connIdSeq{0};
 };
 
 }  // namespace system

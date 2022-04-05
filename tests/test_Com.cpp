@@ -1,5 +1,5 @@
 /*
- * This file is part of LSST cRIOcpp test suite. Tests ILC generic functions.
+ * This file is part of LSST ts_m2cellcpp test suite.
  *
  * Developed for the Vera C. Rubin Observatory Telescope & Site Software Systems.
  * This product includes software developed by the Vera C.Rubin Observatory Project
@@ -34,7 +34,7 @@
 #include "system/Config.h"
 #include "system/ComClient.h"
 #include "system/ComServer.h"
-#include "system/Log.h"
+#include "util/Log.h"
 
 using namespace std;
 using namespace LSST::m2cellcpp::system;
@@ -54,12 +54,12 @@ TEST_CASE("Test Com echo", "[Com]") {
     auto serv = ComServer::create(ioContext, port);
     atomic<bool> done{false};
     REQUIRE(serv->getState() == ComServer::CREATED);
-    Log::log(Log::DEBUG, "server started");
+    LDEBUG("server started");
 
     thread servThrd([&serv, &done]() {
-        Log::log(Log::INFO, "server run " + serv->prettyState(serv->getState()));
+        LINFO("server run ", serv->prettyState(serv->getState()));
         serv->run();
-        Log::log(Log::INFO, "server finish");
+        LINFO("server finish");
         done = true;
     });
 
@@ -67,27 +67,27 @@ TEST_CASE("Test Com echo", "[Com]") {
         sleep(1);
     }
     REQUIRE(serv->getState() == ComServer::RUNNING);
-    Log::log(Log::DEBUG, "server running");
+    LDEBUG("server running");
 
     // Client echo test 1
     {
         ComClient client(ioContext, "127.0.0.1", port);
         string cmd("This is test 1");
         client.writeCommand(cmd);
-        Log::log(Log::DEBUG, "wrote cmd=" + cmd);
+        LDEBUG("wrote cmd=", cmd);
         auto str = client.readCommand();
-        Log::log(Log::DEBUG, "read str=" + str);
+        LDEBUG("read str=", str);
         REQUIRE(cmd == str);
     }
-    
+
     // Client echo test 2
     {
         ComClient client(ioContext, "127.0.0.1", port);
         string cmd("Something different 42");
         client.writeCommand(cmd);
-        Log::log(Log::DEBUG, "wrote cmd=" + cmd);
+        LDEBUG("wrote cmd=" + cmd);
         auto str = client.readCommand();
-        Log::log(Log::DEBUG, "read str=" + str);
+        LDEBUG("read str=", str);
         REQUIRE(cmd == str);
     }
 
@@ -99,7 +99,7 @@ TEST_CASE("Test Com echo", "[Com]") {
         ComClient client(ioContext, "127.0.0.1", port);
         string cmd("expected failure");
         client.writeCommand(cmd);
-        Log::log(Log::DEBUG, "wrote cmd=" + cmd);
+        LDEBUG("wrote cmd=", cmd);
         REQUIRE_THROWS(client.readCommand());
         REQUIRE_THROWS(client.writeCommand(cmd));
     }
@@ -108,12 +108,13 @@ TEST_CASE("Test Com echo", "[Com]") {
     ioContext->stop();
     for (int j = 0; !done && j < 10; ++j) {
         sleep(1);
-        Log::log(Log::INFO, "server wait " + to_string(done));
+        bool d = done;
+        LINFO("server wait ", d);
     }
-    Log::log(Log::DEBUG, "server stopped");
+    LDEBUG("server stopped");
     servThrd.join();
     REQUIRE(done == true);
     REQUIRE(serv->getState() == ComServer::STOPPED);
     serv.reset();
-    Log::log(Log::DEBUG, "server reset");
+    LDEBUG("server reset");
 }

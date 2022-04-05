@@ -35,7 +35,7 @@
 // Project headers
 #include "system/ComServer.h"
 #include "system/Config.h"
-#include "system/Log.h"
+#include "util/Log.h"
 
 using namespace std;
 using namespace std::placeholders;
@@ -43,12 +43,11 @@ using namespace std::placeholders;
 namespace {
 
 bool isErrorCode(boost::system::error_code const& ec, string const& note) {
-    using Log = LSST::m2cellcpp::system::Log;
     if (ec.value() != 0) {
         if (ec == boost::asio::error::eof) {
-            Log::log(Log::INFO, note + "  ** closed **");
+            LINFO(note, "  ** closed **");
         } else {
-            Log::log(Log::ERROR, note + "  ** failed: " + ec.message() + " **");
+            LERROR(note, "  ** failed: ", ec.message(), " **");
         }
         return true;
     }
@@ -66,18 +65,16 @@ ComConnection::Ptr ComConnection::create(IoContextPtr const& ioContext, uint64_t
     return ComConnection::Ptr(new ComConnection(ioContext, connId, server));
 }
 
-ComConnection::ComConnection(IoContextPtr const& ioContext, uint64_t connId, shared_ptr<ComServer> const& server) 
-  : _socket(*ioContext), _ioContext(ioContext), _connId(connId), _server(server) {
-}
+ComConnection::ComConnection(IoContextPtr const& ioContext, uint64_t connId,
+                             shared_ptr<ComServer> const& server)
+        : _socket(*ioContext), _ioContext(ioContext), _connId(connId), _server(server) {}
 
-ComConnection::~ComConnection() {
-    shutdown();
-}
+ComConnection::~ComConnection() { shutdown(); }
 
 void ComConnection::beginProtocol() { _receiveCommand(); }
 
 void ComConnection::_receiveCommand() {
-    Log::log(Log::DEBUG, "ComConnection::_receiveCommand");
+    LDEBUG("ComConnection::_receiveCommand");
     if (_shutdown) {
         return;
     }
@@ -93,7 +90,7 @@ void ComConnection::_readCommand(boost::system::error_code const& ec, size_t xfe
     std::string command(buffers_begin(_streamBuf.data()), buffers_begin(_streamBuf.data()) + msgSz);
     _streamBuf.consume(xfer);
 
-    Log::log(Log::INFO, "received command: " + command + " streamBuf size=" + to_string(command.size()));
+    LINFO("received command: ", command, " streamBuf size=", command.size());
 
     // TODO: DM-33713: instead of just echo, identify the incoming command
     //      and arguments and send an appropriate response.
@@ -101,14 +98,14 @@ void ComConnection::_readCommand(boost::system::error_code const& ec, size_t xfe
 }
 
 void ComConnection::_sendResponse(string const& command) {
-    Log::log(Log::DEBUG, "ComConnection::_sendResponse command:" + command);
+    LDEBUG("ComConnection::_sendResponse command:", command);
     string cmd = command + ComConnection::getDelimiter();
     boost::asio::async_write(_socket, boost::asio::buffer(cmd, cmd.size()),
                              bind(&ComConnection::_responseSent, shared_from_this(), _1, _2));
 }
 
 void ComConnection::_responseSent(boost::system::error_code const& ec, size_t xfer) {
-    Log::log(Log::DEBUG, "ComConnection::_responseSent xfer=" + to_string(xfer));
+    LDEBUG("ComConnection::_responseSent xfer=", xfer);
     if (::isErrorCode(ec, __func__)) {
         return;
     }
@@ -124,7 +121,7 @@ void ComConnection::shutdown() {
     if (serv != nullptr) {
         serv->eraseConnection(_connId);
     } else {
-        Log::log(Log::ERROR, "ComConnection::shutdown server already destroyed");
+        LERROR("ComConnection::shutdown server already destroyed");
     }
     boost::system::error_code ec;
     _socket.shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
