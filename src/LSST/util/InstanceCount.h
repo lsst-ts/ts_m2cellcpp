@@ -57,7 +57,6 @@ namespace util {
 /// This will indacte how many threads are waiting on the mutex compared
 /// to how many have passed it. <mutex_id> is an arbitray string to
 /// uniquly define the mutex.
-/// Based on qserv util::InstanceCount.cpp
 /// unit test: test_InstanceCount.cpp
 class InstanceCount {
 public:
@@ -70,8 +69,19 @@ public:
 
     int getCount();  ///< Return the number of instances of _className.
 
+    /// Put the contents of this instance of InstanceCount and the
+    /// static elements into `os`. This includes a complete list of all
+    /// identifiers being tracked and the number of instances of each.
     virtual std::ostream& dump(std::ostream& os) const;
+
+    /// @return a string representation of this instance of InstanceCount and the
+    /// static elements
+    /// @see virtual std::ostream& dump(std::ostream& os)
     std::string dump() const;
+
+    /// Put the contents of this instance of InstanceCount and the
+    /// static elements into `os`.
+    /// @see virtual std::ostream& dump(std::ostream& os)
     friend std::ostream& operator<<(std::ostream& out, InstanceCount const& instanceCount);
 
 private:

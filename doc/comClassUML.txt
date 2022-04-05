@@ -1,6 +1,11 @@
 # Copy and paste the following into http://www.plantuml.com/plantuml/uml/
 
 @startuml
+class util::Log
+class util::Issue
+class util::Bug
+util::Issue <|-- util::Bug
+
 class Config
 class ComServer
 class ComConnection

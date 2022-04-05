@@ -1,5 +1,5 @@
 /*
- * This file is part of LSST cRIOcpp test suite. Tests ILC generic functions.
+ * This file is part of LSST ts_m2cellcpp test suite.
  *
  * Developed for the Vera C. Rubin Observatory Telescope & Site Software Systems.
  * This product includes software developed by the Vera C.Rubin Observatory Project

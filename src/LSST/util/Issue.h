@@ -37,7 +37,6 @@ namespace util {
 /// This class inherits from standard exception class and adds the facility
 /// for tracking of where the exception originated.
 /// @see util::Bug for an example;
-/// Based on qserv util::Issue
 /// unit test test_Bug.cpp
 class Issue : public std::exception {
 public:

@@ -1,5 +1,9 @@
 # Version History
 
+0.1.5
+
+- Added utility namespace and improved logging.
+
 0.1.4
 
 - Setup to use cross compiler and build on cRIO.

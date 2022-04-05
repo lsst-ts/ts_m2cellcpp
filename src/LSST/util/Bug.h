@@ -33,7 +33,7 @@ namespace util {
 /// Bug is a generic Qserv exception that indicates a probable bug or fatal issue.
 /// This class is not intended to be caught. It's an indication that something
 /// unexpected and/or dangerous has happened that needs to be fixed.
-/// Based on qserv util::Bug
+/// unit test: test_Bug.cpp
 class Bug : public util::Issue {
 public:
     explicit Bug(util::Issue::Context const& ctx, std::string const& msg);
