@@ -32,7 +32,6 @@
 
 // Project headers
 
-// This header declarations
 namespace LSST {
 namespace m2cellcpp {
 namespace system {
@@ -48,7 +47,7 @@ typedef std::shared_ptr<boost::asio::io_context> IoContextPtr;
 /// unit test: test_com.cpp
 class ComConnection : public std::enable_shared_from_this<ComConnection> {
 public:
-    typedef std::shared_ptr<ComConnection> Ptr;
+    using Ptr = std::shared_ptr<ComConnection>;
 
     // Delimiter for all messages
     static std::string getDelimiter() { return "\r\n"; }

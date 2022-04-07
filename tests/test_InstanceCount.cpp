@@ -33,7 +33,6 @@
 
 using namespace std;
 using namespace LSST::m2cellcpp::util;
-using Catch::Matchers::StartsWith;
 
 TEST_CASE("Test InstanceCount", "[InstanceCount]") {
     {
