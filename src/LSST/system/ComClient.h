@@ -67,6 +67,12 @@ private:
     boost::asio::ip::tcp::socket _socket;
 
     void _setup(std::string const& servIp, int port);
+
+    /// Buffer for asio to store incoming TCP data.
+    /// asio may read more into the buffer than needed, so
+    /// the same buffer needs to be used repeatedly.
+    boost::asio::streambuf _readStream;
+    std::mutex _readStreamMtx; ///< Protects `_readStream`
 };
 
 }  // namespace system
