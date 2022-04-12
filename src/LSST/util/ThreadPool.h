@@ -185,8 +185,8 @@ private:
 
     unsigned int _poolThreadCount = 0;    ///< Number of threads that exist.
     unsigned int _maxThreadCount = 5000;  ///< Max number of thread allowed, set from config.
-    std::condition_variable _cvPool;    ///< Signal when threads are deleted.
-    mutable std::mutex _mxPool;         ///< Protects _poolThreadCount, _cvPool, _mxPool
+    std::condition_variable _cvPool;      ///< Signal when threads are deleted.
+    mutable std::mutex _mxPool;           ///< Protects _poolThreadCount, _cvPool, _mxPool
 };
 
 }  // namespace util

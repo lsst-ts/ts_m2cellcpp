@@ -31,6 +31,7 @@
 #include <boost/asio.hpp>
 
 // Project headers
+#include "util/Command.h"
 
 namespace LSST {
 namespace m2cellcpp {
@@ -72,6 +73,22 @@ public:
     /// Shutdown this connection
     void shutdown();
 
+    /// Async write to client.
+    void asyncWrite(std::string const& msg);
+
+    /// doc&&&
+    /// Important: All child functions must contain a copy of a shared_ptr to
+    ///     this ComConnection to prevent segfaults. Capturing `this` is
+    ///     not enough to ensure that this `ComConnection` still exists when
+    ///     the `runAction()` thread finally finishes.
+    virtual std::tuple<std::string, util::Command::Ptr> interpretCommand(std::string const& commandStr);
+
+     /// doc&&& For testing only.
+    static std::string makeTestAck(std::string const& msg);
+
+    /// doc&&& For testing only.
+    static std::string makeTestFinal(std::string const& msg);
+
 private:
     /// @see ComConnection::create()
     ComConnection(IoContextPtr const& ioContext, uint64_t connId, std::shared_ptr<ComServer> const& server);
@@ -98,6 +115,12 @@ private:
     /// @param ec An error code to be evaluated.
     /// @param xfer The number of bytes sent to a client in a response.
     void _responseSent(boost::system::error_code const& ec, size_t xfer);
+
+    /// The callback on finishing (either successfully or not) of asynchronous writes.
+    /// This is a dead end in that it only registers an error.
+    /// @param ec An error code to be evaluated.
+    /// @param xfer The number of bytes sent to a client in a response.
+    void _asyncWriteSent(boost::system::error_code const& ec, size_t xfer);
 
     /// A socket for communication with clients
     boost::asio::ip::tcp::socket _socket;

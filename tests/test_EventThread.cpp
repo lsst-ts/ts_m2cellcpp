@@ -45,15 +45,15 @@ TEST_CASE("EventThread test", "[EventThread]") {
         EventThread et{};
         SumUnprotected sum;
         int total{0};
-        int cycles = 99; // Arbitrary number of times add message to queue.
-        for (int j=1; j<cycles; j++) {
-            auto cmdSum = std::make_shared<Command>([&sum, j](CmdData*){sum.add(j);});
+        int cycles = 99;  // Arbitrary number of times add message to queue.
+        for (int j = 1; j < cycles; j++) {
+            auto cmdSum = std::make_shared<Command>([&sum, j](CmdData*) { sum.add(j); });
             total += j;
             et.queCmd(cmdSum);
         }
         et.run();
-        for (int j=1; j<cycles; j++) {
-            auto cmdSum = std::make_shared<Command>([&sum, j](CmdData*){sum.add(j);});
+        for (int j = 1; j < cycles; j++) {
+            auto cmdSum = std::make_shared<Command>([&sum, j](CmdData*) { sum.add(j); });
             total += j;
             et.queCmd(cmdSum);
         }
@@ -66,12 +66,11 @@ TEST_CASE("EventThread test", "[EventThread]") {
     std::weak_ptr<CommandQueue> weak_que;
     std::weak_ptr<ThreadPool> weak_pool;
 
-
     /// Create a thread pool
     {
         auto cmdQueue = std::make_shared<CommandQueue>();
         weak_que = cmdQueue;
-        unsigned int sz = 2; // size of thread pool to create
+        unsigned int sz = 2;  // size of thread pool to create
         auto pool = ThreadPool::newThreadPool(sz, cmdQueue);
         weak_pool = pool;
         LDEBUG("pool size=", sz);
@@ -80,26 +79,25 @@ TEST_CASE("EventThread test", "[EventThread]") {
         // Shrink the pool to zero and verify that the pool is shutdown.
         pool->shutdownPool();
         LDEBUG("pool size=0 weak_pool.use_count=", weak_pool.use_count());
-        pool->resize(20); // Size should remain zero, since shutdownPool() called.
+        pool->resize(20);  // Size should remain zero, since shutdownPool() called.
         REQUIRE(pool->size() == 0);
     }
     REQUIRE(weak_pool.use_count() == 0);
     REQUIRE(weak_que.use_count() == 0);
 
-
     {
         auto cmdQueue = std::make_shared<CommandQueue>();
         weak_que = cmdQueue;
-        unsigned int sz = 10; // size of thread pool to create
+        unsigned int sz = 10;  // size of thread pool to create
         auto pool = ThreadPool::newThreadPool(sz, cmdQueue);
         weak_pool = pool;
         LDEBUG("pool size=", sz);
         REQUIRE(pool->size() == sz);
-        sz += 10; // test increase in size of thread pool.
+        sz += 10;  // test increase in size of thread pool.
         pool->resize(sz);
         LDEBUG("pool size=", sz, " weak_pool.use_count=", weak_pool.use_count());
         REQUIRE(pool->size() == sz);
-        sz = 5; // test decrease in size of thread pool.
+        sz = 5;  // test decrease in size of thread pool.
         pool->resize(sz);
         pool->waitForResize(10000);
         LDEBUG("pool size=", sz, " weak_pool.use_count=", weak_pool.use_count());
@@ -115,18 +113,18 @@ TEST_CASE("EventThread test", "[EventThread]") {
         int total = 0;
         auto poolQueue = pool->getQueue();
         LDEBUG("Summing with pool");
-        sz = 20; // Want enough threads so that there are reasonable chance of collisions.
+        sz = 20;  // Want enough threads so that there are reasonable chance of collisions.
         pool->resize(sz);
         LDEBUG("pool size=", sz, " weak_pool.use_count=", weak_pool.use_count());
         REQUIRE(pool->size() == sz);
 
-        for (int j=1;j<2000;j++) {
-            auto cmdSum = std::make_shared<Command>([&poolSum, j](CmdData*){poolSum.add(j);});
+        for (int j = 1; j < 2000; j++) {
+            auto cmdSum = std::make_shared<Command>([&poolSum, j](CmdData*) { poolSum.add(j); });
             total += j;
             poolQueue->queCmd(cmdSum);
         }
         LDEBUG("stopping all threads in pool");
-        pool->endAll(); // These are added to end of queue, everything on queue should complete.
+        pool->endAll();  // These are added to end of queue, everything on queue should complete.
         pool->waitForResize(0);
         LDEBUG("pool size=", 0, " weak_pool.use_count=", weak_pool.use_count());
         REQUIRE(total == poolSum.total);
@@ -143,26 +141,26 @@ TEST_CASE("EventThread test", "[EventThread]") {
         std::mutex goCVMtx;
         // Create more threads than can fit in the pool and don't let any complete.
         // Since they all leave the pool (via peThread->leavePool();), they should all run.
-        int threadsRunning = sz*2;
-        for (int j=0; j<threadsRunning; j++) {
+        int threadsRunning = sz * 2;
+        for (int j = 0; j < threadsRunning; j++) {
             // The command to run.
             auto cmdDelaySum = std::make_shared<CommandForThreadPool>(
-                [&sum, &go, &goCV, &goCVMtx](CmdData* eventThread){
-                    PoolEventThread* peThread = dynamic_cast<PoolEventThread*>(eventThread);
-                    peThread->leavePool();
-                    sum.add(1);
-                    LDEBUG("Wait for goCVTest.");
-                    auto goCVTest = [&go](){ return go; };
-                    std::unique_lock<std::mutex> goLock(goCVMtx);
-                    goCV.wait(goLock, goCVTest); // wait until go == true;
-                    sum.add(1);
-            });
-            trackedCmds.push_back(cmdDelaySum); // Remember the command so we can check status later.
-            poolQueue->queCmd(cmdDelaySum); // Have the pool run the command when it can.
+                    [&sum, &go, &goCV, &goCVMtx](CmdData* eventThread) {
+                        PoolEventThread* peThread = dynamic_cast<PoolEventThread*>(eventThread);
+                        peThread->leavePool();
+                        sum.add(1);
+                        LDEBUG("Wait for goCVTest.");
+                        auto goCVTest = [&go]() { return go; };
+                        std::unique_lock<std::mutex> goLock(goCVMtx);
+                        goCV.wait(goLock, goCVTest);  // wait until go == true;
+                        sum.add(1);
+                    });
+            trackedCmds.push_back(cmdDelaySum);  // Remember the command so we can check status later.
+            poolQueue->queCmd(cmdDelaySum);      // Have the pool run the command when it can.
         }
         // Wait briefly (5sec) for all threads to be running.
         LDEBUG("Wait for all threads to be running.");
-        for (int j = 0; sum.total<threadsRunning && j<50; ++j) {
+        for (int j = 0; sum.total < threadsRunning && j < 50; ++j) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
         // Verify pool size
@@ -184,7 +182,7 @@ TEST_CASE("EventThread test", "[EventThread]") {
             ptc->waitComplete();
         }
         // sum.total should now be double what it was, indicating all threads completed.
-        REQUIRE(sum.total == 2*threadsRunning);
+        REQUIRE(sum.total == 2 * threadsRunning);
         LDEBUG("Shutting down pool.");
         pool->shutdownPool();
         pool.reset();
@@ -201,8 +199,8 @@ TEST_CASE("EventThread test", "[EventThread]") {
         unsigned int sz = 10;
         auto pool = ThreadPool::newThreadPool(sz, cmdQueue);
         weak_pool = pool;
-        auto func = [&sum](CmdData*){
-            for (int j=0; j<900000;j++) {
+        auto func = [&sum](CmdData*) {
+            for (int j = 0; j < 900000; j++) {
                 sum.add(1);
             }
         };
@@ -212,7 +210,7 @@ TEST_CASE("EventThread test", "[EventThread]") {
         class CommandData : public CommandTracked {
         public:
             void action(CmdData*) override {
-                for (int j=0; j<900000;j++) {
+                for (int j = 0; j < 900000; j++) {
                     total += 1;
                 }
                 setComplete();
@@ -226,13 +224,13 @@ TEST_CASE("EventThread test", "[EventThread]") {
 
         cmdSumUnprotected->waitComplete();
         commandData->waitComplete();
-        LDEBUG("cmdSumUnprotected=", sum.total,  " commandData=", commandData->total);
+        LDEBUG("cmdSumUnprotected=", sum.total, " commandData=", commandData->total);
         REQUIRE(sum.total == commandData->total);
         pool->shutdownPool();
     }
 
     // Give it some time to finish deleting everything (5 seconds)
-    for (int j = 0; weak_pool.use_count() > 0 && j<50 ; ++j) {
+    for (int j = 0; weak_pool.use_count() > 0 && j < 50; ++j) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     REQUIRE(weak_pool.use_count() == 0);

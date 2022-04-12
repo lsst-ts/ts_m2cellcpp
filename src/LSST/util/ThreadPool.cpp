@@ -206,7 +206,8 @@ void ThreadPool::resize(unsigned int targetThrdCount) {
             lock_guard<mutex> lockPool(_mxPool);
             /// Normally, targetThrdCount should be much smaller than _maxThreadCount.
             if (targetThrdCount >= _maxThreadCount) {
-                LWARN("ThreadPool::resize target count ", targetThrdCount, " is >= than max ", _maxThreadCount);
+                LWARN("ThreadPool::resize target count ", targetThrdCount, " is >= than max ",
+                      _maxThreadCount);
                 // Need at least one thread available to deal with released threads.
                 _maxThreadCount = targetThrdCount + 1;
                 _cvPool.notify_all();

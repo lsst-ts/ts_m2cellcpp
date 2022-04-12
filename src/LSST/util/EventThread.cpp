@@ -53,7 +53,6 @@ void EventThread::queCmd(Command::Ptr cmd) {
     _q->queCmd(cmd);
 }
 
-
 /// Handle commands as they arrive until queEnd() is called.
 void EventThread::_handleCmds() {
     startup();

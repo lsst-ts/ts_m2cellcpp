@@ -72,7 +72,7 @@ private:
     /// asio may read more into the buffer than needed, so
     /// the same buffer needs to be used repeatedly.
     boost::asio::streambuf _readStream;
-    std::mutex _readStreamMtx; ///< Protects `_readStream`
+    std::mutex _readStreamMtx;  ///< Protects `_readStream`
 };
 
 }  // namespace system

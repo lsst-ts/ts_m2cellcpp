@@ -49,4 +49,4 @@ private:
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif // LSST_M2CELLCPP_SYSTEM_COMCONTROL_H
+#endif  // LSST_M2CELLCPP_SYSTEM_COMCONTROL_H

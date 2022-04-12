@@ -124,7 +124,7 @@ protected:
 
 /// An event driven thread, the event loop is in handleCmds().
 /// Thread must be started with run(). Stop the thread by calling queEnd().
-class EventThread : public CmdData { //&&& does this really need to be CmdData ???
+class EventThread : public CmdData {  //&&& does this really need to be CmdData ???
 public:
     typedef std::shared_ptr<EventThread> Ptr;
     enum { HALT = -1000 };
@@ -164,16 +164,17 @@ protected:
 
     CommandQueue::Ptr _q{std::make_shared<CommandQueue>()};  ///< Queue of commands. // &&& rename
     std::thread _t;                                          ///< Our thread.  //&&& rename
-    std::atomic<bool> _loop{true};                  ///< Keep running the event loop while this is true.  // &&& remove _
-    std::atomic<bool> _commandFinishCalled{false};  ///< flag to prevent multiple calls to commandFinish. // &&& remove _
-    
+    std::atomic<bool> _loop{true};  ///< Keep running the event loop while this is true.  // &&& remove _
+    std::atomic<bool> _commandFinishCalled{
+            false};  ///< flag to prevent multiple calls to commandFinish. // &&& remove _
+
     /// @return the point of the currently running command, not thread safe.
-    /// WARNING: This should only ever be called by the thread running the 
+    /// WARNING: This should only ever be called by the thread running the
     ///     current command as doing so outside of that thread is not safe.
-    Command::Ptr _getCurrentCommandPtr() const { return _cmd; } // &&& rename to getCurrentCmdPtr
+    Command::Ptr _getCurrentCommandPtr() const { return _cmd; }  // &&& rename to getCurrentCmdPtr
 
 private:
-    void _handleCmds(); ///< Event loop that runs commands!!!
+    void _handleCmds();  ///< Event loop that runs commands!!!
     Command::Ptr _cmd;
     std::atomic<Command*> _currentCommand{nullptr};
 };
