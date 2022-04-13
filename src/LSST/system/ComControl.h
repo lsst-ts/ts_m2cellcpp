@@ -24,6 +24,7 @@
 // System headers
 
 // Project headers
+#include "control/NetCommandFactory.h"
 #include "system/ComConnection.h"
 
 namespace LSST {
@@ -38,11 +39,26 @@ public:
     /// Factory method used to prevent issues with enable_shared_from_this.
     /// @param ioContext asio object for the network I/O operations
     static Ptr create(IoContextPtr const& ioContext, uint64_t connId,
-                      std::shared_ptr<ComServer> const& server);
+                      std::shared_ptr<ComServer> const& server,
+                      std::shared_ptr<control::NetCommandFactory> cmdFactory);
+
+    /// Use `commandStr` to get a runnable command and ack string from `_cmdFactory`.
+    /// @return a json string to use for the 'ack'
+    /// @return a Command object that when run will do what the `commandStr` indicated should be done.
+    ///    If the facotry doesn't recognize `commandStr` it probably return a `Noack` message
+    ///    and the returned command will be a noop. This is depends on the provided
+    ///    `NetCommandFactory`, `_cmdFactory`.
+    std::tuple<std::string, util::Command::Ptr> interpretCommand(std::string const& commandStr) override;
+
+protected:
+    /// @see ComControl::create()
+    ComControl(IoContextPtr const& ioContext, uint64_t connId, std::shared_ptr<ComServer> const& server, 
+               std::shared_ptr<control::NetCommandFactory> cmdFactory) 
+               : ComConnection(ioContext, connId, server), _cmdFactory(cmdFactory) {}
 
 private:
-    /// @see ComControl::create()
-    ComControl(IoContextPtr const& ioContext, uint64_t connId, std::shared_ptr<ComServer> const& server);
+    /// Factory for producing commands to run.
+    std::shared_ptr<control::NetCommandFactory> _cmdFactory;
 };
 
 }  // namespace system

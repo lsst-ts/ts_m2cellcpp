@@ -67,6 +67,9 @@ public:
     /// Used to change the value of _defaultNoAck if NCmdNoAck is incorrect.
     void setDefaultNoAck();
 
+    /// @return an instance of the `_defaultNoAck` command with seqId=0.
+    NetCommand::Ptr getNoAck();
+
 private:
     NetCommandFactory() = default;
 

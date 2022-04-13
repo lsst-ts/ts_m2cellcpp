@@ -83,16 +83,17 @@ public:
     ///     the `runAction()` thread finally finishes.
     virtual std::tuple<std::string, util::Command::Ptr> interpretCommand(std::string const& commandStr);
 
-     /// doc&&& For testing only.
+    /// doc&&& For testing only.
     static std::string makeTestAck(std::string const& msg);
 
     /// doc&&& For testing only.
     static std::string makeTestFinal(std::string const& msg);
 
-private:
+protected:
     /// @see ComConnection::create()
     ComConnection(IoContextPtr const& ioContext, uint64_t connId, std::shared_ptr<ComServer> const& server);
 
+private:
     /// Receive a command from a client.
     void _receiveCommand();
 

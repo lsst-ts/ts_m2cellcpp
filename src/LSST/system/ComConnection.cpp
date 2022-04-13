@@ -83,58 +83,6 @@ void ComConnection::_receiveCommand() {
 }
 
 void ComConnection::_readCommand(boost::system::error_code const& ec, size_t xfer) {
-    /* &&&
-    assert(_streamBuf.size() >= xfer);
-
-    if (::isErrorCode(ec, __func__)) return;
-    size_t msgSz = xfer - getDelimiter().size();
-    std::string command(buffers_begin(_streamBuf.data()), buffers_begin(_streamBuf.data()) + msgSz);
-    _streamBuf.consume(xfer);
-
-    LINFO("received command: ", command, " streamBuf size=", command.size());
-
-    // TODO: DM-33713: instead of just echo, identify the incoming command
-    //      and arguments and send an appropriate response.
-    _sendResponse(command);
-    */
-    /* &&&
-size_t delimSz = getDelimiter().size();
-    auto iter = inStr.find(getDelimiter());
-    LDEBUG("_readCommand a inStr=", inStr, " iter=", iter);
-    while (iter != string::npos) {
-        // Get the first command
-        string cmdStr = inStr.substr(0, iter);
-        // Clear the first command and its delimiter from inStr
-        inStr = inStr.substr(iter + delimSz);
-        LINFO("received cmdStr: ", cmdStr, " streamBuf size=", cmdStr.size());
-        // `interpretCommand()` will add a shared_from_this pointer to command
-        // so it can send a response to the correct ComConnection, and
-        // that ComConnection will still exist.
-        auto [responseStr, command] =  interpretCommand(cmdStr);
-        LDEBUG("&&& responseStr=", responseStr);
-        // This is really annoying, C++ 17 standard doesn't handle lambda
-        // capture of a tuple element properly, so copy command to cmd so
-        // it can go in the lambda capture.
-        auto cmd = command;
-        // The ack response must be sent before the command is run, or the final
-        // respsonse could be sent before the ack.
-                sendResponse(responseStr);
-        LDEBUG("&&& called _sendResponse");
-        // Running the command could take a while, so start a new thread.
-        auto cmdFunc = [cmd]() {
-            cmd->runAction(nullptr);
-        };
-        thread cThrd(cmdFunc);
-        cThrd.detach(); // With luck, this wont cause issues with unit tests segfaulting.
-        // Check if there's another delimiter.
-        if (inStr.empty()) {
-            break;
-        }
-        
-        iter = inStr.find(getDelimiter());
-        LDEBUG("_readCommand b inStr=", inStr, " iter=", iter);
-    }
-    */
     assert(_streamBuf.size() >= xfer);
 
     if (::isErrorCode(ec, __func__)) return;
@@ -147,7 +95,7 @@ size_t delimSz = getDelimiter().size();
     // `interpretCommand()` will add a shared_from_this pointer to command
     // so it can send a response to the correct ComConnection, and
     // that ComConnection will still exist.
-    auto [responseStr, command] =  interpretCommand(msgStr);
+    auto [responseStr, command] = interpretCommand(msgStr);
     // This is really annoying, C++ 17 standard doesn't handle lambda
     // capture of a tuple element properly, so copy command to cmd so
     // it can go in the lambda capture.
@@ -157,11 +105,9 @@ size_t delimSz = getDelimiter().size();
     _sendResponse(responseStr);
 
     // Running the command could take a while, so start a new thread.
-    auto cmdFunc = [cmd]() {
-        cmd->runAction(nullptr);
-    };
+    auto cmdFunc = [cmd]() { cmd->runAction(nullptr); };
     thread cThrd(cmdFunc);
-    cThrd.detach(); // With luck, this wont cause issues with unit tests segfaulting.
+    cThrd.detach();
 }
 
 std::tuple<std::string, util::Command::Ptr> ComConnection::interpretCommand(std::string const& commandStr) {
@@ -169,11 +115,10 @@ std::tuple<std::string, util::Command::Ptr> ComConnection::interpretCommand(std:
     // This lambda function will be run when `cmd->runAction()` is called.
     // It needs a shared_ptr to this to prevent segfaults if ComConnection was closed.
     auto thisPtr = shared_from_this();
-    auto testFunc = [thisPtr, commandStr](util::CmdData*){
+    auto testFunc = [thisPtr, commandStr](util::CmdData*) {
         LDEBUG("Running Command func");
         string finalMsg = makeTestFinal(commandStr);
         thisPtr->asyncWrite(finalMsg);
-        //&&&thisPtr->sendResponse(finalMsg);
     };
     auto cmd = make_shared<util::Command>(testFunc);
     return {ackMsg, cmd};

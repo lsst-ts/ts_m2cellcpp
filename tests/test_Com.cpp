@@ -81,7 +81,6 @@ TEST_CASE("Test Com echo", "[Com]") {
         LDEBUG("read fin=", fin);
         REQUIRE(ComConnection::makeTestAck(cmd) == ack);
         REQUIRE(ComConnection::makeTestFinal(cmd) == fin);
-
     }
 
     // Client echo test 2
@@ -96,6 +95,18 @@ TEST_CASE("Test Com echo", "[Com]") {
         LDEBUG("read fin=", fin);
         REQUIRE(ComConnection::makeTestAck(cmd) == ack);
         REQUIRE(ComConnection::makeTestFinal(cmd) == fin);
+
+        for (int j=0; j<5; ++j) {
+            cmd = "another command @" + to_string(j) + " q";
+            client.writeCommand(cmd);
+            LDEBUG("wrote cmd=" + cmd);
+            ack = client.readCommand();
+            LDEBUG("read ack=", ack);
+            fin = client.readCommand();
+            LDEBUG("read fin=", fin);
+            REQUIRE(ComConnection::makeTestAck(cmd) == ack);
+            REQUIRE(ComConnection::makeTestFinal(cmd) == fin);
+        }
     }
 
     serv->shutdown();

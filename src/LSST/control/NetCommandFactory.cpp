@@ -91,6 +91,17 @@ NetCommand::Ptr NetCommandFactory::getCommandFor(std::string const& jsonStr) {
     return cmdOut;
 }
 
+NetCommand::Ptr NetCommandFactory::getNoAck() {
+    // If this function is being called, the incoming message is probably too
+    // garbled to be parsed. Make a fake one.
+    NetCommand::JsonPtr inJson = std::shared_ptr<nlohmann::json>(new nlohmann::json());
+    nlohmann::json& js = *inJson;
+    js["id"] = "unknown_noAck";
+    js["seq_id"] = 0;
+    auto cmdOut = _defaultNoAck->createNewNetCommand(inJson);
+    return cmdOut;
+}
+
 }  // namespace control
 }  // namespace m2cellcpp
 }  // namespace LSST

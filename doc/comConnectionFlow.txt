@@ -1,0 +1,41 @@
+# Copy and paste the following into http://www.plantuml.com/plantuml/uml/
+# ComConnection Logic Flow Diagram
+
+@startuml
+start
+:ComConnection::beginProtocol;
+repeat
+:receiveCommand;
+if (_shutdown) then 
+stop
+endif
+:asio::asynv_read_until;
+:_readCommand;
+:_sendResponse   (this is the ack);
+:asio::async_write;
+:_responseSent;
+if (isErrorCode) then
+stop
+endif
+repeat while (true) is (true)
+stop
+
+
+start
+:ComConnection::_finalResponse thread begin;
+while (not _shutdown)
+:wait for final response command;
+:asio::async_write;
+:Split here, as the response callback is a dead end, but this thread immediately continues to the top of the loop;
+endwhile
+stop
+
+start
+:ComConnection::shutdown();
+:set latch _shutdown = true;
+:drain finalResponse queue;
+:server - eraseConnection;
+:_socket shutdown;
+stop
+
+@enduml
