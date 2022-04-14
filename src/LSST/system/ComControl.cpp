@@ -41,6 +41,12 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
+void ComControl::setupNormalFactory(control::NetCommandFactory::Ptr const& cmdFactory) {
+    cmdFactory->addNetCommand(control::NCmdAck::createFactoryVersion());
+    cmdFactory->addNetCommand(control::NCmdNoAck::createFactoryVersion());
+    cmdFactory->addNetCommand(control::NCmdEcho::createFactoryVersion());
+}
+
 std::tuple<std::string, util::Command::Ptr> ComControl::interpretCommand(std::string const& commandStr) {
     control::NetCommand::Ptr netCmd;
     try {
@@ -55,7 +61,7 @@ std::tuple<std::string, util::Command::Ptr> ComControl::interpretCommand(std::st
     auto thisPtr = shared_from_this();
     auto func = [thisPtr, netCmd](util::CmdData*) {
         LDEBUG("Running func netCmd ", netCmd->getName(), " seqId=", netCmd->getSeqId());
-        netCmd->run(); 
+        netCmd->run();
         string finalMsg = netCmd->getRespJsonStr();
         thisPtr->asyncWrite(finalMsg);
     };

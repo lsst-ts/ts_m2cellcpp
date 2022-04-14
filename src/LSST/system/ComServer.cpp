@@ -82,7 +82,8 @@ void ComServer::_beginAccept() {
         return;
     }
     auto connId = _connIdSeq++;
-    ComConnection::Ptr const connection = ComConnection::create(_ioContext, connId, shared_from_this());
+    //&&&ComConnection::Ptr const connection = ComConnection::create(_ioContext, connId, shared_from_this());
+    ComConnection::Ptr const connection = newComConnection(_ioContext, connId, shared_from_this());
     {
         lock_guard<mutex> lg(_mapMtx);
         _connections.emplace(connId, connection);
@@ -149,6 +150,12 @@ string ComServer::prettyState(State state) {
             return "STOPPED";
     }
     return "unknown";
+}
+
+ComConnection::Ptr ComServer::newComConnection(IoContextPtr const& ioContext, uint64_t connId,
+                                               std::shared_ptr<ComServer> const& server) {
+    ComConnection::Ptr ptr = ComConnection::create(ioContext, connId, server);
+    return ptr;
 }
 
 }  // namespace system
