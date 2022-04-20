@@ -82,7 +82,6 @@ void ComServer::_beginAccept() {
         return;
     }
     auto connId = _connIdSeq++;
-    //&&&ComConnection::Ptr const connection = ComConnection::create(_ioContext, connId, shared_from_this());
     ComConnection::Ptr const connection = newComConnection(_ioContext, connId, shared_from_this());
     {
         lock_guard<mutex> lg(_mapMtx);

@@ -116,7 +116,7 @@ std::tuple<std::string, util::Command::Ptr> ComConnection::interpretCommand(std:
     // It needs a shared_ptr to this to prevent segfaults if ComConnection was closed.
     auto thisPtr = shared_from_this();
     auto testFunc = [thisPtr, commandStr](util::CmdData*) {
-        LDEBUG("Running Command func");
+        LDEBUG("ComConnection Running Command func");
         string finalMsg = makeTestFinal(commandStr);
         thisPtr->asyncWrite(finalMsg);
     };

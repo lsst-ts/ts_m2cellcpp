@@ -41,6 +41,12 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
+ComControl::Ptr ComControl::create(IoContextPtr const& ioContext, uint64_t connId,
+                                   std::shared_ptr<ComServer> const& server,
+                                   control::NetCommandFactory::Ptr const& cmdFactory) {
+    return ComControl::Ptr(new ComControl(ioContext, connId, server, cmdFactory));                                       
+}
+
 void ComControl::setupNormalFactory(control::NetCommandFactory::Ptr const& cmdFactory) {
     cmdFactory->addNetCommand(control::NCmdAck::createFactoryVersion());
     cmdFactory->addNetCommand(control::NCmdNoAck::createFactoryVersion());
@@ -60,7 +66,7 @@ std::tuple<std::string, util::Command::Ptr> ComControl::interpretCommand(std::st
     // It needs a shared_ptr to this to prevent segfaults if ComConnection was closed.
     auto thisPtr = shared_from_this();
     auto func = [thisPtr, netCmd](util::CmdData*) {
-        LDEBUG("Running func netCmd ", netCmd->getName(), " seqId=", netCmd->getSeqId());
+        LDEBUG("ComControl Running func ", netCmd->getName(), " seqId=", netCmd->getSeqId());
         netCmd->run();
         string finalMsg = netCmd->getRespJsonStr();
         thisPtr->asyncWrite(finalMsg);

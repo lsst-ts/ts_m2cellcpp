@@ -289,7 +289,6 @@ void ThreadPool::_waitIfAtMaxThreadPoolCount() {
     if (_poolThreadCount >= _maxThreadCount) {
         logLvl = Log::WARN;
     }
-    //&&& LOGS(_log, logLvl, "wait before _poolThreadCount=" << _poolThreadCount);
     Log::logW(logLvl, __FILE__, __LINE__, "wait before _poolThreadCount=", _poolThreadCount);
     _cvPool.wait(lockPool, [this]() { return (_poolThreadCount <= _maxThreadCount); });
 }

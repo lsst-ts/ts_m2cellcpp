@@ -36,16 +36,6 @@ namespace LSST {
 namespace m2cellcpp {
 namespace util {
 
-/* &&&
-void CommandQueue::queCmd(Command::Ptr const& cmd) {
-    {
-        lock_guard<mutex> lock(_mx);
-        _qu.push_back(cmd);
-    }
-    notify(false); // notify one thread
-}
-*/
-
 void EventThread::queCmd(Command::Ptr cmd) {
     if (cmd == nullptr) {
         throw util::Bug(ERR_LOC, "EventThread::queCmd was nullptr");

@@ -68,7 +68,7 @@ public:
     void setDefaultNoAck();
 
     /// @return an instance of the `_defaultNoAck` command with seqId=0.
-    NetCommand::Ptr getNoAck();  // &&& add test for this in test_NetCommand.cpp
+    NetCommand::Ptr getNoAck();
 
 private:
     NetCommandFactory() = default;

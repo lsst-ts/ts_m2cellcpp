@@ -44,6 +44,12 @@ ComControlServer::Ptr ComControlServer::create(IoContextPtr const& ioContext, in
     return ComControlServer::Ptr(new ComControlServer(ioContext, port, cmdFactory));
 }
 
+ComConnection::Ptr ComControlServer::newComConnection(IoContextPtr const& ioContext, uint64_t connId,
+                                                      std::shared_ptr<ComServer> const& server) {
+    ComConnection::Ptr ptr = ComControl::create(ioContext, connId, server, _cmdFactory);
+    return ptr;
+}
+
 }  // namespace system
 }  // namespace m2cellcpp
 }  // namespace LSST

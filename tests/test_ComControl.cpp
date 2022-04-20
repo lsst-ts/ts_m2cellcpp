@@ -23,6 +23,7 @@
 #define CATCH_CONFIG_MAIN
 #include <catch2/catch.hpp>
 
+#include "system/ComClient.h"
 #include "system/ComControlServer.h"
 #include "system/ComServer.h"
 #include "system/Config.h"
@@ -32,6 +33,18 @@ using namespace std;
 using namespace LSST::m2cellcpp::system;
 using namespace LSST::m2cellcpp;
 
+tuple<nlohmann::json, nlohmann::json> comTest(string const& jStr, ComClient& client, string const& note) {
+    client.writeCommand(jStr);
+    LDEBUG(note, ":wrote jStr=", jStr);
+    auto ack = client.readCommand();
+    LDEBUG(note, ":read ack=", ack);
+    auto ackJ = nlohmann::json::parse(ack);
+    auto fin = client.readCommand();
+    LDEBUG(note, ":read fin=", fin);
+    auto finJ = nlohmann::json::parse(fin);
+    return {ackJ, finJ};
+}
+
 TEST_CASE("Test ComControl", "[ComControl]") {
     Config::setup("UNIT_TEST");
 
@@ -39,7 +52,6 @@ TEST_CASE("Test ComControl", "[ComControl]") {
     IoContextPtr ioContext = make_shared<boost::asio::io_context>();
     string strPort = Config::get().getValue("server", "port");
     int port = stoi(strPort);
-    //&&&auto serv = ComServer::create(ioContext, port);
     auto cmdFactory = control::NetCommandFactory::create();
     ComControl::setupNormalFactory(cmdFactory);
     auto serv = ComControlServer::create(ioContext, port, cmdFactory);
@@ -60,213 +72,67 @@ TEST_CASE("Test ComControl", "[ComControl]") {
         sleep(1);
     }
 
+    {
+        ComClient client(ioContext, "127.0.0.1", port);
+        {
+            string note("Correct NCmdAck");
+            LDEBUG(note);
+            string jStr = R"({"id":"cmd_ack","seq_id": 1 })";
+            int seqId = 1;
+            auto [ackJ, finJ] = comTest(jStr, client, note);
+            REQUIRE(ackJ["seq_id"] == seqId);
+            REQUIRE(ackJ["id"] == "ack");
+            REQUIRE(finJ["seq_id"] == seqId);
+            REQUIRE(finJ["id"] == "success");
+            REQUIRE(finJ["user_info"] == "");
+        }
+        {
+            string note = "Correct NCmdEcho";
+            LDEBUG(note);
+            string jStr = R"({"id":"cmd_echo","seq_id": 2, "msg":"This is an echomsg" })";
+            int seqId = 2;
+            auto [ackJ, finJ] = comTest(jStr, client, note);
+            REQUIRE(ackJ["seq_id"] == seqId);
+            REQUIRE(ackJ["id"] == "ack");
+            REQUIRE(finJ["seq_id"] == seqId);
+            REQUIRE(finJ["id"] == "success");
+            REQUIRE(finJ["msg"] == "This is an echomsg");
+        }
+        {
+            string note = "Incorrect NCmdAck";
+            LDEBUG(note);
+            string jStr = R"({"id":"cmd_ak","seq_id": 3 })";
+            int seqId = 3;
+            auto [ackJ, finJ] = comTest(jStr, client, note);
+            REQUIRE(ackJ["seq_id"] == seqId);
+            REQUIRE(ackJ["id"] == "noack");
+            REQUIRE(finJ["seq_id"] == seqId);
+            REQUIRE(finJ["id"] == "fail");
+        }
+    }
+
     // Shutdown the server
     serv->shutdown();
     REQUIRE(serv->connectionCount() == 0);
-#if 0   //&&&
+
+    // TODO: remove this client connection DM-33730
+    // Client expected failure
     {
-        // Test basic functionality of base class
-        string jStr = "{\"id\":\"cmd_ack\",\"seq_id\": 5 }";
-        NetCommand::JsonPtr jsn = NetCommand::parse(jStr);
-        REQUIRE(jsn->at("id") == "cmd_ack");
-        REQUIRE(jsn->at("seq_id") == 5);
-        NetCommand::Ptr cmd1 = NCmdAck::create(jsn);
-        REQUIRE(cmd1->getName() == "cmd_ack");
-        REQUIRE(cmd1->getSeqId() == 5);
+        ComClient client(ioContext, "127.0.0.1", port);
+        string cmd("expected failure");
+        client.writeCommand(cmd);
+        LDEBUG("wrote cmd=", cmd);
+        REQUIRE_THROWS(client.readCommand());
+        REQUIRE_THROWS(client.writeCommand(cmd));
     }
 
-    {
-        string msg = "simple test msg";
-        NetCommandException cExc(msg);
-        REQUIRE(cExc.what() == msg);
+    // Server stop
+    ioContext->stop();
+    for (int j = 0; !done && j < 10; ++j) {
+        sleep(1);
+        bool d = done;
+        LINFO("server wait ", d);
     }
-    // Test that Command Exception is thrown appropriately.
-    string note("Malformed json ");
-    LDEBUG(note);
-    bool thrown = false;
-    try {
-        string jStr = "\"id\":\"cmd_ack\",\"seq_id\": 1 }";
-        auto jsn = NetCommand::parse(jStr);
-    } catch (NetCommandException const& ex) {
-        LDEBUG(note, ex.what());
-        thrown = true;
-    }
-    REQUIRE(thrown);
-
-    note = "Missing id ";
-    LDEBUG(note);
-    try {
-        thrown = false;
-        string jStr = "{\"seq_id\": 1 }";
-        auto jsn = NetCommand::parse(jStr);
-    } catch (NetCommandException const& ex) {
-        LDEBUG(note, ex.what());
-        thrown = true;
-    }
-    REQUIRE(thrown);
-
-    note = "seq_id not int ";
-    LDEBUG(note);
-    try {
-        thrown = false;
-        string jStr = "{\"id\":\"cmd_ack\",\"seq_id\":\"hello\" }";
-        auto jsn = NetCommand::parse(jStr);
-    } catch (NetCommandException const& ex) {
-        LDEBUG(note, ex.what());
-        thrown = true;
-    }
-    REQUIRE(thrown);
-
-    note = "json is nullptr ";
-    LDEBUG(note);
-    try {
-        thrown = false;
-        auto cmd = NCmdAck::create(nullptr);
-    } catch (NetCommandException const& ex) {
-        LDEBUG(note, ex.what());
-        thrown = true;
-    }
-    REQUIRE(thrown);
-
-    note = "create test";
-    LDEBUG(note);
-    {
-        auto js1 = NetCommand::JsonPtr(new nlohmann::json{{"id", "cmd_ack"}, {"seq_id", 7}});
-        auto cmd = NCmdAck::create(js1);
-        REQUIRE(cmd != nullptr);
-    }
-
-    note = "constructor missing seq ";
-    LDEBUG(note);
-    try {
-        thrown = false;
-        auto js1 = NetCommand::JsonPtr(new nlohmann::json{{"id", "cmd_ack"}});
-        auto cmd = NCmdAck::create(js1);
-    } catch (NetCommandException const& ex) {
-        LDEBUG(note, ex.what());
-        thrown = true;
-    }
-    REQUIRE(thrown);
-
-    note = "constructor missing id ";
-    LDEBUG(note);
-    try {
-        thrown = false;
-        auto js1 = NetCommand::JsonPtr(new nlohmann::json{{"seq_id", 7}});
-        auto cmd = NCmdAck::create(js1);
-    } catch (NetCommandException const& ex) {
-        LDEBUG(note, ex.what());
-        thrown = true;
-    }
-    REQUIRE(thrown);
-}
-
-TEST_CASE("Test NetCommandFactory", "[Factory]") {
-    std::vector<NetCommand::Ptr> nCmds;
-    nCmds.push_back(NCmdAck::createFactoryVersion());
-    nCmds.push_back(NCmdEcho::createFactoryVersion());
-
-    auto factory = NetCommandFactory::create();
-    for (auto&& cmd : nCmds) {
-        factory->addNetCommand(cmd);
-    }
-
-    string jStr1 = "{\"id\":\"cmd_ack\",\"seq_id\": 1 }";
-    {
-        string note = "Correct NCmdAck jStr ";
-        LDEBUG(note);
-        auto inNCmd = factory->getCommandFor(jStr1);
-        REQUIRE(inNCmd != nullptr);
-        auto inNCmdAck = dynamic_pointer_cast<NCmdAck>(inNCmd);
-        REQUIRE(inNCmdAck != nullptr);
-        auto ackStr = inNCmd->getAckJsonStr();
-        auto ackJ = nlohmann::json::parse(ackStr);
-        REQUIRE(ackJ["seq_id"] == 1);
-        REQUIRE(ackJ["id"] == "ack");
-        REQUIRE(inNCmd->run() == true);
-        auto respStr = inNCmd->getRespJsonStr();
-        auto respJ = nlohmann::json::parse(respStr);
-        REQUIRE(respJ["seq_id"] == 1);
-        REQUIRE(respJ["id"] == "success");
-    }
-
-    {
-        string note = "Correct NCmdEcho jStr ";
-        LDEBUG(note);
-        string jStr = "{\"id\":\"cmd_echo\",\"seq_id\": 2, \"msg\":\"This is an echomsg\" }";
-        auto inNCmd = factory->getCommandFor(jStr);
-        REQUIRE(inNCmd != nullptr);
-        auto inNCmdEcho = dynamic_pointer_cast<NCmdEcho>(inNCmd);
-        REQUIRE(inNCmdEcho != nullptr);
-        auto ackStr = inNCmd->getAckJsonStr();
-        auto ackJ = nlohmann::json::parse(ackStr);
-        REQUIRE(ackJ["seq_id"] == 2);
-        REQUIRE(ackJ["id"] == "ack");
-        REQUIRE(inNCmd->run() == true);
-        auto respStr = inNCmd->getRespJsonStr();
-        auto respJ = nlohmann::json::parse(respStr);
-        REQUIRE(respJ["seq_id"] == 2);
-        REQUIRE(respJ["id"] == "success");
-        string respMsg = respJ["msg"];
-        REQUIRE(respJ["msg"] == "This is an echomsg");
-    }
-
-    {
-        string note = "Incorrect NCmdAck jStr ";
-        LDEBUG(note);
-        string jStr = "{\"id\":\"cmd_ak\",\"seq_id\": 3 }";
-        auto inNCmd = factory->getCommandFor(jStr);
-        REQUIRE(inNCmd != nullptr);
-        auto inNCmdNoAck = dynamic_pointer_cast<NCmdNoAck>(inNCmd);
-        REQUIRE(inNCmdNoAck != nullptr);
-        auto ackStr = inNCmd->getAckJsonStr();
-        auto ackJ = nlohmann::json::parse(ackStr);
-        REQUIRE(ackJ["seq_id"] == 3);
-        REQUIRE(ackJ["id"] == "noack");
-        REQUIRE(inNCmd->run() == false);
-        auto respStr = inNCmd->getRespJsonStr();
-        auto respJ = nlohmann::json::parse(respStr);
-        REQUIRE(respJ["seq_id"] == 3);
-        REQUIRE(respJ["id"] == "fail");
-    }
-
-    {
-        string note = "Incorrect seq_id NCmdAck jStr ";
-        LDEBUG(note);
-        auto inNCmd = factory->getCommandFor(jStr1);
-        REQUIRE(inNCmd != nullptr);
-        auto inNCmdNoAck = dynamic_pointer_cast<NCmdNoAck>(inNCmd);
-        REQUIRE(inNCmdNoAck != nullptr);
-        auto ackStr = inNCmd->getAckJsonStr();
-        auto ackJ = nlohmann::json::parse(ackStr);
-        REQUIRE(ackJ["seq_id"] == 1);
-        REQUIRE(ackJ["id"] == "noack");
-        REQUIRE(inNCmd->run() == false);
-        auto respStr = inNCmd->getRespJsonStr();
-        auto respJ = nlohmann::json::parse(respStr);
-        REQUIRE(respJ["seq_id"] == 1);
-        REQUIRE(respJ["id"] == "fail");
-    }
-
-    {
-        string note = "Echo missing message jStr ";
-        LDEBUG(note);
-        string jStr = "{\"id\":\"cmd_echo\",\"seq_id\": 4, \"msgg\":\"This is an echomsg\" }";
-        auto inNCmd = factory->getCommandFor(jStr);
-        REQUIRE(inNCmd != nullptr);
-        auto inNCmdNoAck = dynamic_pointer_cast<NCmdNoAck>(inNCmd);
-        REQUIRE(inNCmdNoAck != nullptr);
-        auto ackStr = inNCmd->getAckJsonStr();
-        auto ackJ = nlohmann::json::parse(ackStr);
-        REQUIRE(ackJ["seq_id"] == 4);
-        REQUIRE(ackJ["id"] == "noack");
-        REQUIRE(inNCmd->run() == false);
-        auto respStr = inNCmd->getRespJsonStr();
-        auto respJ = nlohmann::json::parse(respStr);
-        REQUIRE(respJ["seq_id"] == 4);
-        REQUIRE(respJ["id"] == "fail");
-        LDEBUG("ackJson=", ackJ.dump());
-        LDEBUG("respJson=", respJ.dump());
-    }
-#endif  //&&&
+    LDEBUG("server stopped");
+    servThrd.join();
 }

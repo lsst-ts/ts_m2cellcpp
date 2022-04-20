@@ -45,6 +45,10 @@ public:
     static Ptr create(IoContextPtr const& ioContext, int port,
                       control::NetCommandFactory::Ptr const& cmdFactory);
 
+    /// @return a new ComControl object.
+    ComConnection::Ptr newComConnection(IoContextPtr const& ioContext, uint64_t connId,
+                                        std::shared_ptr<ComServer> const& server) override;
+
 protected:
     /// Protected constructor to force use of create().
     ComControlServer(IoContextPtr const& ioContext, int port,

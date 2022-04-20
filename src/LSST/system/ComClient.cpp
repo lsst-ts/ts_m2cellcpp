@@ -77,7 +77,6 @@ void ComClient::writeCommand(string const& cmd) {
 }
 
 string ComClient::readCommand() {
-    //&&&io::streambuf streamB;
     auto delimSz = ComConnection::getDelimiter().size();
     boost::system::error_code ec;
     lock_guard lkg(_readStreamMtx);
@@ -91,15 +90,6 @@ string ComClient::readCommand() {
     string outStr(buffers_begin(_readStream.data()), buffers_begin(_readStream.data()) + xfer - delimSz);
     _readStream.consume(xfer);
     return outStr;
-    /*&&&
-    // TODO: DM-33715 Put this streambuf to string conversion in a utility function.
-    using boost::asio::buffers_begin;
-    auto buf = streamB.data();
-    size_t msgSz = streamB.size() - ComConnection::getDelimiter().size();
-    string cmd(buffers_begin(buf), buffers_begin(buf) + msgSz);
-    LDEBUG("ComClient::readCommand ", cmd);
-    return cmd;
-    */
 }
 
 }  // namespace system

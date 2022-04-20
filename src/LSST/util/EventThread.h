@@ -124,7 +124,7 @@ protected:
 
 /// An event driven thread, the event loop is in handleCmds().
 /// Thread must be started with run(). Stop the thread by calling queEnd().
-class EventThread : public CmdData {  //&&& does this really need to be CmdData ???
+class EventThread : public CmdData {
 public:
     typedef std::shared_ptr<EventThread> Ptr;
     enum { HALT = -1000 };

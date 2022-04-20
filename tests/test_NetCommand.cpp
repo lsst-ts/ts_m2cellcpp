@@ -137,6 +137,15 @@ TEST_CASE("Test NetCommandFactory", "[Factory]") {
         factory->addNetCommand(cmd);
     }
 
+    {
+        auto noAckCmd = factory->getNoAck();
+        auto ackStr = noAckCmd->getAckJsonStr();
+        auto ackJ = nlohmann::json::parse(ackStr);
+        REQUIRE(ackJ["id"] == "noack");
+        REQUIRE(ackJ["seq_id"] == 0);
+        REQUIRE(ackJ["user_info"] == "factory default noack");
+    }
+
     string jStr1 = "{\"id\":\"cmd_ack\",\"seq_id\": 1 }";
     {
         string note = "Correct NCmdAck jStr ";
@@ -234,4 +243,5 @@ TEST_CASE("Test NetCommandFactory", "[Factory]") {
         LDEBUG("ackJson=", ackJ.dump());
         LDEBUG("respJson=", respJ.dump());
     }
+
 }

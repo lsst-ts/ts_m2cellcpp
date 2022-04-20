@@ -78,12 +78,6 @@ public:
     /// @return a new ComConnection object.
     virtual ComConnection::Ptr newComConnection(IoContextPtr const& ioContext, uint64_t connId,
                                                 std::shared_ptr<ComServer> const& server);
-    /* &&&
-    {
-        ComConnection::Ptr ptr = CConn::create(ioContext, connId, server);
-        return ptr;
-    }
-    */
 
     /// @return Human readable string for State
     static std::string prettyState(State state);
@@ -115,33 +109,6 @@ private:
     /// uint64_t to wrap around.
     uint64_t _connIdSeq{0};
 };
-
-#if 0   //&&&
-/// doc&&&
-/// unit test: tests/test_ComControl.cpp
-template <class CConn>
-class ComServerTmpl : public ComServer {
-public:
-    //&&&using std::shared_ptr<ComServerTmpl<CConn>> = Ptr;
-    /// A factory method to prevent issues with enable_shared_from_this.
-    /// @return A pointer to the created ComServer object.
-    static Ptr create(IoContextPtr const& ioContext, int port) {
-        std::shared_ptr<ComServerTmpl<CConn>> ptr = Ptr(new ComServerTmpl(ioContext, port));
-        return ptr;
-    }
-
-    /// @return a new ComConnection object from template `CConn`.
-    ComConnection::Ptr newComConnection(IoContextPtr const& ioContext, uint64_t connId,
-                      std::shared_ptr<ComServer> const& server) override {
-        ComConnection::Ptr ptr = CConn::create(ioContext, connId, server);
-        return ptr; 
-    } 
-
-protected:
-    /// Private constructor to force use of create().
-    ComServerTmpl(IoContextPtr const& ioContext, int port) : ComServer(ioContext, port) {}
-};
-#endif  //&&&
 
 }  // namespace system
 }  // namespace m2cellcpp

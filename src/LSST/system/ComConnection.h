@@ -76,17 +76,19 @@ public:
     /// Async write to client.
     void asyncWrite(std::string const& msg);
 
-    /// doc&&&
+    /// Given the `commandStr`, return an appropriate ack and Command to run.
+    /// @return This, base version, just returns an ack string and a Command that will
+    ///         write a final string for testing.
     /// Important: All child functions must contain a copy of a shared_ptr to
     ///     this ComConnection to prevent segfaults. Capturing `this` is
     ///     not enough to ensure that this `ComConnection` still exists when
     ///     the `runAction()` thread finally finishes.
     virtual std::tuple<std::string, util::Command::Ptr> interpretCommand(std::string const& commandStr);
 
-    /// doc&&& For testing only.
+    /// @return the ack string, used for unit testing only.
     static std::string makeTestAck(std::string const& msg);
 
-    /// doc&&& For testing only.
+    /// @return the final string, used for unit testing only.
     static std::string makeTestFinal(std::string const& msg);
 
 protected:
