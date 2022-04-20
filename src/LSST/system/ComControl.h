@@ -32,13 +32,13 @@ namespace m2cellcpp {
 namespace system {
 
 /// This class is used to handle a connection to a client that controls
-/// the mirror, as opposed to an event monitor. It is based on 
+/// the mirror, as opposed to an event monitor. It is based on
 /// ComConnection, and multiple clients can connect simultaneously.
-/// The commands it is expected to handle should be put in 
+/// The commands it is expected to handle should be put in
 /// `setupNormalFactory` and the NetCommandFactory should be created
-/// before this class and passed to `ComControlServer`. One factory 
-/// can be shared by multiple `ComControl` and `ComControlServer` 
-/// objects. Separate servers, on different ports, can be given 
+/// before this class and passed to `ComControlServer`. One factory
+/// can be shared by multiple `ComControl` and `ComControlServer`
+/// objects. Separate servers, on different ports, can be given
 /// factories with different sets of `NetCommands`.
 class ComControl : public ComConnection {
 public:

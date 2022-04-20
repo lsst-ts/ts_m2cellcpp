@@ -30,6 +30,7 @@
 #include <nlohmann/json.hpp>
 
 // Project headers
+#include "util/Issue.h"
 
 namespace LSST {
 namespace m2cellcpp {
@@ -41,9 +42,9 @@ class NetCommandFactory;
 /// @see class NetCommand
 ///
 /// unit test: test_NetCommand.cpp
-class NetCommandException : public std::runtime_error {
+class NetCommandException : public util::Issue {
 public:
-    NetCommandException(std::string const& msg) : std::runtime_error(msg) {}
+    NetCommandException(Context const& ctx, std::string const& msg) : util::Issue(ctx, msg) {}
 };
 
 /// The base class for all commands received over the network.

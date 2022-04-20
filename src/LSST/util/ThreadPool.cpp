@@ -35,7 +35,6 @@ namespace LSST {
 namespace m2cellcpp {
 namespace util {
 
-/// PoolEventThread factory to ensure shared_this.
 PoolEventThread::Ptr PoolEventThread::newPoolEventThread(shared_ptr<ThreadPool> const& threadPool,
                                                          CommandQueue::Ptr const& q) {
     PoolEventThread::Ptr pet(new PoolEventThread(threadPool, q));
@@ -53,7 +52,6 @@ PoolEventThread::~PoolEventThread() {
     _threadPool->_decrPoolThreadCount();
 }
 
-/// If cmd is a CommandThreadPool object, give it a copy of our this pointer.
 void PoolEventThread::specialActions(Command::Ptr const& cmd) {
     CommandForThreadPool::Ptr cmdPool = dynamic_pointer_cast<CommandForThreadPool>(cmd);
     if (cmdPool != nullptr) {
@@ -61,15 +59,9 @@ void PoolEventThread::specialActions(Command::Ptr const& cmd) {
     }
 }
 
-/// Cause this thread to leave the thread pool, this can be called from outside of the
-// thread that will be removed from the pool. This would most likely be done by
-// a CommandQueue which was having some trouble due to 'cmd', such as 'cmd' taking
-// too long to complete. This allows the CommandQueue to continue but will have other
-// consequences.
-// @return false if a different command is running than cmd.
 bool PoolEventThread::leavePool(Command::Ptr const& cmd) {
     // This thread will stop accepting commands
-    _loop = false;
+    eLoop = false;
     LDEBUG("PoolEventThread::leavePool ", this);
 
     if (cmd.get() != getCurrentCommand()) {
@@ -90,13 +82,11 @@ bool PoolEventThread::leavePool(Command::Ptr const& cmd) {
     return true;
 }
 
-/// Cause this thread to leave the thread pool. This MUST only called from within
-/// the thread that will be removed (most likely from within a CommandThreadPool action).
 void PoolEventThread::leavePool() {
     // This thread will stop accepting commands
-    _loop = false;
+    eLoop = false;
     _threadPool->_waitIfAtMaxThreadPoolCount();
-    leavePool(_getCurrentCommandPtr());
+    leavePool(getCurrentCommandPtr());
 }
 
 bool PoolEventThread::atMaxThreadCount() { return _threadPool->atMaxThreadPoolCount(); }
@@ -110,15 +100,10 @@ void PoolEventThread::finishup() {
     }
 }
 
-/// Set _poolEventThread pointer to the thread running this command.
 void CommandForThreadPool::_setPoolEventThread(PoolEventThread::Ptr const& poolEventThread) {
     _poolEventThread = poolEventThread;
 }
 
-/// Invalidate _poolEventThread so it can't be used again.
-/// At this point, the reason to get _poolEventThread is to
-/// have the thread leave the pool. This prevents that from
-/// happening more than once.
 PoolEventThread::Ptr CommandForThreadPool::getAndNullPoolEventThread() {
     lock_guard<mutex> lg(_poolMtx);
     auto pet = _poolEventThread.lock();
@@ -164,8 +149,6 @@ ThreadPool::~ThreadPool() {
     LDEBUG("~ThreadPool ", this);
 }
 
-/// Wait for all threads to complete. The ThreadPool should not be used after this function is called.
-/// This includes threads that were removed from the pool and not detached.
 void ThreadPool::shutdownPool() {
     LDEBUG("shutdownPool begin", this);
     _shutdown = true;
@@ -174,8 +157,6 @@ void ThreadPool::shutdownPool() {
     _joinerThread->shutdownJoin();
 }
 
-/// Release the thread from the thread pool and return true if the thread
-/// was found and added to the joiner thread.
 bool ThreadPool::release(PoolEventThread* thrd) {
     // Search for the the thread to free
     auto func = [thrd](PoolEventThread::Ptr const& pt) -> bool { return pt.get() == thrd; };
@@ -223,9 +204,6 @@ void ThreadPool::resize(unsigned int targetThrdCount) {
     _resize();
 }
 
-/// Do the work of changing the size of the thread pool.
-/// Making the pool larger is just a matter of adding threads.
-/// Shrinking the pool requires ending one thread at a time.
 void ThreadPool::_resize() {
     lock_guard<mutex> lock(_poolMutex);
     auto target = getTargetThrdCount();
@@ -254,10 +232,6 @@ void ThreadPool::_resize() {
     }
 }
 
-/// Wait for the pool to reach the _targetThrdCount number of threads.
-/// It will wait forever if 'millisecs' is zero, otherwise it will timeout
-/// after that number of milliseconds.
-/// Note that this wont detect changes to _targetThrdCount.
 void ThreadPool::waitForResize(int millisecs) {
     auto eqTest = [this]() { return _targetThrdCount == _pool.size(); };
     unique_lock<mutex> lock(_countMutex);

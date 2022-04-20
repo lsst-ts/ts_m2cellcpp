@@ -1,17 +1,12 @@
 # Copy and paste the following into http://www.plantuml.com/plantuml/uml/
 
 @startuml
-class util::Log
-class util::Issue
-class util::Bug
-util::Issue <|-- util::Bug
-
 class Config
 class ComServer
 class ComConnection
 class ComControl
 class ComTelemetry
-ComControl : theoretical, unimplemented
+class ComControl 
 ComTelemetry : theoretical, unimplemented
 
 Config ..> ComServer : Configuration data
@@ -20,6 +15,7 @@ ComConnection <|-- ComControl
 ComConnection <|-- ComTelemetry
 ComControl *-- NetCommandFactory
 ComTelemetry *-- NetCommandFactory
+ComConnection <.. util::Command : uses
 
 class NetCommandException
 class NetCommandFactory

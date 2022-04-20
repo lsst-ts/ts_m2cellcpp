@@ -29,7 +29,6 @@ namespace LSST {
 namespace m2cellcpp {
 namespace util {
 
-/// Set status to COMPLETE and notify everyone waiting for a status change.
 void Tracker::setComplete() {
     {
         lock_guard<mutex> lock(_trMutex);
@@ -38,20 +37,16 @@ void Tracker::setComplete() {
     _trCV.notify_all();
 }
 
-/// Check if the action is complete without waiting.
 bool Tracker::isFinished() {
     lock_guard<mutex> lock(_trMutex);
     return _trStatus == Status::COMPLETE;
 }
 
-/// Wait until this Tracker's action is complete.
 void Tracker::waitComplete() {
     unique_lock<mutex> lock(_trMutex);
     _trCV.wait(lock, [this]() { return _trStatus == Status::COMPLETE; });
 }
 
-/// Change the function called when the Command is activated.
-/// nullptr is replaced with a nop function.
 void Command::setFunc(function<void(CmdData*)> func) {
     if (func == nullptr) {
         _func = [](CmdData*) { ; };
@@ -60,8 +55,6 @@ void Command::setFunc(function<void(CmdData*)> func) {
     }
 }
 
-/// If _func is a lambda with a captured shared_ptr to this command,
-/// this function must be called or the lambda will keep this object alive.
 void Command::resetFunc() { setFunc(nullptr); }
 
 }  // namespace util

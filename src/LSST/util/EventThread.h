@@ -23,24 +23,9 @@
 #ifndef LSST_M2CELLCPP_UTIL_EVENTTHREAD_H
 #define LSST_M2CELLCPP_UTIL_EVENTTHREAD_H
 
-// System headers
-#include <atomic>
-#include <deque>
-#include <queue>
-#include <thread>
-#include <vector>
-
-// Qserv headers
-#include "util/Command.h"
-
-namespace LSST {
-namespace m2cellcpp {
-namespace util {
-
 /// The classes in this header are meant to provide the basis for easy to use event
 /// driven threads. A basic CommandQueue is a simple thread safe fifo, but derived
-/// classes can overload the member functions and be very complicated schedulers
-/// (see wsched::ScanScheduler, wsched::BlendScheduler, and wsched::GroupScheduler).
+/// classes can overload the member functions and be very complicated schedulers.
 ///
 /// The basic EventThread just runs whatever Command its CommandQueue object hands it.
 /// It tells the CommandQueue when each command starts and finishes, which can be
@@ -66,10 +51,24 @@ namespace util {
 /// for something slow to complete before finishing a task). And the primary case for a
 /// CommandQueue derived scheduler to cause a Command and its PoolEventThread to leave the
 /// ThreadPool is that the command is too slow for that scheduler.
-//
 
-/// A queue of Commands meant to drive an EventThread.
-///
+// System headers
+#include <atomic>
+#include <deque>
+#include <queue>
+#include <thread>
+#include <vector>
+
+// Qserv headers
+#include "util/Command.h"
+
+namespace LSST {
+namespace m2cellcpp {
+namespace util {
+
+/// A queue of Commands meant to drive an `EventThread` instance.
+/// This class provides a queue and virtual functions to help
+/// manage more complex scheduling.
 class CommandQueue {
 public:
     using Ptr = std::shared_ptr<CommandQueue>;
@@ -84,8 +83,8 @@ public:
         notify(false);  // notify all=false
     };
 
-    /// Get a command off the queue.
-    /// If wait is true, wait until a message is available.
+    /// @return the command from the front of the queue.
+    /// @param wait If true, wait until a command is available.
     virtual Command::Ptr getCmd(bool wait = true) {
         std::unique_lock<std::mutex> lock(_mx);
         if (wait) {
@@ -113,13 +112,18 @@ public:
         }
     }
 
-    virtual void commandStart(Command::Ptr const&){};   //< Derived methods must be thread safe.
-    virtual void commandFinish(Command::Ptr const&){};  //< Derived methods must be thread safe.
+    /// EventThread will call this method just before calling `runAction`
+    /// Derived methods must be thread safe.
+    virtual void commandStart(Command::Ptr const&){};
+
+    /// EventThread will call this method just after calling `runAction`
+    /// Derived methods must be thread safe.
+    virtual void commandFinish(Command::Ptr const&){};
 
 protected:
-    std::deque<Command::Ptr> _qu{};
-    std::condition_variable _cv{};
-    mutable std::mutex _mx{};
+    std::deque<Command::Ptr> _qu{};  ///< The queue of Commands.
+    std::condition_variable _cv{};   ///< Condition variable for signalling.
+    mutable std::mutex _mx{};        ///< Protects `_qu`.
 };
 
 /// An event driven thread, the event loop is in handleCmds().
@@ -129,12 +133,12 @@ public:
     typedef std::shared_ptr<EventThread> Ptr;
     enum { HALT = -1000 };
     EventThread() {}
-    explicit EventThread(CommandQueue::Ptr const& q) : _q{q} {}
+    explicit EventThread(CommandQueue::Ptr const& q) : eQue{q} {}
     EventThread(EventThread const&) = delete;
     EventThread& operator=(EventThread const&) = delete;
     virtual ~EventThread() {}
 
-    void join() { _t.join(); }
+    void join() { eThrd.join(); }
     void run();  ///< Run this EventThread.
 
     /// Put a Command on this EventThread's queue.
@@ -146,7 +150,7 @@ public:
             void action(CmdData* data) override {
                 auto thisEventThread = dynamic_cast<EventThread*>(data);
                 if (thisEventThread != nullptr) {
-                    thisEventThread->_loop = false;
+                    thisEventThread->eLoop = false;
                 }
             }
         };
@@ -162,21 +166,20 @@ protected:
     virtual void specialActions(Command::Ptr const& cmd) {}  ///< Things to do before running a command.
     void callCommandFinish(Command::Ptr const& cmd);  ///< Limit commandFinish() to be called once per loop.
 
-    CommandQueue::Ptr _q{std::make_shared<CommandQueue>()};  ///< Queue of commands. // &&& rename
-    std::thread _t;                                          ///< Our thread.  //&&& rename
-    std::atomic<bool> _loop{true};  ///< Keep running the event loop while this is true.  // &&& remove _
-    std::atomic<bool> _commandFinishCalled{
-            false};  ///< flag to prevent multiple calls to commandFinish. // &&& remove _
+    CommandQueue::Ptr eQue{std::make_shared<CommandQueue>()};  ///< Queue of commands.
+    std::thread eThrd;                                         ///< Our thread.
+    std::atomic<bool> eLoop{true};                 ///< Keep running the event loop while this is true.
+    std::atomic<bool> commandFinishCalled{false};  ///< flag to prevent multiple calls to commandFinish.
 
     /// @return the point of the currently running command, not thread safe.
     /// WARNING: This should only ever be called by the thread running the
     ///     current command as doing so outside of that thread is not safe.
-    Command::Ptr _getCurrentCommandPtr() const { return _cmd; }  // &&& rename to getCurrentCmdPtr
+    Command::Ptr getCurrentCommandPtr() const { return _cmd; }
 
 private:
-    void _handleCmds();  ///< Event loop that runs commands!!!
-    Command::Ptr _cmd;
-    std::atomic<Command*> _currentCommand{nullptr};
+    void _handleCmds();                              ///< Event loop that runs `Commands`.
+    Command::Ptr _cmd;                               ///< The currently running `Command::Ptr`.
+    std::atomic<Command*> _currentCommand{nullptr};  ///< the raw pointer for `_cmd`.
 };
 
 /// This class is used to join threads that are no longer wanted by their original owners. In
@@ -192,15 +195,24 @@ public:
     EventThreadJoiner();
     ~EventThreadJoiner();
 
+    /// Run the loop that will join the threads.
     void joinLoop();
+
+    /// Add a thread to the list of threads to join.
     void addThread(EventThread::Ptr const& eventThread);
+
+    /// @return the number of threads that need to be joined.
     int getCount() { return _count; }
+
+    /// Shutdown the joiner thread.
     void shutdownJoin();
+
+    /// @return true if this is joinable.
     bool joinable() { return _tJoiner.joinable(); }
 
 private:
-    std::atomic<bool> _continue{true};  ///< Stop checking
-    std::atomic<int> _count{0};
+    std::atomic<bool> _continue{true};           ///< Stop checking
+    std::atomic<int> _count{0};                  ///< count of threads in the list to join.
     std::chrono::milliseconds _sleepTime{1000};  ///< Wait time before checking, only if queue is empty.
     std::queue<EventThread::Ptr> _eventThreads;  ///< Queue of EventThreads that need joining.
     std::mutex _mtxJoiner;                       ///< Protects _eventThreads

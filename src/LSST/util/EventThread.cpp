@@ -40,18 +40,18 @@ void EventThread::queCmd(Command::Ptr cmd) {
     if (cmd == nullptr) {
         throw util::Bug(ERR_LOC, "EventThread::queCmd was nullptr");
     }
-    _q->queCmd(cmd);
+    eQue->queCmd(cmd);
 }
 
 /// Handle commands as they arrive until queEnd() is called.
 void EventThread::_handleCmds() {
     startup();
-    while (_loop) {
-        _cmd = _q->getCmd();
-        _commandFinishCalled = false;
+    while (eLoop) {
+        _cmd = eQue->getCmd();
+        commandFinishCalled = false;
         _currentCommand = _cmd.get();
         if (_cmd != nullptr) {
-            _q->commandStart(_cmd);
+            eQue->commandStart(_cmd);
             specialActions(_cmd);
             _cmd->runAction(this);
             callCommandFinish(_cmd);
@@ -67,15 +67,15 @@ void EventThread::_handleCmds() {
 
 /// Ensure that commandFinish is only called once per loop.
 void EventThread::callCommandFinish(Command::Ptr const& cmd) {
-    if (_commandFinishCalled.exchange(true) == false) {
-        _q->commandFinish(cmd);
+    if (commandFinishCalled.exchange(true) == false) {
+        eQue->commandFinish(cmd);
     }
 }
 
 /// call this to start the thread
 void EventThread::run() {
     thread t(&EventThread::_handleCmds, this);
-    _t = move(t);
+    eThrd = move(t);
 }
 
 EventThreadJoiner::EventThreadJoiner() {

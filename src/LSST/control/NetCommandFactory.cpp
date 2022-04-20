@@ -48,7 +48,7 @@ void NetCommandFactory::addNetCommand(NetCommand::Ptr const& cmd) {
     if (result.second == false) {
         string eMsg = string("addNetCommand failed as this command was already in the map ") + cmdName;
         LERROR(eMsg);
-        throw NetCommandException(eMsg);
+        throw NetCommandException(ERR_LOC, eMsg);
     }
 }
 
@@ -94,11 +94,11 @@ NetCommand::Ptr NetCommandFactory::getCommandFor(std::string const& jsonStr) {
 NetCommand::Ptr NetCommandFactory::getNoAck() {
     // If this function is being called, the incoming message is probably too
     // garbled to be parsed. Make a fake one.
-    // The client should proabably break the connection when it sees a bad 
+    // The client should proabably break the connection when it sees a bad
     // sequence number.
     NetCommand::JsonPtr inJson = std::shared_ptr<nlohmann::json>(new nlohmann::json());
     nlohmann::json& js = *inJson;
-    js["id"] = "noack"; // This will be overwritten by the default.
+    js["id"] = "noack";  // This will be overwritten by the default.
     js["seq_id"] = 0;
     auto cmdOut = _defaultNoAck->createNewNetCommand(inJson);
     cmdOut->setAckUserInfo("factory default noack");

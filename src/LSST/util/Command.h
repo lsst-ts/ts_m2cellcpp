@@ -37,18 +37,29 @@ namespace util {
 ///
 class Tracker {
 public:
-    Tracker() {}
-    virtual ~Tracker() {}
     enum class Status { INPROGRESS, COMPLETE };
     using Ptr = std::shared_ptr<Tracker>;
+
+    Tracker() = default;
+    virtual ~Tracker() = default;
+
+    Tracker(Tracker const&) = delete;
+    Tracker& operator=(Tracker const&) = delete;
+    Tracker(Tracker&&) = delete;
+
+    /// Set status to COMPLETE and notify everyone waiting for a status change.
     void setComplete();
+
+    /// @return true if the action is complete without waiting.
     bool isFinished();
+
+    /// Wait until this Tracker's action is complete.
     void waitComplete();
 
 private:
-    Status _trStatus{Status::INPROGRESS};
-    std::mutex _trMutex;
-    std::condition_variable _trCV;
+    Status _trStatus{Status::INPROGRESS};  ///< current status
+    std::mutex _trMutex;                   ///< protects status
+    std::condition_variable _trCV;         ///< for signaling
 };
 
 /// Base class to allow arbitrary data to be passed to or returned from
@@ -68,17 +79,34 @@ public:
 
     Command(Command const&) = delete;
     Command& operator=(Command const&) = delete;
+    Command(Command&&) = delete;
 
+    /// The action to take when running the `Command`.
+    /// For simple cases, redefining `_func` with `setFunc` is a
+    /// good option. More complex opperations or cases
+    /// where `actionComplete` is required need child classes.
     virtual void action(CmdData* data) { _func(data); };
+
+    /// Placeholder for child classes to take special action
+    /// when the command is done running.
     virtual void actionComplete(CmdData*) {}
+
+    /// Run `action` and call `actionComplete` when done.
     void runAction(CmdData* data) {
         action(data);
         actionComplete(data);
     }
+
+    /// Change the function called when the Command is activated.
+    /// nullptr is replaced with a nop function.
     void setFunc(std::function<void(CmdData*)> func);
+
+    /// Set `_func` to nullptr.
     void resetFunc();
 
 protected:
+    /// Function to run when `action` is run. Child classes
+    /// may alter `action(CmdData*)` so that this variable is irrelevant.
     std::function<void(CmdData*)> _func = [](CmdData*) { ; };
 };
 
@@ -87,13 +115,12 @@ protected:
 class CommandTracked : public Command, public Tracker {
 public:
     using Ptr = std::shared_ptr<CommandTracked>;
+
     CommandTracked() = default;
     explicit CommandTracked(std::function<void(CmdData*)> func) : Command(func) {}
     ~CommandTracked() override = default;
 
-    CommandTracked(CommandTracked const&) = delete;
-    CommandTracked& operator=(CommandTracked const&) = delete;
-
+    /// Overriden `Command::actionComplete` to call `Tracker::setComplete`
     void actionComplete(CmdData*) override { setComplete(); };
 };
 

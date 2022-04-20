@@ -43,8 +43,11 @@ TEST_CASE("Test NetCommand", "[NetCommand]") {
 
     {
         string msg = "simple test msg";
-        NetCommandException cExc(msg);
-        REQUIRE(cExc.what() == msg);
+        NetCommandException cExc(ERR_LOC, msg);
+        // Only compare the first part of the message, ignore util::Issue add on.
+        string exMsg = cExc.what();
+        exMsg = exMsg.substr(0, msg.length());
+        REQUIRE(exMsg == msg);
     }
     // Test that Command Exception is thrown appropriately.
     string note("Malformed json ");
@@ -243,5 +246,4 @@ TEST_CASE("Test NetCommandFactory", "[Factory]") {
         LDEBUG("ackJson=", ackJ.dump());
         LDEBUG("respJson=", respJ.dump());
     }
-
 }

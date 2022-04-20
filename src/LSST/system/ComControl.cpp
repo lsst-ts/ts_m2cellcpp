@@ -44,7 +44,7 @@ namespace system {
 ComControl::Ptr ComControl::create(IoContextPtr const& ioContext, uint64_t connId,
                                    std::shared_ptr<ComServer> const& server,
                                    control::NetCommandFactory::Ptr const& cmdFactory) {
-    return ComControl::Ptr(new ComControl(ioContext, connId, server, cmdFactory));                                       
+    return ComControl::Ptr(new ComControl(ioContext, connId, server, cmdFactory));
 }
 
 void ComControl::setupNormalFactory(control::NetCommandFactory::Ptr const& cmdFactory) {
