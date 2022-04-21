@@ -46,6 +46,7 @@ tuple<nlohmann::json, nlohmann::json> comTest(string const& jStr, ComClient& cli
 }
 
 TEST_CASE("Test ComControl", "[ComControl]") {
+    util::Log::getLog().useEnvironmentLogLvl();
     Config::setup("UNIT_TEST");
 
     // Start a ComControlServer
@@ -114,17 +115,6 @@ TEST_CASE("Test ComControl", "[ComControl]") {
     // Shutdown the server
     serv->shutdown();
     REQUIRE(serv->connectionCount() == 0);
-
-    // TODO: remove this client connection DM-33730
-    // Client expected failure
-    {
-        ComClient client(ioContext, "127.0.0.1", port);
-        string cmd("expected failure");
-        client.writeCommand(cmd);
-        LDEBUG("wrote cmd=", cmd);
-        REQUIRE_THROWS(client.readCommand());
-        REQUIRE_THROWS(client.writeCommand(cmd));
-    }
 
     // Server stop
     ioContext->stop();

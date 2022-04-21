@@ -190,6 +190,29 @@ void Log::setLogLvl(LogLvl logLvl) {
     _logLvl = logLvl;
 }
 
+Log::LogLvl Log::getEnvironmentLogLvl() {
+    LogLvl result = TRACE;
+    char* chp = getenv("LOGLVL");
+    if (chp != nullptr) {
+        string inStr = chp;
+        int inVal = stoi(inStr);
+        if (inVal < TRACE) {
+            result = TRACE;
+        } else if (inVal > CRITICAL) {
+            result = CRITICAL;
+        } else {
+            result = static_cast<LogLvl>(inVal);
+        }
+    }
+    return result;
+}
+
+void Log::useEnvironmentLogLvl() {
+    auto eLogLvl = getEnvironmentLogLvl();
+    LCRITICAL("using environment LOGLVL ", Log::getLogLvl(eLogLvl));
+    setLogLvl(eLogLvl);
+}
+
 }  // namespace util
 }  // namespace m2cellcpp
 }  // namespace LSST

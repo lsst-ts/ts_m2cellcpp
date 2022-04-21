@@ -40,6 +40,9 @@ class ComControlServer : public ComServer {
 public:
     using Ptr = std::shared_ptr<ComControlServer>;
 
+    // parent class non-copyable, non-movable.
+    virtual ~ComControlServer() = default;
+
     /// A factory method to prevent issues with enable_shared_from_this.
     /// @return A pointer to the created ComControlServer object.
     static Ptr create(IoContextPtr const& ioContext, int port,

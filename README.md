@@ -50,6 +50,16 @@ make clean
 ```bash
 make run_tests
 ```
+The output of most unit tests can be reduced by setting the environment
+variable `LOGLVL` to 6, for minimal output.
+```bash
+export LOGLVL=6
+```
+For verbose output either of the following
+```bash
+export LOGLVL=1
+unset LOGLVL
+```
 
 ### To run code coverage 
 

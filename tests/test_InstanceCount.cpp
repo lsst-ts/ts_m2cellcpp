@@ -29,12 +29,14 @@
 #include <catch2/catch.hpp>
 
 // Project headers
-#include <util/InstanceCount.h>
+#include "util/InstanceCount.h"
+#include "util/Log.h"
 
 using namespace std;
 using namespace LSST::m2cellcpp::util;
 
 TEST_CASE("Test InstanceCount", "[InstanceCount]") {
+    Log::getLog().useEnvironmentLogLvl();
     {
         InstanceCount instA0("a");
         InstanceCount instB0("b");
