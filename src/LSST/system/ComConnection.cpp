@@ -47,7 +47,7 @@ bool isErrorCode(boost::system::error_code const& ec, string const& note) {
         if (ec == boost::asio::error::eof) {
             LINFO(note, "  ** closed **");
         } else {
-            LERROR(note, "  ** failed: ", ec.message(), " **");
+            LERROR(note, "  ** failed: ", ec.message(), " ** ");
         }
         return true;
     }

@@ -17,7 +17,7 @@ endif
 if (isErrorCode) then
 stop
 endif
-repeat while (true) is (true)
+repeat while (loop_forever) is (always_true)
 stop
 
 

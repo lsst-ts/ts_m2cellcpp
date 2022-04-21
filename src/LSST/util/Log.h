@@ -141,6 +141,15 @@ public:
     /// BUFFER or MIRRORED as the destination.
     void setMaxBuffers(int maxBuffers);
 
+    /// @return value of environment variabe LOGLVL, defaults to TRACE (1).
+    /// Expected values of LOGLVL are integers. 
+    static LogLvl getEnvironmentLogLvl();
+
+    /// Set the current _logLvl to the environment LOGLVL
+    /// Useful for quieting down local unit tests.
+    /// @see Log::getEnvironmentLogLvl()
+    void useEnvironmentLogLvl();
+
 private:
     /// Private constructor as only instance of Log should be availabel through getLog().
     /// Log needs to be available before the configuration is read so that configuration

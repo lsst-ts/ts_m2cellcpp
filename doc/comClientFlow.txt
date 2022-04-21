@@ -5,7 +5,7 @@
 start
 :ComClient::writeCommand;
 :asio::write(command);
-if (ec) then (error)
+if (errorCode) then (error)
 :_socket.close();
 stop
 endif

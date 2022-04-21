@@ -41,6 +41,7 @@ using namespace LSST::m2cellcpp::system;
 using Catch::Matchers::StartsWith;
 
 TEST_CASE("Test Com echo", "[Com]") {
+    LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
     Config::setup("UNIT_TEST");
 
     REQUIRE(ComServer::prettyState(ComServer::CREATED) == "CREATED");

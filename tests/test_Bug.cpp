@@ -31,7 +31,11 @@
 using namespace std;
 using namespace LSST::m2cellcpp::util;
 
+
+
 TEST_CASE("Test Bug", "[Bug]") {
+    Log::getLog().useEnvironmentLogLvl();
+
     bool thrown = false;
     string str;
     int line;
