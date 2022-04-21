@@ -1,0 +1,33 @@
+# Copy and paste the following into http://www.plantuml.com/plantuml/uml/
+
+@startuml
+class Log
+class Issue
+class Bug
+Issue <|-- Bug
+
+class Tracker
+class CmdData
+class Command
+class CommandTracked
+
+Tracker <|-- CommandTracked
+Command <|-- CommandTracked
+Command <.. CmdData : argument 
+
+class CommandQueue
+class EventThread
+class EventThreadJoiner
+class PoolEventThread
+class CommandForThreadPool
+class ThreadPool
+
+CommandQueue o-- Command : many
+CmdData <|-- EventThread
+EventThread *-- CommandQueue
+EventThreadJoiner o-- EventThread : many
+PoolEventThread <|-- EventThread
+CommandTracked <|-- CommandForThreadPool
+ThreadPool o-- PoolEventThread : many
+
+@enduml

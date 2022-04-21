@@ -48,7 +48,7 @@ class ComConnection;
 /// unit test: test_com.cpp
 class ComServer : public std::enable_shared_from_this<ComServer> {
 public:
-    typedef std::shared_ptr<ComServer> Ptr;
+    using Ptr = std::shared_ptr<ComServer>;
     enum State { CREATED = 0, RUNNING, STOPPED };
 
     /// A factory method to prevent issues with enable_shared_from_this.
@@ -75,13 +75,18 @@ public:
 
     State getState() const { return _state; }
 
+    /// @return a new ComConnection object.
+    virtual ComConnection::Ptr newComConnection(IoContextPtr const& ioContext, uint64_t connId,
+                                                std::shared_ptr<ComServer> const& server);
+
     /// @return Human readable string for State
     static std::string prettyState(State state);
 
-private:
-    /// Private constructor to force use of create().
+protected:
+    /// Protected constructor to force use of create().
     ComServer(IoContextPtr const& ioContext, int port);
 
+private:
     /// Begin (asynchronously) accepting connection requests.
     void _beginAccept();
 

@@ -21,37 +21,41 @@
  */
 
 #define CATCH_CONFIG_MAIN
-
-// System headers
-#include <exception>
-#include <thread>
-
-// 3rd party headers
-#include <boost/asio.hpp>
 #include <catch2/catch.hpp>
 
-// Project headers
-#include "system/Config.h"
 #include "system/ComClient.h"
+#include "system/ComControlServer.h"
 #include "system/ComServer.h"
+#include "system/Config.h"
 #include "util/Log.h"
 
 using namespace std;
 using namespace LSST::m2cellcpp::system;
-using Catch::Matchers::StartsWith;
+using namespace LSST::m2cellcpp;
 
-TEST_CASE("Test Com echo", "[Com]") {
+tuple<nlohmann::json, nlohmann::json> comTest(string const& jStr, ComClient& client, string const& note) {
+    client.writeCommand(jStr);
+    LDEBUG(note, ":wrote jStr=", jStr);
+    auto ack = client.readCommand();
+    LDEBUG(note, ":read ack=", ack);
+    auto ackJ = nlohmann::json::parse(ack);
+    auto fin = client.readCommand();
+    LDEBUG(note, ":read fin=", fin);
+    auto finJ = nlohmann::json::parse(fin);
+    return {ackJ, finJ};
+}
+
+TEST_CASE("Test ComControl", "[ComControl]") {
     Config::setup("UNIT_TEST");
 
-    REQUIRE(ComServer::prettyState(ComServer::CREATED) == "CREATED");
-    REQUIRE(ComServer::prettyState(ComServer::RUNNING) == "RUNNING");
-    REQUIRE(ComServer::prettyState(ComServer::STOPPED) == "STOPPED");
-
-    // Start the server
+    // Start a ComControlServer
     IoContextPtr ioContext = make_shared<boost::asio::io_context>();
     string strPort = Config::get().getValue("server", "port");
     int port = stoi(strPort);
-    auto serv = ComServer::create(ioContext, port);
+    auto cmdFactory = control::NetCommandFactory::create();
+    ComControl::setupNormalFactory(cmdFactory);
+    auto serv = ComControlServer::create(ioContext, port, cmdFactory);
+
     atomic<bool> done{false};
     REQUIRE(serv->getState() == ComServer::CREATED);
     LDEBUG("server started");
@@ -63,55 +67,55 @@ TEST_CASE("Test Com echo", "[Com]") {
         done = true;
     });
 
+    // Make sure the server is running
     for (int j = 0; (serv->getState() != ComServer::RUNNING) && j < 10; ++j) {
         sleep(1);
     }
-    REQUIRE(serv->getState() == ComServer::RUNNING);
-    LDEBUG("server running");
 
-    // Client echo test 1
     {
         ComClient client(ioContext, "127.0.0.1", port);
-        string cmd("This is test 1");
-        client.writeCommand(cmd);
-        LDEBUG("wrote cmd=", cmd);
-        auto ack = client.readCommand();
-        LDEBUG("read ack=", ack);
-        auto fin = client.readCommand();
-        LDEBUG("read fin=", fin);
-        REQUIRE(ComConnection::makeTestAck(cmd) == ack);
-        REQUIRE(ComConnection::makeTestFinal(cmd) == fin);
-    }
-
-    // Client echo test 2
-    {
-        ComClient client(ioContext, "127.0.0.1", port);
-        string cmd("Something different 42");
-        client.writeCommand(cmd);
-        LDEBUG("wrote cmd=" + cmd);
-        auto ack = client.readCommand();
-        LDEBUG("read ack=", ack);
-        auto fin = client.readCommand();
-        LDEBUG("read fin=", fin);
-        REQUIRE(ComConnection::makeTestAck(cmd) == ack);
-        REQUIRE(ComConnection::makeTestFinal(cmd) == fin);
-
-        for (int j = 0; j < 5; ++j) {
-            cmd = "another command @" + to_string(j) + " q";
-            client.writeCommand(cmd);
-            LDEBUG("wrote cmd=" + cmd);
-            ack = client.readCommand();
-            LDEBUG("read ack=", ack);
-            fin = client.readCommand();
-            LDEBUG("read fin=", fin);
-            REQUIRE(ComConnection::makeTestAck(cmd) == ack);
-            REQUIRE(ComConnection::makeTestFinal(cmd) == fin);
+        {
+            string note("Correct NCmdAck");
+            LDEBUG(note);
+            string jStr = R"({"id":"cmd_ack","seq_id": 1 })";
+            int seqId = 1;
+            auto [ackJ, finJ] = comTest(jStr, client, note);
+            REQUIRE(ackJ["seq_id"] == seqId);
+            REQUIRE(ackJ["id"] == "ack");
+            REQUIRE(finJ["seq_id"] == seqId);
+            REQUIRE(finJ["id"] == "success");
+            REQUIRE(finJ["user_info"] == "");
+        }
+        {
+            string note = "Correct NCmdEcho";
+            LDEBUG(note);
+            string jStr = R"({"id":"cmd_echo","seq_id": 2, "msg":"This is an echomsg" })";
+            int seqId = 2;
+            auto [ackJ, finJ] = comTest(jStr, client, note);
+            REQUIRE(ackJ["seq_id"] == seqId);
+            REQUIRE(ackJ["id"] == "ack");
+            REQUIRE(finJ["seq_id"] == seqId);
+            REQUIRE(finJ["id"] == "success");
+            REQUIRE(finJ["msg"] == "This is an echomsg");
+        }
+        {
+            string note = "Incorrect NCmdAck";
+            LDEBUG(note);
+            string jStr = R"({"id":"cmd_ak","seq_id": 3 })";
+            int seqId = 3;
+            auto [ackJ, finJ] = comTest(jStr, client, note);
+            REQUIRE(ackJ["seq_id"] == seqId);
+            REQUIRE(ackJ["id"] == "noack");
+            REQUIRE(finJ["seq_id"] == seqId);
+            REQUIRE(finJ["id"] == "fail");
         }
     }
 
+    // Shutdown the server
     serv->shutdown();
     REQUIRE(serv->connectionCount() == 0);
 
+    // TODO: remove this client connection DM-33730
     // Client expected failure
     {
         ComClient client(ioContext, "127.0.0.1", port);
@@ -131,8 +135,4 @@ TEST_CASE("Test Com echo", "[Com]") {
     }
     LDEBUG("server stopped");
     servThrd.join();
-    REQUIRE(done == true);
-    REQUIRE(serv->getState() == ComServer::STOPPED);
-    serv.reset();
-    LDEBUG("server reset");
 }

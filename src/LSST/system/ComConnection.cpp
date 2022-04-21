@@ -87,14 +87,54 @@ void ComConnection::_readCommand(boost::system::error_code const& ec, size_t xfe
 
     if (::isErrorCode(ec, __func__)) return;
     size_t msgSz = xfer - getDelimiter().size();
-    std::string command(buffers_begin(_streamBuf.data()), buffers_begin(_streamBuf.data()) + msgSz);
+    std::string msgStr(buffers_begin(_streamBuf.data()), buffers_begin(_streamBuf.data()) + msgSz);
     _streamBuf.consume(xfer);
 
-    LINFO("received command: ", command, " streamBuf size=", command.size());
+    LINFO("received msg: ", msgStr, " streamBuf size=", msgStr.size());
 
-    // TODO: DM-33713: instead of just echo, identify the incoming command
-    //      and arguments and send an appropriate response.
-    _sendResponse(command);
+    // `interpretCommand()` will add a shared_from_this pointer to command
+    // so it can send a response to the correct ComConnection, and
+    // that ComConnection will still exist.
+    auto [responseStr, command] = interpretCommand(msgStr);
+    // This is really annoying, C++ 17 standard doesn't handle lambda
+    // capture of a tuple element properly, so copy command to cmd so
+    // it can go in the lambda capture.
+    auto cmd = command;
+    // The ack response must be sent before the command is run, or the final
+    // respsonse could be sent before the ack.
+    _sendResponse(responseStr);
+
+    // Running the command could take a while, so start a new thread.
+    auto cmdFunc = [cmd]() { cmd->runAction(nullptr); };
+    thread cThrd(cmdFunc);
+    cThrd.detach();
+}
+
+std::tuple<std::string, util::Command::Ptr> ComConnection::interpretCommand(std::string const& commandStr) {
+    string ackMsg = makeTestAck(commandStr);
+    // This lambda function will be run when `cmd->runAction()` is called.
+    // It needs a shared_ptr to this to prevent segfaults if ComConnection was closed.
+    auto thisPtr = shared_from_this();
+    auto testFunc = [thisPtr, commandStr](util::CmdData*) {
+        LDEBUG("ComConnection Running Command func");
+        string finalMsg = makeTestFinal(commandStr);
+        thisPtr->asyncWrite(finalMsg);
+    };
+    auto cmd = make_shared<util::Command>(testFunc);
+    return {ackMsg, cmd};
+}
+
+void ComConnection::asyncWrite(string const& msg) {
+    LDEBUG("ComConnection::asyncWrite ", msg);
+    string cmd = msg + ComConnection::getDelimiter();
+    boost::asio::async_write(_socket, boost::asio::buffer(cmd, cmd.size()),
+                             bind(&ComConnection::_asyncWriteSent, shared_from_this(), _1, _2));
+}
+
+void ComConnection::_asyncWriteSent(boost::system::error_code const& ec, size_t xfer) {
+    LDEBUG("ComConnection::_asyncWriteSent xfer=", xfer);
+    // Log if there was an error and nothing else to do.
+    ::isErrorCode(ec, __func__);
 }
 
 void ComConnection::_sendResponse(string const& command) {
@@ -126,6 +166,16 @@ void ComConnection::shutdown() {
     boost::system::error_code ec;
     _socket.shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
     ::isErrorCode(ec, __func__);
+}
+
+string ComConnection::makeTestAck(string const& msg) {
+    string ack = string("{Ack:") + msg + "}";
+    return ack;
+}
+
+string ComConnection::makeTestFinal(string const& msg) {
+    string final = string("{Final:") + msg + "}";
+    return final;
 }
 
 }  // namespace system

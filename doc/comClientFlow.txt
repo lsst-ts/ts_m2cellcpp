@@ -1,0 +1,24 @@
+# Copy and paste the following into http://www.plantuml.com/plantuml/uml/
+# ComClient Logic Flow Diagram
+
+@startuml
+start
+:ComClient::writeCommand;
+:asio::write(command);
+if (ec) then (error)
+:_socket.close();
+stop
+endif
+stop
+
+start
+:ComClient::readCommand;
+:asio::read;
+if (ec) then (error)
+:_socket.close();
+stop
+endif
+:log(msg);
+stop
+
+@enduml
