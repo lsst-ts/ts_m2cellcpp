@@ -87,7 +87,9 @@ string ComClient::readCommand() {
         throw boost::system::system_error(ec);
     }
     using boost::asio::buffers_begin;
+    // Copy the contents of _readStream upto, but not including the delimiter.
     string outStr(buffers_begin(_readStream.data()), buffers_begin(_readStream.data()) + xfer - delimSz);
+    // Remove the entire message, including delimiter, from _readStream so the next message is clean.
     _readStream.consume(xfer);
     return outStr;
 }

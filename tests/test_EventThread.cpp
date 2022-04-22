@@ -33,6 +33,7 @@ using namespace std;
 using namespace LSST::m2cellcpp::util;
 
 TEST_CASE("EventThread test", "[EventThread]") {
+    Log::getLog().useEnvironmentLogLvl();
     LDEBUG("EventThread test");
 
     struct SumUnprotected {

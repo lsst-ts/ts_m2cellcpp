@@ -1,5 +1,13 @@
 # Version History
 
+0.1.7
+
+- Improved ComServer shutdown.
+
+0.1.6
+
+- Added ComControl and ComControlServer.
+
 0.1.5
 
 - Added utility namespace and improved logging.

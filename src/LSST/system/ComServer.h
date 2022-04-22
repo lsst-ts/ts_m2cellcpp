@@ -58,7 +58,7 @@ public:
     ComServer() = delete;
     ComServer(ComServer const&) = delete;
     ComServer& operator=(ComServer const&) = delete;
-    ~ComServer();
+    virtual ~ComServer();
 
     /// Run the server, this is a blocking opperation.
     void run();

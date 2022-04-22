@@ -30,6 +30,7 @@ using namespace std;
 using namespace LSST::m2cellcpp::control;
 
 TEST_CASE("Test NetCommand", "[NetCommand]") {
+    LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
     {
         // Test basic functionality of base class
         string jStr = "{\"id\":\"cmd_ack\",\"seq_id\": 5 }";

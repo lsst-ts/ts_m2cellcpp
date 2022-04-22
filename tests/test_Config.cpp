@@ -29,13 +29,14 @@
 #include <catch2/catch.hpp>
 
 // Project headers
-#include <system/Config.h>
+#include "system/Config.h"
+#include "util/Log.h"
 
 using namespace std;
 using namespace LSST::m2cellcpp::system;
-using Catch::Matchers::StartsWith;
 
 TEST_CASE("Test Config", "[Config]") {
+    LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
     REQUIRE_THROWS(Config::get());
     REQUIRE_THROWS(Config::setup("junk"));
 
