@@ -63,6 +63,7 @@ ComServer::~ComServer() {
     // accept loop to move. Catch and ignore any problems
     // as the `cmd` is expected to fail.
     try {
+        // The server must be on this host.
         ComClient client(_ioContext, "127.0.0.1", _port);
         string cmd("ComServer destructor shuting down");
         client.writeCommand(cmd);

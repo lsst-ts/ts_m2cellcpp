@@ -10,7 +10,7 @@
   - centos `yum install json-devel`
   - Ubuntu `apt install nlohmann-json3-dev`
 - [Catch2](https://https://github.com/catchorg/Catch2)
-- [gcovr](https://github.com/gcovr)  
+- [gcovr](https://github.com/gcovr)
 - clang-format (optional)
 - glib-devel
 
@@ -29,7 +29,7 @@ To enable this with a git pre-commit hook:
 make
 ```
 
-The software compiles significantly faster with the following line, but this 
+The software compiles significantly faster with the following line, but this
 prevents code coverage from working.
 
 ```bash
@@ -50,18 +50,27 @@ make clean
 ```bash
 make run_tests
 ```
+
 The output of most unit tests can be reduced by setting the environment
 variable `LOGLVL` to 6, for minimal output.
+
 ```bash
 export LOGLVL=6
 ```
+
 For verbose output either of the following
+
 ```bash
 export LOGLVL=1
+```
+
+Default behavior is verbose if the `LOGLVL` variable is undefined.
+
+```
 unset LOGLVL
 ```
 
-### To run code coverage 
+### To run code coverage
 
 ``` bash
 make clean
@@ -78,7 +87,7 @@ If the Cobertura xml report is needed, change the `gcovr` command to
 gcovr -r src/ . --xml-pretty > coverageReport.xml
 ```
 
-To produce Jenkins results, `make junit` needs to be called.  For details, please see the `Jenkinsfile` `Unit Test` section. 
+To produce Jenkins results, `make junit` needs to be called.  For details, please see the `Jenkinsfile` `Unit Test` section.
 
 ### To make documentation
 
@@ -87,15 +96,15 @@ make doc
 ```
 
 UML documents are available in the `/doc` subdirectory The text of these can be cut
-and pasted into `http://www.plantuml.com/plantuml/uml/`. 
-Current UML files are 
+and pasted into `http://www.plantuml.com/plantuml/uml/`.
+Current UML files are
 ```bash
 /doc/comClassUML.txt
 ```
 
 ### Environment variables for the make file
 
-For each of the following, setting or unsetting the environment 
+For each of the following, setting or unsetting the environment
 variable will probably require a `make clean` to have its effects
 apply to all files.
 
@@ -116,7 +125,7 @@ apply to all files.
 
 # Building with the cross compiler
 
-- When a new shell is started: 
+- When a new shell is started:
   ```bash
   source /usr/local/oecore-x86_64/environment-setup-core2-64-nilrt-linux
   export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/x86_64-linux-gnu/pkgconfig/
@@ -155,7 +164,7 @@ This is not recommended as the cRIO has limited resources.
 
 Installing required packages
 - On cRIO
--- opkg update 
+-- opkg update
 -- opkg install packagegroup-core-buildessential
 -- opkg install boost-dev      (opkg list | grep boost)
 
@@ -163,7 +172,7 @@ Installing required packages
 -- copied nlohmann header files to <cRIO>:/usr/include/nlohmann/.
 -- cd Catch2     (check that the branch is v2.x)
 -- scp -r single_include/catch2/ <crIO>:/usr/include/.
-- On cRIO 
+- On cRIO
 -- cd ts_m2cellcpp
 -- make clean
 -- edit Makefile.inc and add "-lboost_system"  (no quotes) to the "CPP :=" lines

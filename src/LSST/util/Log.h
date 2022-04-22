@@ -142,7 +142,10 @@ public:
     void setMaxBuffers(int maxBuffers);
 
     /// @return value of environment variabe LOGLVL, defaults to TRACE (1).
-    /// Expected values of LOGLVL are integers.
+    /// Expected values of LOGLVL are associated with their corresponding LogLvl.
+    /// TRACE being 1, CRITICAL being 6. Values are constrained such that
+    /// values less than TRACE are set to TRACE, and values greater than
+    /// CRITCAL are set to CRITICAL.
     static LogLvl getEnvironmentLogLvl();
 
     /// Set the current _logLvl to the environment LOGLVL
