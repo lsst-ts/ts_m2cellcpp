@@ -6,6 +6,7 @@ endif
 BUILD_DIR ?= $(RELATIVE_DIR)build
 SRC_DIRS ?= $(RELATIVE_DIR)src
 LIB_DIR ?= $(RELATIVE_DIR)lib
+BIN_DIR ?= $(RELATIVE_DIR)bin
 
 SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
@@ -22,7 +23,7 @@ endif
 
 # Code coverage by gcovr
 ifdef NOGCOVR
-  GCOVR_FLAGS := 
+  GCOVR_FLAGS :=
 else
   GCOVR_FLAGS := -fprofile-arcs -ftest-coverage
 endif
@@ -39,7 +40,7 @@ endif
 LIBS += $(shell pkg-config yaml-cpp --libs) -ldl
 
 BOOST_CPPFLAGS := -I$(CONDA_PREFIX)/include/
-CPP_FLAGS += $(shell pkg-config yaml-cpp --cflags) 
+CPP_FLAGS += $(shell pkg-config yaml-cpp --cflags)
 
 VERSION := $(shell git describe --tags --dirty)
 ifeq ("$(VERSION)","")

@@ -4,7 +4,7 @@ RELATIVE_DIR ?= ./
 
 include Makefile.inc
 
-.PHONY: all clean deploy tests FORCE doc main
+.PHONY: all clean deploy tests FORCE doc m2cell
 
 MKDIR_P ?= mkdir -p
 
@@ -12,9 +12,15 @@ MKDIR_P ?= mkdir -p
 # Jenkins overwrites CPPFLAGS, so use CPPARGS instead.
 CPPARGS ?= $(INC_FLAGS) $(CPP_FLAGS) -MMD -MP -DVERSION="\"$(VERSION)\""
 
+m2cell: run_tests $(BIN_DIR)/m2cell
+
 # At some point there will be a main that depends on libm2cellcpp.a
 #main: $(LIB_DIR)/libm2cellcpp.a
 #	$(CC) $(OBJS) -o $@ $(LDFLAGS)
+$(BIN_DIR)/m2cell: $(LIB_DIR)/libm2cellcpp.a
+	mkdir -p bin
+	$(CPP) $(OBJS) -o $@ $(LDFLAGS)
+
 
 $(LIB_DIR)/libm2cellcpp.a: $(BUILD_DIR)/libm2cellcpp.a
 	mkdir -p lib
@@ -25,14 +31,14 @@ $(BUILD_DIR)/libm2cellcpp.a: $(OBJS)
 	${co}$(AR) rs $@ $^
 
 # all is not the default as it will build documentation.
-all: run_tests doc
+all: run_tests doc m2cell
 
 .PHONY: clean
 
 clean:
 	@$(foreach file,doc/html doc/latex,echo '[RM ] ${file}'; $(RM) -r $(file);)
 	@$(foreach dir,tests,$(MAKE) -C ${dir} $@;)
-	$(RM) -r $(BUILD_DIR) $(LIB_DIR)
+	$(RM) -r $(BUILD_DIR) $(LIB_DIR) $(BIN_DIR)
 
 # The tests should stay out of the BUILD_DIR.
 tests: $(LIB_DIR)/libm2cellcpp.a tests/Makefile tests/*.cpp
