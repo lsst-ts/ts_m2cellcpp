@@ -24,6 +24,7 @@ To enable this with a git pre-commit hook:
 
 ## Compile the software
 
+The executable is bin/m2cell
 
 ```bash
 make
@@ -66,13 +67,13 @@ export LOGLVL=1
 
 Default behavior is verbose if the `LOGLVL` variable is undefined.
 
-```
+```bash
 unset LOGLVL
 ```
 
 ### To run code coverage
 
-``` bash
+```bash
 make clean
 unset NOGCOVR
 make run_tests
@@ -126,14 +127,18 @@ apply to all files.
 # Building with the cross compiler
 
 - When a new shell is started:
+
   ```bash
   source /usr/local/oecore-x86_64/environment-setup-core2-64-nilrt-linux
   export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/lib/x86_64-linux-gnu/pkgconfig/
   ```
+
 - build with
+
   ```bash
   make tests
   ```
+
 # Running cross compiler unit tests on the cRIO
 
 cRIO:
@@ -141,6 +146,7 @@ cRIO:
 ```bash
 mkdir <reasonable_directory>/ts_m2cellcpp
 ```
+
 Build machine: (`scp -r ts_m2cellcpp` copies a large set of .git files, so avoid that.)
 source statement is only needed for a new shell
 
@@ -151,6 +157,7 @@ make clean
 NOGOVR=1 make -j8 run_tests
 scp -r * admin@<crIO>:<reasonable_directory>/ts_m2cellcpp/.
 ```
+
 cRIO: (note: `make crio_x_test` will not build anything, it just runs what it finds in the tests directory.)
 
 bash```

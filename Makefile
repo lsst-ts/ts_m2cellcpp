@@ -14,9 +14,7 @@ CPPARGS ?= $(INC_FLAGS) $(CPP_FLAGS) -MMD -MP -DVERSION="\"$(VERSION)\""
 
 m2cell: run_tests $(BIN_DIR)/m2cell
 
-# At some point there will be a main that depends on libm2cellcpp.a
-#main: $(LIB_DIR)/libm2cellcpp.a
-#	$(CC) $(OBJS) -o $@ $(LDFLAGS)
+# The main m2cell program.
 $(BIN_DIR)/m2cell: $(LIB_DIR)/libm2cellcpp.a
 	mkdir -p bin
 	$(CPP) $(OBJS) -o $@ $(LDFLAGS)
