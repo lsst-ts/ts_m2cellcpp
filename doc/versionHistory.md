@@ -1,5 +1,9 @@
 # Version History
 
+0.1.8
+
+- Added main m2cellcpp program.
+
 0.1.7
 
 - Improved ComServer shutdown.
