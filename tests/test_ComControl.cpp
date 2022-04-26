@@ -51,7 +51,7 @@ TEST_CASE("Test ComControl", "[ComControl]") {
 
     // Start a ComControlServer
     IoContextPtr ioContext = make_shared<boost::asio::io_context>();
-    string strPort = Config::get().getValue("server", "port");
+    string strPort = Config::get().getValue("controlServer", "port");
     int port = stoi(strPort);
     auto cmdFactory = control::NetCommandFactory::create();
     ComControl::setupNormalFactory(cmdFactory);

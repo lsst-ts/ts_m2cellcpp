@@ -50,7 +50,7 @@ TEST_CASE("Test Com echo", "[Com]") {
 
     // Start the server
     IoContextPtr ioContext = make_shared<boost::asio::io_context>();
-    string strPort = Config::get().getValue("server", "port");
+    string strPort = Config::get().getValue("controlServer", "port");
     int port = stoi(strPort);
     auto serv = ComServer::create(ioContext, port);
     atomic<bool> done{false};
