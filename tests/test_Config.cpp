@@ -40,6 +40,9 @@ TEST_CASE("Test Config", "[Config]") {
     REQUIRE_THROWS(Config::get());
     REQUIRE_THROWS(Config::setup("junk"));
 
+    /* &&&
     Config::setup("UNIT_TEST");
     REQUIRE(Config::get().getValue("controlServer", "threads") == "1");
+    */
+    Config::setup("../configs/unitTestCfg.yaml");
 }

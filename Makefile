@@ -17,7 +17,7 @@ m2cell: run_tests $(BIN_DIR)/m2cell
 # The main m2cell program.
 $(BIN_DIR)/m2cell: $(LIB_DIR)/libm2cellcpp.a
 	mkdir -p bin
-	$(CPP) $(OBJS) -o $@ $(LDFLAGS)
+	$(CPP) $(OBJS) -o $@ $(LDFLAGS) $(CPP_LIBS)
 
 
 $(LIB_DIR)/libm2cellcpp.a: $(BUILD_DIR)/libm2cellcpp.a
@@ -52,7 +52,7 @@ doc:
 # c++ source. Jenkins fills in CPPFLAGS and CXXFLAGS.
 $(BUILD_DIR)/%.cpp.o: %.cpp
 	$(MKDIR_P) $(dir $@)
-	$(CPP) $(CPPFLAGS) $(CXXFLAGS) $(CPPARGS) -c $< -o $@
+	$(CPP) $(CPPFLAGS) $(CXXFLAGS) $(CPPARGS) -c $< -o $@ $(CPP_LIBS)
 
 # assembly, kept for reference
 #$(BUILD_DIR)/%.s.o: %.s

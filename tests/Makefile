@@ -33,7 +33,7 @@ junit: compile
 clean:
 	@$(foreach df,$(ALL_BINARIES) $(patsubst %,%.cpp.o,$(ALL_BINARIES)) $(DEPS) $(GCOVR_A) $(JUNIT_FILES),echo '[RM ] ${df}'; $(RM) ${df};)
 
-# This will not build the binaries if they do not exist. 
+# This will not build the binaries if they do not exist.
 # It is for running cross compiled unit tests on the cRIO.
 crio_x_test:
 	@$(foreach b,$(ALL_BINARIES),echo '[RUN] ${b}'; ./${b};)
@@ -44,16 +44,16 @@ $(LIB_DIR)/libm2cellcpp.a: FORCE
 
 %.cpp.o: %.cpp.d
 	@echo '[CPP] $(patsubst %.d,%,$<)'
-	${co}$(CPP) $(BOOST_CPPFLAGS) $(CPP_FLAGS) $(TEST_CPPFLAGS) -c -fmessage-length=0 -o $@ $(patsubst %.d,%,$<)
+	${co}$(CPP) $(BOOST_CPPFLAGS) $(CPP_FLAGS) $(TEST_CPPFLAGS) -c -fmessage-length=0 -o $@ $(patsubst %.d,%,$<)  $(CPP_LIBS)
 
 %.cpp.d: %.cpp
 	@echo '[DPP] $<'
-	${co}$(CPP) $(BOOST_CPPFLAGS) $(CPP_FLAGS) $(TEST_CPPFLAGS) -M $< -MF $@ -MT '$(patsubst %.cpp,%.o,$<) $@'
+	${co}$(CPP) $(BOOST_CPPFLAGS) $(CPP_FLAGS) $(TEST_CPPFLAGS) -M $< -MF $@ -MT '$(patsubst %.cpp,%.o,$<) $@' $(CPP_LIBS)
 
 $(TEST_REQ_READLINE): %: %.cpp.o ../lib/libm2cellcpp.a
 	@echo '[TPR] $<'
-	${co}$(CPP) -o $@ $(LIBS_FLAGS) $(LIBS) $^ $(CPP_FLAGS) -lreadline -lhistory
+	${co}$(CPP) -o $@ $(LIBS_FLAGS) $(LIBS) $^ $(CPP_FLAGS) -lreadline -lhistory $(CPP_LIBS)
 
 ${BINARIES}: %: %.cpp.o ../lib/libm2cellcpp.a
 	@echo '[TPP] $<'
-	${co}$(CPP) -o $@ $(LIBS_FLAGS) $(LIBS) $^ $(CPP_FLAGS)
+	${co}$(CPP) -o $@ $(LIBS_FLAGS) $(LIBS) $^ $(CPP_FLAGS) $(CPP_LIBS)

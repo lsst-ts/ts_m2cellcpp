@@ -21,6 +21,7 @@
 
 // Class header
 #include "system/Config.h"
+#include "util/Bug.h"
 #include "util/Log.h"
 
 // System headers
@@ -51,13 +52,17 @@ Config::Config(std::string const& source) {
         // source ignored in this case.
         _setValuesUnitTests();
     } else {
-        throw invalid_argument("Config had invalid source " + source);
+        try {
+            _yaml = YAML::LoadFile(source);
+        } catch (YAML::BadFile& ex) {
+            throw util::Bug(ERR_LOC, string("YAML::BadFile ") + ex.what());
+        }
     }
 }
 
 Config& Config::get() {
     if (_thisPtr == nullptr) {
-        throw runtime_error("Config has not been setup.");
+        throw util::Bug(ERR_LOC, "Config has not been setup.");
     }
     return *_thisPtr;
 }

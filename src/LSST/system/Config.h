@@ -29,7 +29,8 @@
 #include <string>
 
 // Third party headers
-// TODO #include "nlohmann/json.hpp" or yaml
+// TODO #include "nlohmann/json.hpp" or yaml &&&
+#include "yaml-cpp/yaml.h"
 
 // This header declarations
 namespace LSST {
@@ -70,14 +71,16 @@ private:
     /// @see setup.
     Config(std::string const& source);
 
-    /// Set config values for unit tests.
-    void _setValuesUnitTests();
+    /// Set config values for unit tests. &&&
+    void _setValuesUnitTests();  //&&&
 
     void _setValue(std::string const& section, std::string const& key, std::string const& val);
 
     static Ptr _thisPtr;  ///< Pointer to the global instance of Config.
     static std::mutex _thisMtx;
     std::map<std::string, std::string> _map;  ///< map of section:key -> values.
+
+    YAML::Node _yaml;  ///< yaml storage object
 };
 
 }  // namespace system
