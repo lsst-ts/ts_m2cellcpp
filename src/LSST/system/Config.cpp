@@ -63,8 +63,8 @@ Config& Config::get() {
 }
 
 void Config::_setValuesUnitTests() {
-    _setValue("server", "port", "12678");
-    _setValue("server", "threads", "1");
+    _setValue("controlServer", "port", "12678");
+    _setValue("controlServer", "threads", "1");
 }
 
 void Config::_setValue(string const& section, string const& key, string const& val) {

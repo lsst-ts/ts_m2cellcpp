@@ -24,7 +24,7 @@ To enable this with a git pre-commit hook:
 
 ## Compile the software
 
-The executable is bin/m2cell
+The executable is `bin/m2cell`
 
 ```bash
 make

@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 
     // Start a ComControlServer
     system::IoContextPtr ioContext = make_shared<boost::asio::io_context>();
-    string strPort = system::Config::get().getValue("server", "port");
+    string strPort = system::Config::get().getValue("controlServer", "port");
     int port = stoi(strPort);
     auto cmdFactory = control::NetCommandFactory::create();
     system::ComControl::setupNormalFactory(cmdFactory);

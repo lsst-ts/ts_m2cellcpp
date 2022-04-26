@@ -31,8 +31,6 @@ $(BUILD_DIR)/libm2cellcpp.a: $(OBJS)
 # all is not the default as it will build documentation.
 all: run_tests doc m2cell
 
-.PHONY: clean
-
 clean:
 	@$(foreach file,doc/html doc/latex,echo '[RM ] ${file}'; $(RM) -r $(file);)
 	@$(foreach dir,tests,$(MAKE) -C ${dir} $@;)

@@ -2,7 +2,7 @@
 
 0.1.8
 
-- Added main m2cellcpp program.
+- Added main executable `m2cell`.
 
 0.1.7
 

@@ -80,7 +80,7 @@ void ComServer::run() {
     _beginAccept();
 
     // Launch all threads in the pool
-    int threadCount = stoi(Config::get().getValue("server", "threads"));
+    int threadCount = stoi(Config::get().getValue("controlServer", "threads"));
     vector<shared_ptr<thread>> threads(threadCount);
     for (auto&& ptr : threads) {
         ptr = shared_ptr<thread>(new thread([&]() { _ioContext->run(); }));
