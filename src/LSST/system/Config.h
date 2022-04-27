@@ -63,6 +63,18 @@ public:
     /// @throws runtime_error when setup() has not been called.
     static Config& get();
 
+    ///&&&doc
+    std::string getControlServerHost();
+
+    /// &&&doc
+    int getControlServerPort();
+
+    /// &&&doc
+    int getControlServerThreads();
+
+    /// @throws `util::Bug` if any required elements are missing or fail conversion.
+    void verifyRequiredElements();
+
     /// Temporary method to access values.
     /// TODO: methods to access specific keys that return typed values
     std::string getValue(std::string const& section, std::string const& key);
@@ -71,10 +83,18 @@ private:
     /// @see setup.
     Config(std::string const& source);
 
+    /// @return the `key` value in `section` as an integer.
+    /// @throws `util::Bug` if the key is missing or is not an `int`.
+    int _getSectionKeyAsInt(std::string const& section, std::string const& key);
+
+    /// @return the `key` value in `section` as a string.
+    /// @throws `util::Bug` if the key is missing or is not a `string`.
+    std::string _getSectionKeyAsString(std::string const& section, std::string const& key);
+
     /// Set config values for unit tests. &&&
     void _setValuesUnitTests();  //&&&
 
-    void _setValue(std::string const& section, std::string const& key, std::string const& val);
+    void _setValue(std::string const& section, std::string const& key, std::string const& val); //&&&
 
     static Ptr _thisPtr;  ///< Pointer to the global instance of Config.
     static std::mutex _thisMtx;

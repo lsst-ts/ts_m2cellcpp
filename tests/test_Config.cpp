@@ -37,12 +37,21 @@ using namespace LSST::m2cellcpp::system;
 
 TEST_CASE("Test Config", "[Config]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
+    LDEBUG("test get");
     REQUIRE_THROWS(Config::get());
+
+    LDEBUG("test bad filename");
     REQUIRE_THROWS(Config::setup("junk"));
 
     /* &&&
     Config::setup("UNIT_TEST");
     REQUIRE(Config::get().getValue("controlServer", "threads") == "1");
     */
+    LDEBUG("test valid file read");
     Config::setup("../configs/unitTestCfg.yaml");
+    int port = Config::get().getControlServerPort();
+    REQUIRE(port == 12678);
+    string host = Config::get().getControlServerHost();
+    REQUIRE(host == "127.0.0.1");
+
 }

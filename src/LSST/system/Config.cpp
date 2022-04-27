@@ -53,6 +53,7 @@ Config::Config(std::string const& source) {
         _setValuesUnitTests();
     } else {
         try {
+            LINFO("Config trying to load yaml file ", source);
             _yaml = YAML::LoadFile(source);
         } catch (YAML::BadFile& ex) {
             throw util::Bug(ERR_LOC, string("YAML::BadFile ") + ex.what());
@@ -91,6 +92,64 @@ string Config::getValue(string const& section, string const& key) {
     string ret = iter->second;
     return ret;
 }
+
+int Config::getControlServerPort() {
+    string section = "ControlServer";
+    string key = "port";
+    return _getSectionKeyAsInt(section, key);
+}
+
+int Config::getControlServerThreads() {
+    string section = "ControlServer";
+    string key = "threads";
+    return _getSectionKeyAsInt(section, key);
+}
+
+string Config::getControlServerHost() {
+    string section = "ControlServer";
+    string key = "host";
+    return _getSectionKeyAsString(section, key);
+}
+
+int Config::_getSectionKeyAsInt(string const& section, string const& key) {
+    if (!_yaml[section][key]) {
+        throw util::Bug(ERR_LOC, string("Config") + section + ": " + key + " is missing");
+    }
+    try {
+        int val = _yaml[section][key].as<int>();
+        return val;
+    } catch (exception const& ex) {
+        throw util::Bug(ERR_LOC, string("Config") + section + ": " + key + " failed int " + ex.what());
+    }
+}
+
+string Config::_getSectionKeyAsString(string const& section, string const& key) {
+    if (!_yaml[section][key]) {
+        throw util::Bug(ERR_LOC, string("Config") + section + ": " + key + " is missing");
+    }
+    try {
+        string str = _yaml[section][key].as<string>();
+        return str;
+    } catch (exception const& ex) {
+        throw util::Bug(ERR_LOC, string("Config") + section + ": " + key + " failed string " + ex.what());
+    }
+}
+
+/*&&&
+string Config::getControlServerPort() {
+    string section = "ControlServer";
+    string key = "host";
+    if (!_yaml["ControlServer"]["host"]) {
+        throw util::Bug(ERR_LOC, "ControlServer: host is missing");
+    }
+    try {
+        int port = _yaml["ControlServer"]["host"].as<int>();
+        return port;
+    } catch (exception const& ex) {
+        throw util::Bug(ERR_LOC, string("ControlServer: port failed non-int ") + ex.what());
+    }
+}
+*/
 
 }  // namespace system
 }  // namespace m2cellcpp

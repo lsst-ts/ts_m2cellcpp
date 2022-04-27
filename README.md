@@ -179,8 +179,15 @@ Installing required packages
 -- copied nlohmann header files to <cRIO>:/usr/include/nlohmann/.
 -- cd Catch2     (check that the branch is v2.x)
 -- scp -r single_include/catch2/ <crIO>:/usr/include/.
-- On cRIO
+- Clone yaml-cpp to the local machine and copy it to an appropriate directory on the cRIO.
+-- Build yaml-cpp library on the cRIO
+--- ssh to the cRIO
+--- cd yaml-cpp      (Top level of copy of yaml-cpp clone.)
+--- mkdir build && cd build
+--- cmake .. && make -j
+--- make install
+- On cRIO build m2cell
 -- cd ts_m2cellcpp
 -- make clean
 -- edit Makefile.inc and add "-lboost_system"  (no quotes) to the "CPP :=" lines
--- make run_tests  (this will take several minutes)
+-- make  (this will take several minutes)
