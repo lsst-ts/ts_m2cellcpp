@@ -30,6 +30,7 @@
 
 // Project headers
 #include "system/Config.h"
+#include "util/Bug.h"
 #include "util/Log.h"
 
 using namespace std;
@@ -53,4 +54,33 @@ TEST_CASE("Test Config", "[Config]") {
     REQUIRE(port == 12678);
     string host = Config::get().getControlServerHost();
     REQUIRE(host == "127.0.0.1");
+
+    LDEBUG("test valid double");
+    double pi = Config::get().getSectionKeyAsDouble("testconstant", "pi", 3.14, 3.15);
+    REQUIRE(pi > 3.14159264);
+    REQUIRE(pi < 3.14159266);
+
+    LDEBUG("test bad double value");
+    /// pi is not be between 4.1 and 5.1, so it should trigger the logic.
+    REQUIRE_THROWS(pi = Config::get().getSectionKeyAsDouble("testconstant", "pi", 4.1, 5.1));
+
+    LDEBUG("test bad int value");
+    REQUIRE_THROWS(Config::get().getSectionKeyAsInt("ControlServer", "port", 100000, 200000));
+
+    LDEBUG("test for string value not found");
+    REQUIRE_THROWS(Config::get().getSectionKeyAsString("testconstant", "not_here"));
+
+    Config::reset();
+    LDEBUG("test file with missing required element");
+    bool found = false;
+    try {
+        Config::setup("../configs/unitTestCfgBad1.yaml");
+    } catch (LSST::m2cellcpp::util::Bug const& bug) {
+        string msg(bug.what());
+        string expected = "is missing";
+        if (msg.find(expected) != std::string::npos) {
+            found = true;
+        }
+    }
+    REQUIRE(found);
 }

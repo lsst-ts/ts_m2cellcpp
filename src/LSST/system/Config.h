@@ -63,33 +63,56 @@ public:
     /// @throws runtime_error when setup() has not been called.
     static Config& get();
 
-    ///&&&doc
+    /// @return the `ControlServer: host` value.
+    /// @throws `util::Bug` if there are problems.
     std::string getControlServerHost();
 
-    /// &&&doc
+    /// @return the `ControlServer: port` int value.
+    /// @throws `util::Bug` if there are problems.
     int getControlServerPort();
 
-    /// &&&doc
+    /// @return the `ControlServer: threads` int value.
+    /// @throws `util::Bug` if there are problems.
     int getControlServerThreads();
 
     /// @throws `util::Bug` if any required elements are missing or fail conversion.
+    /// If there are any problems with the configuration, they will be reported and the
+    /// program should terminate.
     void verifyRequiredElements();
 
     /// Temporary method to access values.
     /// TODO: methods to access specific keys that return typed values
-    std::string getValue(std::string const& section, std::string const& key);
+    std::string getValue(std::string const& section, std::string const& key);  //&&&
+
+    /// @return the `key` value in `section` as an integer.
+    /// @throws `util::Bug` if the key is missing or is not an `int`.
+    int getSectionKeyAsInt(std::string const& section, std::string const& key);
+
+    /// @return the `key` value in `section` as an integer, with a range check.
+    /// @throws `util::Bug` if the key is missing or is not an `int`, or
+    ///         if it is outside of min and max.
+    int getSectionKeyAsInt(std::string const& section, std::string const& key, int min, int max);
+
+    /// @return the `key` value in `section` as a string.
+    /// @throws `util::Bug` if the key is missing or is not a `string`.
+    std::string getSectionKeyAsString(std::string const& section, std::string const& key);
+
+    /// @return the `key` value in `section` as a double.
+    /// @throws `util::Bug` if the key is missing or is not a `double`.
+    double getSectionKeyAsDouble(std::string const& section, std::string const& key);
+
+    /// @return the `key` value in `section` as a double, with range check.
+    /// @throws `util::Bug` if the key is missing or is not a `double`, or
+    ///         if it is outside of min and max.
+    double getSectionKeyAsDouble(std::string const& section, std::string const& key, double min, double max);
+
+    /// Reset the global Config so a new configuration can be read.
+    /// The only expected use for this is unit testing.
+    static void reset();
 
 private:
     /// @see setup.
     Config(std::string const& source);
-
-    /// @return the `key` value in `section` as an integer.
-    /// @throws `util::Bug` if the key is missing or is not an `int`.
-    int _getSectionKeyAsInt(std::string const& section, std::string const& key);
-
-    /// @return the `key` value in `section` as a string.
-    /// @throws `util::Bug` if the key is missing or is not a `string`.
-    std::string _getSectionKeyAsString(std::string const& section, std::string const& key);
 
     /// Set config values for unit tests. &&&
     void _setValuesUnitTests();  //&&&
@@ -98,9 +121,9 @@ private:
 
     static Ptr _thisPtr;  ///< Pointer to the global instance of Config.
     static std::mutex _thisMtx;
-    std::map<std::string, std::string> _map;  ///< map of section:key -> values.
-
-    YAML::Node _yaml;  ///< yaml storage object
+    std::map<std::string, std::string> _map;  ///< map of section:key -> values. /// &&&
+    std::string _source;                      ///< name of the source for config values.
+    YAML::Node _yaml;                         ///< yaml storage object
 };
 
 }  // namespace system

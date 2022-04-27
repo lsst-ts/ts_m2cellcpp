@@ -47,17 +47,42 @@ void Config::setup(std::string const& source) {
     _thisPtr = Ptr(new Config(source));
 }
 
-Config::Config(std::string const& source) {
-    if (source == "UNIT_TEST") {
+void Config::reset() {
+    LCRITICAL("Config reseting global configuration!!!");
+    lock_guard<mutex> lock(_thisMtx);
+    _thisPtr.reset();
+}
+
+Config::Config(std::string const& source) : _source(source) {
+    if (_source == "UNIT_TEST") {
         // source ignored in this case.
         _setValuesUnitTests();
     } else {
         try {
-            LINFO("Config trying to load yaml file ", source);
-            _yaml = YAML::LoadFile(source);
+            LINFO("Config trying to load yaml file ", _source);
+            _yaml = YAML::LoadFile(_source);
         } catch (YAML::BadFile& ex) {
             throw util::Bug(ERR_LOC, string("YAML::BadFile ") + ex.what());
         }
+        verifyRequiredElements();
+    }
+}
+
+void Config::verifyRequiredElements() {
+    try {
+        LINFO("Config::verifyRequiredElements ", _source);
+        string str = getControlServerHost();
+        LINFO(" ControlServer:host=", str);
+
+        int i = getControlServerPort();
+        LINFO("ControlServer:port", i);
+
+        i = getControlServerThreads();
+        LINFO("ControlServer:threads", i);
+
+    } catch (exception const& ex) {
+        LCRITICAL("Config::verifyRequiredElements config file ", _source, " needs valid ", ex.what());
+        throw;
     }
 }
 
@@ -96,22 +121,22 @@ string Config::getValue(string const& section, string const& key) {
 int Config::getControlServerPort() {
     string section = "ControlServer";
     string key = "port";
-    return _getSectionKeyAsInt(section, key);
+    return getSectionKeyAsInt(section, key, 1, 65535);
 }
 
 int Config::getControlServerThreads() {
     string section = "ControlServer";
     string key = "threads";
-    return _getSectionKeyAsInt(section, key);
+    return getSectionKeyAsInt(section, key, 1, 3000);
 }
 
 string Config::getControlServerHost() {
     string section = "ControlServer";
     string key = "host";
-    return _getSectionKeyAsString(section, key);
+    return getSectionKeyAsString(section, key);
 }
 
-int Config::_getSectionKeyAsInt(string const& section, string const& key) {
+int Config::getSectionKeyAsInt(string const& section, string const& key) {
     if (!_yaml[section][key]) {
         throw util::Bug(ERR_LOC, string("Config") + section + ": " + key + " is missing");
     }
@@ -123,7 +148,28 @@ int Config::_getSectionKeyAsInt(string const& section, string const& key) {
     }
 }
 
-string Config::_getSectionKeyAsString(string const& section, string const& key) {
+double Config::getSectionKeyAsDouble(string const& section, string const& key) {
+    if (!_yaml[section][key]) {
+        throw util::Bug(ERR_LOC, string("Config") + section + ": " + key + " is missing");
+    }
+    try {
+        double val = _yaml[section][key].as<double>();
+        return val;
+    } catch (exception const& ex) {
+        throw util::Bug(ERR_LOC, string("Config") + section + ": " + key + " failed double " + ex.what());
+    }
+}
+
+double Config::getSectionKeyAsDouble(string const& section, string const& key, double min, double max) {
+    double val = getSectionKeyAsDouble(section, key);
+    if (val < min || val > max) {
+        throw util::Bug(ERR_LOC, section + ":" + key + "=" + to_string(val) + " must be between " +
+                                         to_string(min) + " & " + to_string(max));
+    }
+    return val;
+}
+
+string Config::getSectionKeyAsString(string const& section, string const& key) {
     if (!_yaml[section][key]) {
         throw util::Bug(ERR_LOC, string("Config") + section + ": " + key + " is missing");
     }
@@ -135,21 +181,14 @@ string Config::_getSectionKeyAsString(string const& section, string const& key) 
     }
 }
 
-/*&&&
-string Config::getControlServerPort() {
-    string section = "ControlServer";
-    string key = "host";
-    if (!_yaml["ControlServer"]["host"]) {
-        throw util::Bug(ERR_LOC, "ControlServer: host is missing");
+int Config::getSectionKeyAsInt(string const& section, string const& key, int min, int max) {
+    int val = getSectionKeyAsInt(section, key);
+    if (val < min || val > max) {
+        throw util::Bug(ERR_LOC, section + ":" + key + "=" + to_string(val) + " must be between " +
+                                         to_string(min) + " & " + to_string(max));
     }
-    try {
-        int port = _yaml["ControlServer"]["host"].as<int>();
-        return port;
-    } catch (exception const& ex) {
-        throw util::Bug(ERR_LOC, string("ControlServer: port failed non-int ") + ex.what());
-    }
+    return val;
 }
-*/
 
 }  // namespace system
 }  // namespace m2cellcpp
