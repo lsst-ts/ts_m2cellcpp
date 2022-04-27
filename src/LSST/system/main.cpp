@@ -29,7 +29,7 @@ using namespace LSST::m2cellcpp;
 
 int main(int argc, char *argv[]) {
     LINFO("starting");
-    system::Config::setup("../configs/unitTestCfg.yaml");
+    system::Config::setup("configs/m2cellCfg.yaml");
 
     // Start the control system
 

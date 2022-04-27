@@ -9,6 +9,9 @@
 - nlohmann json for CPP
   - centos `yum install json-devel`
   - Ubuntu `apt install nlohmann-json3-dev`
+- yaml-cpp
+  - centos `yum install yaml-cpp`
+  - Ubuntu `apt install libyaml-cpp-dev`
 - [Catch2](https://https://github.com/catchorg/Catch2)
 - [gcovr](https://github.com/gcovr)
 - clang-format (optional)

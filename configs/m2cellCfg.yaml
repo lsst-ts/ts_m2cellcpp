@@ -1,0 +1,6 @@
+# m2cell configuration file.
+
+ControlServer:
+  host: "127.0.0.1"
+  port: 12678
+  threads: 1
