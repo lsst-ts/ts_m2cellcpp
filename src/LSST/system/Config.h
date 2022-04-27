@@ -46,12 +46,15 @@ public:
     ConfigException(Context const& ctx, std::string const& msg) : util::Issue(ctx, msg) {}
 };
 
-/// This class reads and stores the system configuration.
-/// Eventually, this class will read in a configuration file,
-/// maybe yaml or json. Until then, it will just store a map
-/// of values and return those values requested.
+/// This class reads and stores the system configuration from a yaml file.
 /// Config::setup() should be called as early in the program
 /// as possible as many objects will require this class.
+/// Special functions should be made for critical values, like
+/// `getControlServerPort()` and these should be tested in
+/// `verifyRequiredElements()`. Missing or invalid elements
+/// from the config file should cause program termination,
+/// and this should happen before the program has done anything
+/// significant.
 /// unit test: test_config.cpp
 class Config {
 public:
