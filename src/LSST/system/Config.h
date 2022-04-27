@@ -94,7 +94,7 @@ private:
     /// Set config values for unit tests. &&&
     void _setValuesUnitTests();  //&&&
 
-    void _setValue(std::string const& section, std::string const& key, std::string const& val); //&&&
+    void _setValue(std::string const& section, std::string const& key, std::string const& val);  //&&&
 
     static Ptr _thisPtr;  ///< Pointer to the global instance of Config.
     static std::mutex _thisMtx;

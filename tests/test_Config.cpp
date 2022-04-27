@@ -53,5 +53,4 @@ TEST_CASE("Test Config", "[Config]") {
     REQUIRE(port == 12678);
     string host = Config::get().getControlServerHost();
     REQUIRE(host == "127.0.0.1");
-
 }
