@@ -29,8 +29,7 @@ using namespace LSST::m2cellcpp;
 
 int main(int argc, char *argv[]) {
     LINFO("starting");
-    // TODO: replace "UNIT_TEST" with a real yaml file. DM-34550
-    system::Config::setup("UNIT_TEST");
+    system::Config::setup("../configs/unitTestCfg.yaml");
 
     // Start the control system
 
@@ -38,8 +37,7 @@ int main(int argc, char *argv[]) {
 
     // Start a ComControlServer
     system::IoContextPtr ioContext = make_shared<boost::asio::io_context>();
-    string strPort = system::Config::get().getValue("controlServer", "port");
-    int port = stoi(strPort);
+    int port = system::Config::get().getControlServerPort();
     auto cmdFactory = control::NetCommandFactory::create();
     system::ComControl::setupNormalFactory(cmdFactory);
     auto serv = system::ComControlServer::create(ioContext, port, cmdFactory);

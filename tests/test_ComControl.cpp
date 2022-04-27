@@ -47,12 +47,11 @@ tuple<nlohmann::json, nlohmann::json> comTest(string const& jStr, ComClient& cli
 
 TEST_CASE("Test ComControl", "[ComControl]") {
     util::Log::getLog().useEnvironmentLogLvl();
-    Config::setup("UNIT_TEST");
+    Config::setup("../configs/unitTestCfg.yaml");
 
     // Start a ComControlServer
     IoContextPtr ioContext = make_shared<boost::asio::io_context>();
-    string strPort = Config::get().getValue("controlServer", "port");
-    int port = stoi(strPort);
+    int port = Config::get().getControlServerPort();
     auto cmdFactory = control::NetCommandFactory::create();
     ComControl::setupNormalFactory(cmdFactory);
     auto serv = ComControlServer::create(ioContext, port, cmdFactory);

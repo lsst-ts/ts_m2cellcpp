@@ -44,10 +44,6 @@ TEST_CASE("Test Config", "[Config]") {
     LDEBUG("test bad filename");
     REQUIRE_THROWS(Config::setup("junk"));
 
-    /* &&&
-    Config::setup("UNIT_TEST");
-    REQUIRE(Config::get().getValue("controlServer", "threads") == "1");
-    */
     LDEBUG("test valid file read");
     Config::setup("../configs/unitTestCfg.yaml");
     int port = Config::get().getControlServerPort();
@@ -75,7 +71,7 @@ TEST_CASE("Test Config", "[Config]") {
     bool found = false;
     try {
         Config::setup("../configs/unitTestCfgBad1.yaml");
-    } catch (LSST::m2cellcpp::util::Bug const& bug) {
+    } catch (LSST::m2cellcpp::system::ConfigException const& bug) {
         string msg(bug.what());
         string expected = "is missing";
         if (msg.find(expected) != std::string::npos) {

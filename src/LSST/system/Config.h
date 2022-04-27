@@ -29,13 +29,22 @@
 #include <string>
 
 // Third party headers
-// TODO #include "nlohmann/json.hpp" or yaml &&&
 #include "yaml-cpp/yaml.h"
+
+// Project headers
+#include "util/Issue.h"
 
 // This header declarations
 namespace LSST {
 namespace m2cellcpp {
 namespace system {
+
+/// Exception specific to Config.
+/// unit test: test_NetCommand.cpp
+class ConfigException : public util::Issue {
+public:
+    ConfigException(Context const& ctx, std::string const& msg) : util::Issue(ctx, msg) {}
+};
 
 /// This class reads and stores the system configuration.
 /// Eventually, this class will read in a configuration file,
@@ -80,10 +89,6 @@ public:
     /// program should terminate.
     void verifyRequiredElements();
 
-    /// Temporary method to access values.
-    /// TODO: methods to access specific keys that return typed values
-    std::string getValue(std::string const& section, std::string const& key);  //&&&
-
     /// @return the `key` value in `section` as an integer.
     /// @throws `util::Bug` if the key is missing or is not an `int`.
     int getSectionKeyAsInt(std::string const& section, std::string const& key);
@@ -114,16 +119,10 @@ private:
     /// @see setup.
     Config(std::string const& source);
 
-    /// Set config values for unit tests. &&&
-    void _setValuesUnitTests();  //&&&
-
-    void _setValue(std::string const& section, std::string const& key, std::string const& val);  //&&&
-
     static Ptr _thisPtr;  ///< Pointer to the global instance of Config.
     static std::mutex _thisMtx;
-    std::map<std::string, std::string> _map;  ///< map of section:key -> values. /// &&&
-    std::string _source;                      ///< name of the source for config values.
-    YAML::Node _yaml;                         ///< yaml storage object
+    std::string _source;  ///< name of the source for config values.
+    YAML::Node _yaml;     ///< yaml storage object
 };
 
 }  // namespace system

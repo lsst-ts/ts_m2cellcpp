@@ -21,7 +21,6 @@
 
 // Class header
 #include "system/Config.h"
-#include "util/Bug.h"
 #include "util/Log.h"
 
 // System headers
@@ -54,18 +53,13 @@ void Config::reset() {
 }
 
 Config::Config(std::string const& source) : _source(source) {
-    if (_source == "UNIT_TEST") {
-        // source ignored in this case.
-        _setValuesUnitTests();
-    } else {
-        try {
-            LINFO("Config trying to load yaml file ", _source);
-            _yaml = YAML::LoadFile(_source);
-        } catch (YAML::BadFile& ex) {
-            throw util::Bug(ERR_LOC, string("YAML::BadFile ") + ex.what());
-        }
-        verifyRequiredElements();
+    try {
+        LINFO("Config trying to load yaml file ", _source);
+        _yaml = YAML::LoadFile(_source);
+    } catch (YAML::BadFile& ex) {
+        throw ConfigException(ERR_LOC, string("YAML::BadFile ") + ex.what());
     }
+    verifyRequiredElements();
 }
 
 void Config::verifyRequiredElements() {
@@ -88,34 +82,9 @@ void Config::verifyRequiredElements() {
 
 Config& Config::get() {
     if (_thisPtr == nullptr) {
-        throw util::Bug(ERR_LOC, "Config has not been setup.");
+        throw ConfigException(ERR_LOC, "Config has not been setup.");
     }
     return *_thisPtr;
-}
-
-void Config::_setValuesUnitTests() {
-    _setValue("controlServer", "port", "12678");
-    _setValue("controlServer", "threads", "1");
-}
-
-void Config::_setValue(string const& section, string const& key, string const& val) {
-    string secKey = section + ":" + key;
-    auto iter = _map.find(secKey);
-    if (iter != _map.end()) {
-        LWARN("Config trying to reset ", secKey, " from ", iter->second, " to ", val);
-    }
-    _map[secKey] = val;
-    LINFO("Config set ", secKey, "=", val);
-}
-
-string Config::getValue(string const& section, string const& key) {
-    string secKey = section + ":" + key;
-    auto iter = _map.find(secKey);
-    if (iter == _map.end()) {
-        throw invalid_argument("ERROR Configure unknown key " + secKey);
-    }
-    string ret = iter->second;
-    return ret;
 }
 
 int Config::getControlServerPort() {
@@ -138,54 +107,56 @@ string Config::getControlServerHost() {
 
 int Config::getSectionKeyAsInt(string const& section, string const& key) {
     if (!_yaml[section][key]) {
-        throw util::Bug(ERR_LOC, string("Config") + section + ": " + key + " is missing");
+        throw ConfigException(ERR_LOC, string("Config") + section + ": " + key + " is missing");
     }
     try {
         int val = _yaml[section][key].as<int>();
         return val;
     } catch (exception const& ex) {
-        throw util::Bug(ERR_LOC, string("Config") + section + ": " + key + " failed int " + ex.what());
+        throw ConfigException(ERR_LOC, string("Config") + section + ": " + key + " failed int " + ex.what());
     }
 }
 
 double Config::getSectionKeyAsDouble(string const& section, string const& key) {
     if (!_yaml[section][key]) {
-        throw util::Bug(ERR_LOC, string("Config") + section + ": " + key + " is missing");
+        throw ConfigException(ERR_LOC, string("Config") + section + ": " + key + " is missing");
     }
     try {
         double val = _yaml[section][key].as<double>();
         return val;
     } catch (exception const& ex) {
-        throw util::Bug(ERR_LOC, string("Config") + section + ": " + key + " failed double " + ex.what());
+        throw ConfigException(ERR_LOC,
+                              string("Config") + section + ": " + key + " failed double " + ex.what());
     }
 }
 
 double Config::getSectionKeyAsDouble(string const& section, string const& key, double min, double max) {
     double val = getSectionKeyAsDouble(section, key);
     if (val < min || val > max) {
-        throw util::Bug(ERR_LOC, section + ":" + key + "=" + to_string(val) + " must be between " +
-                                         to_string(min) + " & " + to_string(max));
+        throw ConfigException(ERR_LOC, section + ":" + key + "=" + to_string(val) + " must be between " +
+                                               to_string(min) + " & " + to_string(max));
     }
     return val;
 }
 
 string Config::getSectionKeyAsString(string const& section, string const& key) {
     if (!_yaml[section][key]) {
-        throw util::Bug(ERR_LOC, string("Config") + section + ": " + key + " is missing");
+        throw ConfigException(ERR_LOC, string("Config") + section + ": " + key + " is missing");
     }
     try {
         string str = _yaml[section][key].as<string>();
         return str;
     } catch (exception const& ex) {
-        throw util::Bug(ERR_LOC, string("Config") + section + ": " + key + " failed string " + ex.what());
+        throw ConfigException(ERR_LOC,
+                              string("Config") + section + ": " + key + " failed string " + ex.what());
     }
 }
 
 int Config::getSectionKeyAsInt(string const& section, string const& key, int min, int max) {
     int val = getSectionKeyAsInt(section, key);
     if (val < min || val > max) {
-        throw util::Bug(ERR_LOC, section + ":" + key + "=" + to_string(val) + " must be between " +
-                                         to_string(min) + " & " + to_string(max));
+        throw ConfigException(ERR_LOC, section + ":" + key + "=" + to_string(val) + " must be between " +
+                                               to_string(min) + " & " + to_string(max));
     }
     return val;
 }

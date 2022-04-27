@@ -1,0 +1,9 @@
+# Unit Test configuration with missing required element.
+
+ControlServer:
+  host: "127.0.0.1"
+#  port: 12678
+  threads: 1
+
+testconstant:
+  pi: 3.14159265

@@ -6,10 +6,11 @@ class ComServer
 class ComConnection
 class ComControl
 class ComTelemetry
-class ComControl 
+class ComControl
 ComTelemetry : theoretical, unimplemented
 
 Config ..> ComServer : Configuration data
+Config ..> ConfigException : throws
 ComServer *-- ComConnection
 ComConnection <|-- ComControl
 ComConnection <|-- ComTelemetry
