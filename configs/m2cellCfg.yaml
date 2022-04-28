@@ -1,6 +1,17 @@
 # m2cell configuration file.
 
+# Control server details.
+# host is only used by client applications
+# Possible port values are 55555 (old) or 50000 (new).
 ControlServer:
   host: "127.0.0.1"
-  port: 12678
-  threads: 1
+  port: 50000
+  threads: 3
+
+# Telemetry server details.
+# host is only used by client applications
+# Possible port values are 50001
+TelemetryServer:
+  host: "127.0.0.1"
+  port: 50001
+  threads: 3

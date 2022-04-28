@@ -27,7 +27,16 @@ To enable this with a git pre-commit hook:
 
 ## Compile the software
 
-The executable is `bin/m2cell`
+The absolute path to configuration files can set by exporting
+the `M2CELL_CFG_PATH` environemnt variable. This is optional
+as the executable and unit tests should build normally without
+this being set.
+
+```bash
+export M2CELL_CFG_PATH="/home/<usrname>/ts_m2cellcpp/configs"
+```
+
+The executable is `bin/m2cell`.
 
 ```bash
 make

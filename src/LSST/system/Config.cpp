@@ -37,6 +37,16 @@ namespace system {
 Config::Ptr Config::_thisPtr;
 std::mutex Config::_thisMtx;
 
+string Config::getEnvironmentCfgPath(string const& defaultPath) {
+    string result = defaultPath;
+    char* path = getenv("M2CELL_CFG_PATH");
+    if (path != nullptr) {
+        result = path;
+    }
+    result += "/";
+    return result;
+}
+
 void Config::setup(std::string const& source) {
     lock_guard<mutex> lock(_thisMtx);
     if (_thisPtr) {
@@ -65,14 +75,23 @@ Config::Config(std::string const& source) : _source(source) {
 void Config::verifyRequiredElements() {
     try {
         LINFO("Config::verifyRequiredElements ", _source);
-        string str = getControlServerHost();
-        LINFO(" ControlServer:host=", str);
+        string host = getControlServerHost();
+        LINFO("ControlServer:host=", host);
 
-        int i = getControlServerPort();
-        LINFO("ControlServer:port", i);
+        int port = getControlServerPort();
+        LINFO("ControlServer:port=", port);
 
-        i = getControlServerThreads();
-        LINFO("ControlServer:threads", i);
+        int threads = getControlServerThreads();
+        LINFO("ControlServer:threads=", threads);
+
+        host = getTelemetryServerHost();
+        LINFO("TelemetryServer:host=", host);
+
+        port = getTelemetryServerPort();
+        LINFO("TelemetryServer:port=", port);
+
+        threads = getTelemetryServerThreads();
+        LINFO("TelemetryServer:threads=", threads);
 
     } catch (exception const& ex) {
         LCRITICAL("Config::verifyRequiredElements config file ", _source, " needs valid ", ex.what());
@@ -101,6 +120,24 @@ int Config::getControlServerThreads() {
 
 string Config::getControlServerHost() {
     string section = "ControlServer";
+    string key = "host";
+    return getSectionKeyAsString(section, key);
+}
+
+int Config::getTelemetryServerPort() {
+    string section = "TelemetryServer";
+    string key = "port";
+    return getSectionKeyAsInt(section, key, 1, 65535);
+}
+
+int Config::getTelemetryServerThreads() {
+    string section = "TelemetryServer";
+    string key = "threads";
+    return getSectionKeyAsInt(section, key, 1, 3000);
+}
+
+string Config::getTelemetryServerHost() {
+    string section = "TelemetryServer";
     string key = "host";
     return getSectionKeyAsString(section, key);
 }

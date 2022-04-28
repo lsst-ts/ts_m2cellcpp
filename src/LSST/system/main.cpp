@@ -29,7 +29,8 @@ using namespace LSST::m2cellcpp;
 
 int main(int argc, char *argv[]) {
     LINFO("starting");
-    system::Config::setup("configs/m2cellCfg.yaml");
+    string cfgPath = system::Config::getEnvironmentCfgPath("./configs");
+    system::Config::setup(cfgPath + "m2cellCfg.yaml");
 
     // Start the control system
 

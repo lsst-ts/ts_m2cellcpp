@@ -47,7 +47,8 @@ tuple<nlohmann::json, nlohmann::json> comTest(string const& jStr, ComClient& cli
 
 TEST_CASE("Test ComControl", "[ComControl]") {
     util::Log::getLog().useEnvironmentLogLvl();
-    Config::setup("../configs/unitTestCfg.yaml");
+    string cfgPath = Config::getEnvironmentCfgPath("../configs");
+    Config::setup(cfgPath + "unitTestCfg.yaml");
 
     // Start a ComControlServer
     IoContextPtr ioContext = make_shared<boost::asio::io_context>();

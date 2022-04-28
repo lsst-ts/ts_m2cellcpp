@@ -38,6 +38,8 @@ using namespace LSST::m2cellcpp::system;
 
 TEST_CASE("Test Config", "[Config]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
+    string cfgPath = Config::getEnvironmentCfgPath("../configs");
+
     LDEBUG("test get");
     REQUIRE_THROWS(Config::get());
 
@@ -45,7 +47,7 @@ TEST_CASE("Test Config", "[Config]") {
     REQUIRE_THROWS(Config::setup("junk"));
 
     LDEBUG("test valid file read");
-    Config::setup("../configs/unitTestCfg.yaml");
+    Config::setup(cfgPath + "unitTestCfg.yaml");
     int port = Config::get().getControlServerPort();
     REQUIRE(port == 12678);
     string host = Config::get().getControlServerHost();
@@ -60,6 +62,10 @@ TEST_CASE("Test Config", "[Config]") {
     /// pi is not be between 4.1 and 5.1, so it should trigger the logic.
     REQUIRE_THROWS(pi = Config::get().getSectionKeyAsDouble("testconstant", "pi", 4.1, 5.1));
 
+    LDEBUG("test that the int conversion of a double throws");
+    int ipi;
+    REQUIRE_THROWS(ipi = Config::get().getSectionKeyAsInt("testconstant", "pi"));
+
     LDEBUG("test bad int value");
     REQUIRE_THROWS(Config::get().getSectionKeyAsInt("ControlServer", "port", 100000, 200000));
 
@@ -70,9 +76,9 @@ TEST_CASE("Test Config", "[Config]") {
     LDEBUG("test file with missing required element");
     bool found = false;
     try {
-        Config::setup("../configs/unitTestCfgBad1.yaml");
-    } catch (LSST::m2cellcpp::system::ConfigException const& bug) {
-        string msg(bug.what());
+        Config::setup(cfgPath + "unitTestCfgBad1.yaml");
+    } catch (LSST::m2cellcpp::system::ConfigException const& cfgEx) {
+        string msg(cfgEx.what());
         string expected = "is missing";
         if (msg.find(expected) != std::string::npos) {
             found = true;

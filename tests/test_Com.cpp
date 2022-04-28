@@ -42,7 +42,8 @@ using Catch::Matchers::StartsWith;
 
 TEST_CASE("Test Com echo", "[Com]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
-    Config::setup("../configs/unitTestCfg.yaml");
+    string cfgPath = Config::getEnvironmentCfgPath("../configs");
+    Config::setup(cfgPath + "unitTestCfg.yaml");
 
     REQUIRE(ComServer::prettyState(ComServer::CREATED) == "CREATED");
     REQUIRE(ComServer::prettyState(ComServer::RUNNING) == "RUNNING");

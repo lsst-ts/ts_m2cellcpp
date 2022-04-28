@@ -1,9 +1,17 @@
 # Normal Unit Test configuration
 
+# Acceptable values for the control server.
 ControlServer:
   host: "127.0.0.1"
   port: 12678
   threads: 1
 
+# Acceptable values for the telemetry server.
+TelemetryServer:
+  host: "127.0.0.1"
+  port: 12679
+  threads: 3
+
+# Entries made up for unit testing only.
 testconstant:
   pi: 3.14159265
