@@ -42,7 +42,8 @@ using Catch::Matchers::StartsWith;
 
 TEST_CASE("Test Com echo", "[Com]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
-    Config::setup("UNIT_TEST");
+    string cfgPath = Config::getEnvironmentCfgPath("../configs");
+    Config::setup(cfgPath + "unitTestCfg.yaml");
 
     REQUIRE(ComServer::prettyState(ComServer::CREATED) == "CREATED");
     REQUIRE(ComServer::prettyState(ComServer::RUNNING) == "RUNNING");
@@ -50,8 +51,7 @@ TEST_CASE("Test Com echo", "[Com]") {
 
     // Start the server
     IoContextPtr ioContext = make_shared<boost::asio::io_context>();
-    string strPort = Config::get().getValue("controlServer", "port");
-    int port = stoi(strPort);
+    int port = Config::get().getControlServerPort();
     auto serv = ComServer::create(ioContext, port);
     atomic<bool> done{false};
     REQUIRE(serv->getState() == ComServer::CREATED);

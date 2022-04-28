@@ -40,8 +40,8 @@ pipeline {
                 withEnv(["HOME=${env.WORKSPACE}"]) {
                     sh """
                         source ${env.LSST_STACK}/loadLSST.bash
-                        conda install -y catch2 boost asio gcovr doxygen 
-                        conda install -y -c conda-forge nlohmann_json
+                        conda install -y catch2 boost asio gcovr doxygen
+                        conda install -y -c conda-forge nlohmann_json yaml-cpp
                         pip install ltd-conveyor
                     """
                 }

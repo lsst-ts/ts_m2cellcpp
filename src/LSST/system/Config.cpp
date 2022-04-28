@@ -37,6 +37,16 @@ namespace system {
 Config::Ptr Config::_thisPtr;
 std::mutex Config::_thisMtx;
 
+string Config::getEnvironmentCfgPath(string const& defaultPath) {
+    string result = defaultPath;
+    char* path = getenv("M2CELL_CFG_PATH");
+    if (path != nullptr) {
+        result = path;
+    }
+    result += "/";
+    return result;
+}
+
 void Config::setup(std::string const& source) {
     lock_guard<mutex> lock(_thisMtx);
     if (_thisPtr) {
@@ -46,45 +56,146 @@ void Config::setup(std::string const& source) {
     _thisPtr = Ptr(new Config(source));
 }
 
-Config::Config(std::string const& source) {
-    if (source == "UNIT_TEST") {
-        // source ignored in this case.
-        _setValuesUnitTests();
-    } else {
-        throw invalid_argument("Config had invalid source " + source);
+void Config::reset() {
+    LCRITICAL("Config reseting global configuration!!!");
+    lock_guard<mutex> lock(_thisMtx);
+    _thisPtr.reset();
+}
+
+Config::Config(std::string const& source) : _source(source) {
+    try {
+        LINFO("Config trying to load yaml file ", _source);
+        _yaml = YAML::LoadFile(_source);
+    } catch (YAML::BadFile& ex) {
+        throw ConfigException(ERR_LOC, string("YAML::BadFile ") + ex.what());
+    }
+    verifyRequiredElements();
+}
+
+void Config::verifyRequiredElements() {
+    try {
+        LINFO("Config::verifyRequiredElements ", _source);
+        string host = getControlServerHost();
+        LINFO("ControlServer:host=", host);
+
+        int port = getControlServerPort();
+        LINFO("ControlServer:port=", port);
+
+        int threads = getControlServerThreads();
+        LINFO("ControlServer:threads=", threads);
+
+        host = getTelemetryServerHost();
+        LINFO("TelemetryServer:host=", host);
+
+        port = getTelemetryServerPort();
+        LINFO("TelemetryServer:port=", port);
+
+        threads = getTelemetryServerThreads();
+        LINFO("TelemetryServer:threads=", threads);
+
+    } catch (exception const& ex) {
+        LCRITICAL("Config::verifyRequiredElements config file ", _source, " needs valid ", ex.what());
+        throw;
     }
 }
 
 Config& Config::get() {
     if (_thisPtr == nullptr) {
-        throw runtime_error("Config has not been setup.");
+        throw ConfigException(ERR_LOC, "Config has not been setup.");
     }
     return *_thisPtr;
 }
 
-void Config::_setValuesUnitTests() {
-    _setValue("controlServer", "port", "12678");
-    _setValue("controlServer", "threads", "1");
+int Config::getControlServerPort() {
+    string section = "ControlServer";
+    string key = "port";
+    return getSectionKeyAsInt(section, key, 1, 65535);
 }
 
-void Config::_setValue(string const& section, string const& key, string const& val) {
-    string secKey = section + ":" + key;
-    auto iter = _map.find(secKey);
-    if (iter != _map.end()) {
-        LWARN("Config trying to reset ", secKey, " from ", iter->second, " to ", val);
-    }
-    _map[secKey] = val;
-    LINFO("Config set ", secKey, "=", val);
+int Config::getControlServerThreads() {
+    string section = "ControlServer";
+    string key = "threads";
+    return getSectionKeyAsInt(section, key, 1, 3000);
 }
 
-string Config::getValue(string const& section, string const& key) {
-    string secKey = section + ":" + key;
-    auto iter = _map.find(secKey);
-    if (iter == _map.end()) {
-        throw invalid_argument("ERROR Configure unknown key " + secKey);
+string Config::getControlServerHost() {
+    string section = "ControlServer";
+    string key = "host";
+    return getSectionKeyAsString(section, key);
+}
+
+int Config::getTelemetryServerPort() {
+    string section = "TelemetryServer";
+    string key = "port";
+    return getSectionKeyAsInt(section, key, 1, 65535);
+}
+
+int Config::getTelemetryServerThreads() {
+    string section = "TelemetryServer";
+    string key = "threads";
+    return getSectionKeyAsInt(section, key, 1, 3000);
+}
+
+string Config::getTelemetryServerHost() {
+    string section = "TelemetryServer";
+    string key = "host";
+    return getSectionKeyAsString(section, key);
+}
+
+int Config::getSectionKeyAsInt(string const& section, string const& key) {
+    if (!_yaml[section][key]) {
+        throw ConfigException(ERR_LOC, string("Config") + section + ": " + key + " is missing");
     }
-    string ret = iter->second;
-    return ret;
+    try {
+        int val = _yaml[section][key].as<int>();
+        return val;
+    } catch (exception const& ex) {
+        throw ConfigException(ERR_LOC, string("Config") + section + ": " + key + " failed int " + ex.what());
+    }
+}
+
+double Config::getSectionKeyAsDouble(string const& section, string const& key) {
+    if (!_yaml[section][key]) {
+        throw ConfigException(ERR_LOC, string("Config") + section + ": " + key + " is missing");
+    }
+    try {
+        double val = _yaml[section][key].as<double>();
+        return val;
+    } catch (exception const& ex) {
+        throw ConfigException(ERR_LOC,
+                              string("Config") + section + ": " + key + " failed double " + ex.what());
+    }
+}
+
+double Config::getSectionKeyAsDouble(string const& section, string const& key, double min, double max) {
+    double val = getSectionKeyAsDouble(section, key);
+    if (val < min || val > max) {
+        throw ConfigException(ERR_LOC, section + ":" + key + "=" + to_string(val) + " must be between " +
+                                               to_string(min) + " & " + to_string(max));
+    }
+    return val;
+}
+
+string Config::getSectionKeyAsString(string const& section, string const& key) {
+    if (!_yaml[section][key]) {
+        throw ConfigException(ERR_LOC, string("Config") + section + ": " + key + " is missing");
+    }
+    try {
+        string str = _yaml[section][key].as<string>();
+        return str;
+    } catch (exception const& ex) {
+        throw ConfigException(ERR_LOC,
+                              string("Config") + section + ": " + key + " failed string " + ex.what());
+    }
+}
+
+int Config::getSectionKeyAsInt(string const& section, string const& key, int min, int max) {
+    int val = getSectionKeyAsInt(section, key);
+    if (val < min || val > max) {
+        throw ConfigException(ERR_LOC, section + ":" + key + "=" + to_string(val) + " must be between " +
+                                               to_string(min) + " & " + to_string(max));
+    }
+    return val;
 }
 
 }  // namespace system

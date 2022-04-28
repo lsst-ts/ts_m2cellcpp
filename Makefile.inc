@@ -28,14 +28,20 @@ else
   GCOVR_FLAGS := -fprofile-arcs -ftest-coverage
 endif
 
+# g++ flags used in all g++ calls.
+CPP_COMMON := -std=c++17 -fPIE -pthread -Wall ${c_opts} $(GCOVR_FLAGS)
+CPP_LIBS := -L/usr/local/lib -lyaml-cpp
+
 # compile x86 simulator or real cRIO stuff
 ifdef SIMULATOR
   C := gcc -Wall ${c_opts}
-  CPP := g++ -std=c++17 -fPIE -pedantic -pthread -Wall -Wno-vla ${c_opts} -DSIMULATOR $(GCOVR_FLAGS)
+  CPP := g++ $(CPP_COMMON) -pedantic -Wno-vla -DSIMULATOR
 else
   C := gcc -Wall -fmessage-length=0 ${c_opts}
-  CPP := g++ -std=c++17 -fPIE -pthread -Wall -fmessage-length=0 ${c_opts} $(GCOVR_FLAGS)
+  CPP := g++ $(CPP_COMMON) -fmessage-length=0
 endif
+
+
 
 LIBS += $(shell pkg-config yaml-cpp --libs) -ldl
 

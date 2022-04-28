@@ -9,6 +9,9 @@
 - nlohmann json for CPP
   - centos `yum install json-devel`
   - Ubuntu `apt install nlohmann-json3-dev`
+- yaml-cpp
+  - centos `yum install yaml-cpp`
+  - Ubuntu `apt install libyaml-cpp-dev`
 - [Catch2](https://https://github.com/catchorg/Catch2)
 - [gcovr](https://github.com/gcovr)
 - clang-format (optional)
@@ -24,7 +27,16 @@ To enable this with a git pre-commit hook:
 
 ## Compile the software
 
-The executable is `bin/m2cell`
+The absolute path to configuration files can set by exporting
+the `M2CELL_CFG_PATH` environemnt variable. This is optional
+as the executable and unit tests should build normally without
+this being set.
+
+```bash
+export M2CELL_CFG_PATH="/home/<usrname>/ts_m2cellcpp/configs"
+```
+
+The executable is `bin/m2cell`.
 
 ```bash
 make
@@ -179,8 +191,15 @@ Installing required packages
 -- copied nlohmann header files to <cRIO>:/usr/include/nlohmann/.
 -- cd Catch2     (check that the branch is v2.x)
 -- scp -r single_include/catch2/ <crIO>:/usr/include/.
-- On cRIO
+- Clone yaml-cpp to the local machine and copy it to an appropriate directory on the cRIO.
+-- Build yaml-cpp library on the cRIO
+--- ssh to the cRIO
+--- cd yaml-cpp      (Top level of copy of yaml-cpp clone.)
+--- mkdir build && cd build
+--- cmake .. && make -j
+--- make install
+- On cRIO build m2cell
 -- cd ts_m2cellcpp
 -- make clean
 -- edit Makefile.inc and add "-lboost_system"  (no quotes) to the "CPP :=" lines
--- make run_tests  (this will take several minutes)
+-- make  (this will take several minutes)

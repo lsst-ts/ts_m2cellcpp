@@ -1,5 +1,9 @@
 # Version History
 
+0.1.9
+
+- Changed Config to use yaml-cpp.
+
 0.1.8
 
 - Added main executable `m2cell`.
