@@ -20,7 +20,7 @@
  */
 
 // Class header
-#include "control/State.h"
+#include "control/FaultState.h"
 
 // Project headers
 #include "control/Model.h"
@@ -34,14 +34,10 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-void State::onEnterState(State::Ptr const& oldState) {
-    LINFO("Entering state=", getName(), " from oldState=", oldState->getName());
-    enterState(oldState);
-}
-
-void State::onExitState(State::Ptr const& newState) {
-    LINFO("Leaving state=", getName(), " to go to newState=", newState->getName());
-    exitState(newState);
+FaultState::Ptr FaultState::create(StateMap& stateMap) {
+    auto state = shared_ptr<FaultState>(new FaultState());
+    stateMap.insertIntoMap(state);
+    return state;
 }
 
 }  // namespace control

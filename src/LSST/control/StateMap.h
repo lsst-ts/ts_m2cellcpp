@@ -28,6 +28,13 @@
 
 // Project headers
 #include "control/State.h"
+#include "control/FaultState.h"
+#include "control/IdleState.h"
+#include "control/InMotionState.h"
+#include "control/OfflineState.h"
+#include "control/PauseState.h"
+#include "control/StandbyState.h"
+#include "control/StartupState.h"
 
 namespace LSST {
 namespace m2cellcpp {

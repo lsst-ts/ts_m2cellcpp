@@ -34,14 +34,10 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-void State::onEnterState(State::Ptr const& oldState) {
-    LINFO("Entering state=", getName(), " from oldState=", oldState->getName());
-    enterState(oldState);
-}
-
-void State::onExitState(State::Ptr const& newState) {
-    LINFO("Leaving state=", getName(), " to go to newState=", newState->getName());
-    exitState(newState);
+StandbyState::Ptr StandbyState::create(StateMap& stateMap) {
+    auto state = shared_ptr<StandbyState>(new StandbyState());
+    stateMap.insertIntoMap(state);
+    return state;
 }
 
 }  // namespace control

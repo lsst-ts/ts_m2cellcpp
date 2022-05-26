@@ -20,7 +20,7 @@
  */
 
 // Class header
-#include "control/State.h"
+#include "control/IdleState.h"
 
 // Project headers
 #include "control/Model.h"
@@ -34,15 +34,15 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-void State::onEnterState(State::Ptr const& oldState) {
-    LINFO("Entering state=", getName(), " from oldState=", oldState->getName());
-    enterState(oldState);
+IdleState::Ptr IdleState::create(StateMap& stateMap) {
+    auto state = shared_ptr<IdleState>(new IdleState());
+    stateMap.insertIntoMap(state);
+    return state;
 }
 
-void State::onExitState(State::Ptr const& newState) {
-    LINFO("Leaving state=", getName(), " to go to newState=", newState->getName());
-    exitState(newState);
-}
+void IdleState::goToInMotionVI() { throw util::Bug(ERR_LOC, "IdleState::goToInMotion PLACEHOLDER"); }
+
+void IdleState::goToStandbyVI() { throw util::Bug(ERR_LOC, "IdleState::goToInMotion PLACEHOLDER"); }
 
 }  // namespace control
 }  // namespace m2cellcpp

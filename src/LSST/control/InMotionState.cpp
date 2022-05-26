@@ -34,15 +34,15 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-void State::onEnterState(State::Ptr const& oldState) {
-    LINFO("Entering state=", getName(), " from oldState=", oldState->getName());
-    enterState(oldState);
+InMotionState::Ptr InMotionState::create(StateMap& stateMap) {
+    auto state = shared_ptr<InMotionState>(new InMotionState());
+    stateMap.insertIntoMap(state);
+    return state;
 }
 
-void State::onExitState(State::Ptr const& newState) {
-    LINFO("Leaving state=", getName(), " to go to newState=", newState->getName());
-    exitState(newState);
-}
+void InMotionState::goToIdleReadyVI() { throw util::Bug(ERR_LOC, "goToInMotion PLACEHOLDER"); }
+
+void InMotionState::goToPauseVI() { throw util::Bug(ERR_LOC, "goToPauseVI PLACEHOLDER"); }
 
 }  // namespace control
 }  // namespace m2cellcpp

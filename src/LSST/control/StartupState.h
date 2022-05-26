@@ -19,31 +19,40 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-// Class header
-#include "control/State.h"
+#ifndef LSST_M2CELLCPP_CONTROL_STARTUPSTATE_H
+#define LSST_M2CELLCPP_CONTROL_STARTUPSTATE_H
+
+// System headers
+#include <functional>
+#include <map>
+#include <memory>
 
 // Project headers
-#include "control/Model.h"
-#include "control/StateMap.h"
-#include "util/Bug.h"
-#include "util/Log.h"
-
-using namespace std;
+#include "control/State.h"
 
 namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-void State::onEnterState(State::Ptr const& oldState) {
-    LINFO("Entering state=", getName(), " from oldState=", oldState->getName());
-    enterState(oldState);
-}
+/// This class represents the state when the system is started.
+class StartupState : public State {
+public:
+    using Ptr = std::shared_ptr<StartupState>;
 
-void State::onExitState(State::Ptr const& newState) {
-    LINFO("Leaving state=", getName(), " to go to newState=", newState->getName());
-    exitState(newState);
-}
+    /// Create an instance and insert it into `stateMap`.
+    /// @throws Bug if there's already an instance of this class in `stateMap`.
+    static Ptr create(StateMap& stateMap);
+
+    StartupState(StartupState const&) = delete;
+    StartupState& operator=(StartupState const&) = delete;
+    virtual ~StartupState() = default;
+
+private:
+    StartupState() : State("StartupState") {}
+};
 
 }  // namespace control
 }  // namespace m2cellcpp
 }  // namespace LSST
+
+#endif  // LSST_M2CELLCPP_CONTROL_STARTUPSTATE_H
