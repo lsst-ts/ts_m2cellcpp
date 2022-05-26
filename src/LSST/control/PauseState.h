@@ -34,7 +34,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-/// Class representation of the PauseState, aka ReadyPause.
+/// Class representation of the "PauseState", aka ReadyPause.
 class PauseState : public State {
 public:
     using Ptr = std::shared_ptr<PauseState>;

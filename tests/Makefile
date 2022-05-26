@@ -20,7 +20,13 @@ ifneq ($(MAKECMDGOALS),clean)
     -include $(DEPS)
 endif
 
-TEST_CPPFLAGS := $(INC_FLAGS) $(pkg-config --cflags catch2 2>/dev/null)
+# For reference, pkg-config was not working before as it was missing 'shell'
+#TEST_CPPFLAGS := $(INC_FLAGS) $(shell pkg-config --cflags catch2-with-main 2>/dev/null)
+
+TEST_CPPFLAGS := $(INC_FLAGS)
+
+# Catch2Main must appear before Catch2
+TEST_LIBS := $(CPP_LIBS) -lCatch2Main -lCatch2
 
 compile: $(BINARIES) $(TEST_REQ_READLINE)
 
@@ -44,16 +50,16 @@ $(LIB_DIR)/libm2cellcpp.a: FORCE
 
 %.cpp.o: %.cpp.d
 	@echo '[CPP] $(patsubst %.d,%,$<)'
-	${co}$(CPP) $(BOOST_CPPFLAGS) $(CPP_FLAGS) $(TEST_CPPFLAGS) -c -fmessage-length=0 -o $@ $(patsubst %.d,%,$<)  $(CPP_LIBS)
+	${co}$(CPP) $(BOOST_CPPFLAGS) $(CPP_FLAGS) $(TEST_CPPFLAGS) -c -fmessage-length=0 -o $@ $(patsubst %.d,%,$<)  $(TEST_LIBS)
 
 %.cpp.d: %.cpp
 	@echo '[DPP] $<'
-	${co}$(CPP) $(BOOST_CPPFLAGS) $(CPP_FLAGS) $(TEST_CPPFLAGS) -M $< -MF $@ -MT '$(patsubst %.cpp,%.o,$<) $@' $(CPP_LIBS)
+	${co}$(CPP) $(BOOST_CPPFLAGS) $(CPP_FLAGS) $(TEST_CPPFLAGS) -M $< -MF $@ -MT '$(patsubst %.cpp,%.o,$<) $@' $(TEST_LIBS)
 
 $(TEST_REQ_READLINE): %: %.cpp.o ../lib/libm2cellcpp.a
 	@echo '[TPR] $<'
-	${co}$(CPP) -o $@ $(LIBS_FLAGS) $(LIBS) $^ $(CPP_FLAGS) -lreadline -lhistory $(CPP_LIBS)
+	${co}$(CPP) -o $@ $(LIBS_FLAGS) $(LIBS) $^ $(CPP_FLAGS) -lreadline -lhistory $(TEST_LIBS)
 
 ${BINARIES}: %: %.cpp.o ../lib/libm2cellcpp.a
 	@echo '[TPP] $<'
-	${co}$(CPP) -o $@ $(LIBS_FLAGS) $(LIBS) $^ $(CPP_FLAGS) $(CPP_LIBS)
+	${co}$(CPP) -o $@ $(LIBS_FLAGS) $(LIBS) $^ $(CPP_FLAGS) $(TEST_LIBS)

@@ -1,0 +1,31 @@
+# Copy and paste the following into http://www.plantuml.com/plantuml/uml/
+
+@startuml
+class Config
+class Context
+class Model
+class StateMap
+class State
+class FaultState
+class IdleState
+class InMotionState
+class OfflineState
+class PauseState
+class StandbyState
+class StartupState
+
+Config ..> Context
+Config ..> Model
+Context *-- Model
+Model *-- StateMap
+StateMap *-- State
+StateMap *-- currentState
+State <|-- FaultState
+State <|-- IdleState
+State <|-- InMotionState
+State <|-- OfflineState
+State <|-- PauseState
+State <|-- StandbyState
+State <|-- StartupState
+
+@enduml

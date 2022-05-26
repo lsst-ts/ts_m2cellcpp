@@ -34,7 +34,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-/// Class representation of the InMotionState, aka ReadyInMotion.
+/// Class representation of the "InMotionState", aka ReadyInMotion.
 class InMotionState : public State {
 public:
     using Ptr = std::shared_ptr<InMotionState>;

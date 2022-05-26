@@ -34,7 +34,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-/// Class representation of the IdleState, aka ReadyIdle.
+/// Class representation of the "IdleState", aka ReadyIdle.
 class IdleState : public State {
 public:
     using Ptr = std::shared_ptr<IdleState>;

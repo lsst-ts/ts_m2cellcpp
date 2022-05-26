@@ -22,8 +22,14 @@
 
 #include <fstream>
 #include <iostream>
+
+#include <unistd.h>
+#include <limits.h>
+
 #define CATCH_CONFIG_MAIN
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_session.hpp>
+#include <catch2/catch_all.hpp>
 
 #include "util/Bug.h"
 #include "util/Log.h"
@@ -32,6 +38,12 @@ using namespace std;
 using namespace LSST::m2cellcpp::util;
 
 TEST_CASE("Test Bug", "[Bug]") {
+    char cwd[PATH_MAX];
+    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+        LCRITICAL("Current working dir:", cwd);
+    } else {
+        LCRITICAL("getcwd() error");
+    }
     Log::getLog().useEnvironmentLogLvl();
 
     bool thrown = false;

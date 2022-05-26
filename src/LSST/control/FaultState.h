@@ -34,7 +34,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-/// Class representation of the FaultState, this state appears to be unused in LabView!
+/// Class representation of the "FaultState", this state appears to be unused in LabView.
 class FaultState : public State {
 public:
     using Ptr = std::shared_ptr<FaultState>;

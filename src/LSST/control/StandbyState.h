@@ -34,6 +34,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
+/// This class represents the "StandbyState".
 class StandbyState : public State {
 public:
     using Ptr = std::shared_ptr<StandbyState>;
