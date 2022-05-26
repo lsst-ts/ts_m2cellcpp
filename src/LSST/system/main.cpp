@@ -19,6 +19,7 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+#include "control/Context.h"
 #include "system/ComControl.h"
 #include "system/ComControlServer.h"
 #include "system/Config.h"
@@ -33,6 +34,7 @@ int main(int argc, char *argv[]) {
     system::Config::setup(cfgPath + "m2cellCfg.yaml");
 
     // Start the control system
+    control::Context::setup();
 
     // Start the telemetry server
 

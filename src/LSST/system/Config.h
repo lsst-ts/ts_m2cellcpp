@@ -150,10 +150,10 @@ private:
     /// @see setup.
     Config(std::string const& source);
 
-    static Ptr _thisPtr;  ///< Pointer to the global instance of Config.
-    static std::mutex _thisMtx;
-    std::string _source;  ///< name of the source for config values.
-    YAML::Node _yaml;     ///< yaml storage object
+    static Ptr _thisPtr;         ///< Pointer to the global instance of Config.
+    static std::mutex _thisMtx;  ///< Protects _thisPtr.
+    std::string _source;         ///< name of the source for config values.
+    YAML::Node _yaml;            ///< yaml storage object
 };
 
 }  // namespace system
