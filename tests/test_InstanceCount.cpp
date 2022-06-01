@@ -26,7 +26,8 @@
 #include <exception>
 
 // 3rd party headers
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_session.hpp>
 
 // Project headers
 #include "util/InstanceCount.h"

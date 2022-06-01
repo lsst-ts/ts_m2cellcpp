@@ -189,6 +189,9 @@ Installing required packages
 
 - On local machine, install nlohmann, and clone Catch2
 -- copied nlohmann header files to <cRIO>:/usr/include/nlohmann/.
+-- Catch2 will likely need to be cloned from github, copied to the cRIO and built with
+--- cmake -Bbuild -H. -DBUILD_TESTING=OFF
+--- cmake --build build/ --target install
 -- cd Catch2     (check that the branch is v2.x)
 -- scp -r single_include/catch2/ <crIO>:/usr/include/.
 - Clone yaml-cpp to the local machine and copy it to an appropriate directory on the cRIO.

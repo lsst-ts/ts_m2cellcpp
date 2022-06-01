@@ -20,51 +20,35 @@
  * this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <fstream>
-#include <iostream>
-
-#include <unistd.h>
-#include <limits.h>
-
 #define CATCH_CONFIG_MAIN
+
+// System headers
+#include <exception>
+
+// 3rd party headers
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_session.hpp>
-#include <catch2/catch_all.hpp>
 
+// Project headers
+#include "control/Context.h"
+#include "system/Config.h"
 #include "util/Bug.h"
 #include "util/Log.h"
 
 using namespace std;
-using namespace LSST::m2cellcpp::util;
+using namespace LSST::m2cellcpp::control;
 
-TEST_CASE("Test Bug", "[Bug]") {
-    char cwd[PATH_MAX];
-    if (getcwd(cwd, sizeof(cwd)) != NULL) {
-        LCRITICAL("Current working dir:", cwd);
-    } else {
-        LCRITICAL("getcwd() error");
-    }
-    Log::getLog().useEnvironmentLogLvl();
+TEST_CASE("Test Context", "[Context]") {
+    LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
+    string cfgPath = LSST::m2cellcpp::system::Config::getEnvironmentCfgPath("../configs");
 
-    bool thrown = false;
-    string str;
-    int line;
-    /// Only way to test is to catch
-    try {
-        line = __LINE__ + 1;
-        throw Bug(ERR_LOC, "not really a bug");
-    } catch (Bug const& ex) {
-        thrown = true;
-        str = ex.what();
-    }
-    REQUIRE(thrown);
-    /// find "test_Bug.cpp:"+to_string(line) in str.
-    string expected("test_Bug.cpp:");
-    expected += to_string(line);
-    LTRACE("expected=", expected, " what=", str);
-    bool found = false;
-    if (str.find(expected) != std::string::npos) {
-        found = true;
-    }
-    REQUIRE(found);
+    Context::setup();
+
+    Context::Ptr context = Context::get();
+    REQUIRE(context != nullptr);
+    REQUIRE(context->model.getCurrentState() == context->model.getState("StartupState"));
+
+    auto newState = context->model.getState("IdleState");
+    REQUIRE(context->model.changeState(newState));
+    REQUIRE(context->model.getCurrentState() == context->model.getState("IdleState"));
 }

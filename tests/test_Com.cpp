@@ -28,7 +28,8 @@
 
 // 3rd party headers
 #include <boost/asio.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_session.hpp>
 
 // Project headers
 #include "system/Config.h"
@@ -38,7 +39,6 @@
 
 using namespace std;
 using namespace LSST::m2cellcpp::system;
-using Catch::Matchers::StartsWith;
 
 TEST_CASE("Test Com echo", "[Com]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();

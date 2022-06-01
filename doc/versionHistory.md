@@ -1,5 +1,9 @@
 # Version History
 
+0.2.0
+
+- Added Context, Model, and State classes.
+
 0.1.9
 
 - Changed Config to use yaml-cpp.

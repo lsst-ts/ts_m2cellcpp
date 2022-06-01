@@ -12,13 +12,8 @@ MKDIR_P ?= mkdir -p
 # Jenkins overwrites CPPFLAGS, so use CPPARGS instead.
 CPPARGS ?= $(INC_FLAGS) $(CPP_FLAGS) -MMD -MP -DVERSION="\"$(VERSION)\""
 
-m2cell: run_tests $(BIN_DIR)/m2cell
-
-# The main m2cell program.
-$(BIN_DIR)/m2cell: $(LIB_DIR)/libm2cellcpp.a
-	mkdir -p bin
-	$(CPP) $(OBJS) -o $@ $(LDFLAGS) $(CPP_LIBS)
-
+# TODO: DM-35023  Make the executable in the 'serverMain' directory and copy it to bin.
+# Having main in the library broke the Catch2 unit tests.
 
 $(LIB_DIR)/libm2cellcpp.a: $(BUILD_DIR)/libm2cellcpp.a
 	mkdir -p lib
