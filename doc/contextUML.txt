@@ -14,8 +14,8 @@ class PauseState
 class StandbyState
 class StartupState
 
-Config ..> Context
-Config ..> Model
+Config <.. Context
+Config <.. Model
 Context *-- Model
 Model *-- StateMap
 StateMap *-- State

@@ -1,6 +1,6 @@
 # Version History
 
-0.1.10
+0.2.0
 
 - Added Context, Model, and State classes.
 
