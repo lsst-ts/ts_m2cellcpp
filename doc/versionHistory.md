@@ -1,5 +1,9 @@
 # Version History
 
+0.2.1
+
+- Changed to build the main server program from serverMain/main.cpp.
+
 0.2.0
 
 - Added Context, Model, and State classes.
