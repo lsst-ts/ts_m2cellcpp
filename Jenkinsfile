@@ -25,8 +25,8 @@ pipeline {
         XML_REPORT_COVERAGE = "jenkinsReportCov/reportCoverage.xml"
         // Authority to publish the document online
         user_ci = credentials('lsst-io')
-        LTD_USERNAME = '${user_ci_USR}'
-        LTD_PASSWORD = '${user_ci_PSW}'
+        LTD_USERNAME = "${user_ci_USR}"
+        LTD_PASSWORD = "${user_ci_PSW}"
         DOCUMENT_NAME = "ts-m2cellcpp"
     }
 
