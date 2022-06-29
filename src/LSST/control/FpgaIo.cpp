@@ -71,6 +71,17 @@ FpgaIo::FpgaIo(bool useMocks) {
     }
 }
 
+void FpgaIo::writeAllOutputs() {
+    // start with booleans and then DAQ.
+    for (auto& elem : _mapDaqBoolOut) {
+        (elem.second)->write();
+    }
+
+    for (auto& elem : _mapDaqOut) {
+        (elem.second)->write();
+    }
+}
+
 AllIlcs::AllIlcs(bool useMocks) {
     // FUTURE: Once C API is available, create instances capable of communicating
     //         with the FPGA.
@@ -151,14 +162,8 @@ void DaqIn::setRaw(double val) {
     lock_guard<mutex> lg(_mtx);
     _data.raw = val;
     _data.lastRead = FpgaClock::now();
-    _data.upToDate = false;
-}
-
-void DaqIn::adjust() {
-    lock_guard<mutex> lg(_mtx);
-    // FUTURE: This is probably seriously over simplified.
     _data.adjusted = _data.raw * _scale;
-    _data.upToDate = true;
+    LDEBUG("DaqIn::setRaw ", _name, " raw=", _data.raw, " adjusted=", _data.adjusted, " scale=", _scale);
 }
 
 DaqIn::Data DaqIn::getData() {
@@ -214,13 +219,9 @@ void DaqOut::finalSetup(map<string, DaqIn::Ptr>& mapDaqIn) {
 void DaqOut::setSource(double val) {
     lock_guard<mutex> lg(_mtx);
     _data.source = val;
-    _data.upToDate = false;
-}
-
-void DaqOut::adjust() {
-    lock_guard<mutex> lg(_mtx);
     _data.outVal = _data.source / _scale;
-    _data.upToDate = true;
+    LDEBUG("DaqOut::setSource ", _name, " source=", _data.source, " _outVal=", _data.outVal,
+           " scale=", _scale);
 }
 
 DaqOut::Data DaqOut::getData() {
@@ -273,7 +274,7 @@ DaqBoolOut::Ptr DaqBoolOut::create(string const& name, map<string, DaqBoolOut::P
 
 DaqBoolOut::DaqBoolOut(string const& name) : _name(name) {
     try {
-        _linkBoolInStr = system::Config::get().getSectionKeyAsString(_name, "linkBoolOut");
+        _linkBoolInStr = system::Config::get().getSectionKeyAsString(_name, "linkBoolIn");
     } catch (system::ConfigException const& ex) {
         LWARN("No link entry found for ", _name);
     }
@@ -349,6 +350,31 @@ void DaqBoolOut::finalSetup(map<string, DaqBoolIn::Ptr>& mapDaqBoolIn, map<strin
             LERROR(errMsg);
             throw util::Bug(ERR_LOC, errMsg);
         }
+    }
+}
+
+void DaqBoolOut::write() {
+    _lastWrite = FpgaClock::now();
+
+    LDEBUG(_name, " DaqBoolOut::write val=", _val);
+    // Forward this output to the linked input.
+    if (_linkBoolIn != nullptr) {
+        LDEBUG(_name, " DaqBoolOut::write bool val=", _val, " to ", _linkBoolIn);
+        _linkBoolIn->setVal(_val);
+    }
+
+    // Set current and voltage DaqOut items if specified
+    if (_linkCurrentOut != nullptr) {
+        double currentVal = _val ? _linkCurrentOutVal : 0.0;
+        LDEBUG(_name, " DaqBoolOut::write val=", _val, " current ", _linkCurrentOut->getName(), " ",
+               currentVal);
+        _linkCurrentOut->setSource(currentVal);
+    }
+    if (_linkVoltageOut != nullptr) {
+        double voltageVal = _val ? _linkVoltageOutVal : 0.0;
+        LDEBUG(_name, " DaqBoolOut::write val=", _val, " voltage ", _linkVoltageOut->getName(), " ",
+               voltageVal);
+        _linkVoltageOut->setSource(voltageVal);
     }
 }
 

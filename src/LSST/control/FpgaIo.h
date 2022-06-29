@@ -29,6 +29,7 @@
 #include <vector>
 
 // Project headers
+#include "util/Log.h"
 
 #ifndef LSST_M2CELLCPP_CONTROL_FPGAIO_H
 #define LSST_M2CELLCPP_CONTROL_FPGAIO_H
@@ -52,7 +53,6 @@ public:
         double raw = 0;          ///< Value as read from FPGA
         FpgaTimePoint lastRead;  ///< Last time _raw was read from Fpga.
         double adjusted = 0.0;   ///< Adjusted value, for internal use.
-        bool upToDate = false;   ///< True if _adjusted is based on latest _raw value.
     };
 
     /// Uses Config to set values using `name` and adds it to `mapDaqIn`.
@@ -71,10 +71,6 @@ public:
     /// Set `_raw` to `val` and `_lastRead` to now.
     /// FUTURE: type for `val` possibly incorrect.
     void setRaw(double val);
-
-    /// Use value of `_data.raw to set `_data.adjusted`
-    /// FUTURE: What values need to be setup to make the `adjust()` call?
-    void adjust();
 
     /// Returns a copy of `_data`.
     Data getData();
@@ -101,7 +97,6 @@ public:
         double outVal = 0;        ///< Value to write to FPGA
         FpgaTimePoint lastWrite;  ///< Last time `outVal` was written to Fpga.
         double source = 0.0;      ///< Internal value.
-        bool upToDate = false;    ///< True if _adjusted is based on latest _raw value.
     };
 
     /// Uses Config to set values using `name` and adds it to `mapDaqOut`.
@@ -124,10 +119,6 @@ public:
     /// FUTURE: type for `val` possibly incorrect.
     /// Set `_data.source` to `val`
     void setSource(double val);
-
-    /// Use `_data.source` to set`data.outVal` and set `upToDate` = true.
-    /// FUTURE: What values need to be setup to make the `adjust()` call?
-    void adjust();
 
     /// Return a copy of `_data`
     Data getData();
@@ -168,6 +159,7 @@ public:
 
     void setVal(bool v) {
         std::lock_guard<std::mutex> lg(_mtx);
+        LDEBUG(_name, " setVal val=", v);
         _lastRead = FpgaClock::now();
         _val = v;
     }
@@ -227,7 +219,7 @@ public:
 
     /// Set _lastWrite to now and write the data.
     /// FUTURE: possibly change name and actually write the data to the FPGA.
-    void write() { _lastWrite = FpgaClock::now(); }
+    void write();
 
 private:
     /// Uses Config to set values using `name`.
@@ -236,17 +228,17 @@ private:
 
     std::string _name;         ///< Name of this input
     FpgaTimePoint _lastWrite;  ///< Last time this input was written.
-    bool _val;                 ///< value read for this input.
+    bool _val = false;         ///< value read for this input.
 
     DaqBoolIn::Ptr _linkBoolIn;  ///< If not nullptr, forward _val to this DaqBoolIn.
     std::string _linkBoolInStr;  ///< Name of DaqIn for _link
 
-    DaqOut::Ptr _linkCurrentOut;     ///< Pointer to DaqOut for current.
-    std::string _linkCurrentOutStr;  ///< Name of the DaqOut for current.
-    double _linkCurrentOutVal;       ///< The value for DaqOut current when `_val` is true.
-    DaqOut::Ptr _linkVoltageOut;     ///< Pointer to DaqOut for voltage.
-    std::string _linkVoltageOutStr;  ///< Name of the DaqOut for voltage.
-    double _linkVoltageOutVal;       ///< The value for DaqOut voltage when `_val` is true.
+    DaqOut::Ptr _linkCurrentOut;      ///< Pointer to DaqOut for current.
+    std::string _linkCurrentOutStr;   ///< Name of the DaqOut for current.
+    double _linkCurrentOutVal = 0.0;  ///< The value for DaqOut current when `_val` is true.
+    DaqOut::Ptr _linkVoltageOut;      ///< Pointer to DaqOut for voltage.
+    std::string _linkVoltageOutStr;   ///< Name of the DaqOut for voltage.
+    double _linkVoltageOutVal = 0.0;  ///< The value for DaqOut voltage when `_val` is true.
 };
 
 /// This class contains information about one ILC.
@@ -339,6 +331,9 @@ public:
     /// Construct the FpgaIo instance, using mocks if `useMocks` is true.
     /// Mocks are meant for unit testing where no hardware is available.
     FpgaIo(bool useMocks = false);
+
+    /// Wrtie all outputs, starting with `DaqBoolOut`. ILC's not included.
+    void writeAllOutputs();
 
     /// Returns `_ilcMotorCurrent`
     DaqIn::Ptr getIlcMotorCurrent() const { return _ilcMotorCurrent; }

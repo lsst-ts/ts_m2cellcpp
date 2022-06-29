@@ -85,7 +85,7 @@ TEST_CASE("Test FpgaIo", "[FpgaIo]") {
     }
 
     {
-        LDEBUG("Test DaqIn DaqOut &&&");
+        LDEBUG("Test DaqIn DaqOut");
         FpgaIo fpga(true);
 
         auto ilcMotorCurrent = fpga.getIlcMotorCurrent();
@@ -112,48 +112,84 @@ TEST_CASE("Test FpgaIo", "[FpgaIo]") {
         testIlcMotorCurrent->setSource(10.0);
         DaqOut::Data daqOutData = testIlcMotorCurrent->getData();
         REQUIRE(daqOutData.source == 10.0);
-        REQUIRE(daqOutData.upToDate == false);
         DaqIn::Data daqInData0 = ilcMotorCurrent->getData();
 
-        testIlcMotorCurrent->adjust();
         testIlcMotorCurrent->write();
         daqOutData = testIlcMotorCurrent->getData();
         REQUIRE(daqOutData.source == 10.0);
-        REQUIRE(daqOutData.upToDate == true);
         REQUIRE(daqOutData.outVal == 5.0);
 
         DaqIn::Data daqInData1 = ilcMotorCurrent->getData();
         REQUIRE(daqInData1.raw == 5.0);
         REQUIRE(daqInData0.lastRead != daqInData1.lastRead);
-        REQUIRE(daqInData1.upToDate == false);
 
-        ilcMotorCurrent->adjust();
         DaqIn::Data daqInData3 = ilcMotorCurrent->getData();
-        REQUIRE(daqInData3.upToDate == true);
         REQUIRE(daqInData3.adjusted == 10.0);
 
-        LDEBUG("Test DaqBoolIn DaqBoolOut");
+        LDEBUG("Test DaqBoolIn DaqBoolOut: Motor=true, Comm=false, interlock=false");
         FpgaTimePoint lastWrite = ilcMotorPowerOnOut->getLastWrite();
         FpgaTimePoint lastRead = ilcMotorPowerOnIn->getLastRead();
         ilcMotorPowerOnOut->setVal(true);
         REQUIRE(ilcMotorPowerOnOut->getVal() == true);
-        ilcMotorPowerOnOut->write();
+        ilcCommPowerOnOut->setVal(false);
+        REQUIRE(ilcCommPowerOnOut->getVal() == false);
+        fpga.writeAllOutputs();
         REQUIRE(lastWrite != ilcMotorPowerOnOut->getLastWrite());
         REQUIRE(ilcMotorPowerOnIn->getVal() == true);
         REQUIRE(lastRead != ilcMotorPowerOnIn->getLastRead());
+        REQUIRE(ilcCommPowerOnIn->getVal() == false);
+        REQUIRE(crioInterlockEnableOut->getVal() == false);
+        REQUIRE(crioInterlockEnableIn->getVal() == false);
 
-        // &&& Have FpgaIo code do all the write() and adjust() here.
-        testIlcMotorCurrent->adjust();
-        testIlcMotorVoltage->adjust();
-        testIlcMotorCurrent->write();
-        testIlcMotorVoltage->write();
-        ilcMotorCurrent->adjust();
-        ilcMotorVoltage->adjust();
         auto mCurrent = ilcMotorCurrent->getData();
         auto mVoltage = ilcMotorVoltage->getData();
-        REQUIRE(mCurrent.upToDate == true);
-        REQUIRE(mVoltage.upToDate == true);
-        LDEBUG("&&& mCurrent adjusted=", mCurrent.adjusted);
-        LDEBUG("&&& mVoltage adjusted=", mCurrent.adjusted);
+        LDEBUG("mCurrent adjusted=", mCurrent.adjusted, " raw=", mCurrent.raw);
+        REQUIRE(mCurrent.raw == 0.25);
+        REQUIRE(mCurrent.adjusted == 0.5);
+        LDEBUG("mVoltage adjusted=", mVoltage.adjusted, " raw=", mVoltage.raw);
+        REQUIRE(mVoltage.raw == 8.0);
+        REQUIRE(mVoltage.adjusted == 8.0);
+
+        auto cCurrent = ilcCommCurrent->getData();
+        auto cVoltage = ilcCommVoltage->getData();
+        LDEBUG("cCurrent adjusted=", cCurrent.adjusted, " raw=", cCurrent.raw);
+        REQUIRE(cCurrent.raw == 0.0);
+        REQUIRE(cCurrent.adjusted == 0.0);
+        LDEBUG("cVoltage adjusted=", cVoltage.adjusted, " raw=", cVoltage.raw);
+        REQUIRE(cVoltage.raw == 0.0);
+        REQUIRE(cVoltage.adjusted == 0.0);
+
+        LDEBUG("Test DaqBoolIn DaqBoolOut: Motor=false, Comm=true, interlock=false");
+        ilcMotorPowerOnOut->setVal(false);
+        ilcCommPowerOnOut->setVal(true);
+        fpga.writeAllOutputs();
+        REQUIRE(ilcMotorPowerOnIn->getVal() == false);
+        REQUIRE(ilcCommPowerOnIn->getVal() == true);
+        REQUIRE(crioInterlockEnableOut->getVal() == false);
+        REQUIRE(crioInterlockEnableIn->getVal() == false);
+
+        mCurrent = ilcMotorCurrent->getData();
+        mVoltage = ilcMotorVoltage->getData();
+        LDEBUG("mCurrent adjusted=", mCurrent.adjusted, " raw=", mCurrent.raw);
+        REQUIRE(mCurrent.raw == 0.0);
+        REQUIRE(mCurrent.adjusted == 0.0);
+        LDEBUG("mVoltage adjusted=", mVoltage.adjusted, " raw=", mVoltage.raw);
+        REQUIRE(mVoltage.raw == 0.0);
+        REQUIRE(mVoltage.adjusted == 0.0);
+
+        cCurrent = ilcCommCurrent->getData();
+        cVoltage = ilcCommVoltage->getData();
+        LDEBUG("cCurrent adjusted=", cCurrent.adjusted, " raw=", cCurrent.raw);
+        REQUIRE(cCurrent.raw == 0.1);
+        REQUIRE(cCurrent.adjusted == 0.1);
+        LDEBUG("cVoltage adjusted=", cVoltage.adjusted, " raw=", cVoltage.raw);
+        REQUIRE(cVoltage.raw == 12.0);
+        REQUIRE(cVoltage.adjusted == 12.0);
+
+        LDEBUG("Test DaqBoolIn DaqBoolOut: interlock=true");
+        crioInterlockEnableOut->setVal(true);
+        fpga.writeAllOutputs();
+        REQUIRE(crioInterlockEnableOut->getVal() == true);
+        REQUIRE(crioInterlockEnableIn->getVal() == true);
     }
 }

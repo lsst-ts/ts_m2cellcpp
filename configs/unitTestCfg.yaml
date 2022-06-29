@@ -37,23 +37,19 @@ ILC_Comm_Voltage_test:
   scale: 1.0
 
 # DaqBoolOut entries for testing, optional Config elements.
-ILC_Motor_Power_On_in:
+ILC_Motor_Power_On_out:
   linkBoolIn: "ILC_Motor_Power_On_in"
   linkCurrentOut: "ILC_Motor_Current_test"
   linkCurrentOutVal: 0.5
   linkVoltageOut: "ILC_Motor_Voltage_test"
   linkVoltageOutVal: 8.0
 
-ILC_Comm_Power_On_in:
+ILC_Comm_Power_On_out:
   linkBoolIn: "ILC_Comm_Power_On_in"
   linkCurrentOut: "ILC_Comm_Current_test"
   linkCurrentOutVal: 0.1
   linkVoltageOut: "ILC_Comm_Voltage_test"
   linkVoltageOutVal: 12.0
 
-cRIO_Interlock_Enable_in:
-  linkBoolOut: "cRIO_Interlock_Enable_in"
-
-
-
-
+cRIO_Interlock_Enable_out:
+  linkBoolIn: "cRIO_Interlock_Enable_in"
