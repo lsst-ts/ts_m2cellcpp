@@ -21,6 +21,7 @@
 
 // System headers
 #include <chrono>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <stdint.h>
@@ -54,15 +55,18 @@ public:
         bool upToDate = false;   ///< True if _adjusted is based on latest _raw value.
     };
 
-    /// Uses Config to set values using `name`.
-    /// FUTURE: Likely to need defines from the LaBView C API
-    DaqIn(std::string const& name);
+    /// Uses Config to set values using `name` and adds it to `mapDaqIn`.
+    /// `mapDaqIn` can be nullptr.
+    static Ptr create(std::string const& name, std::map<std::string, DaqIn::Ptr>* mapDaqIn);
 
     DaqIn() = delete;
     DaqIn(DaqIn const&) = delete;
     DaqIn& operator=(DaqIn const&) = delete;
 
     ~DaqIn() = default;
+
+    /// Return `_name`.
+    std::string getName() const { return _name; }
 
     /// Set `_raw` to `val` and `_lastRead` to now.
     /// FUTURE: type for `val` possibly incorrect.
@@ -76,6 +80,10 @@ public:
     Data getData();
 
 private:
+    /// Uses Config to set values using `name`.
+    /// FUTURE: Likely to need defines from the LaBView C API
+    DaqIn(std::string const& name);
+
     std::string const _name;  ///< The name of this DAQ.
     double _scale = 1.0;      ///< scale between raw and adjusted.
     Data _data;               ///< Data read from the DAQ for this analog value.
@@ -96,15 +104,21 @@ public:
         bool upToDate = false;    ///< True if _adjusted is based on latest _raw value.
     };
 
-    /// Uses Config to set values using `name`.
-    /// FUTURE: Likely to need defines from the LaBView C API
-    DaqOut(std::string const& name);
+    /// Uses Config to set values using `name` and adds it to `mapDaqOut`.
+    /// `mapDaqOut` can be nullptr.
+    static Ptr create(std::string const& name, std::map<std::string, DaqOut::Ptr>* mapDaqOut);
 
     DaqOut() = delete;
     DaqOut(DaqOut const&) = delete;
     DaqOut& operator=(DaqOut const&) = delete;
 
     ~DaqOut() = default;
+
+    /// Return `_name`.
+    std::string getName() const { return _name; }
+
+    /// Setup items that require all other FpgaIo members are defined.
+    void finalSetup(std::map<std::string, DaqIn::Ptr>& mapDaqIn);
 
     /// Set `_raw` to `val` and `_lastRead` to now.
     /// FUTURE: type for `val` possibly incorrect.
@@ -120,28 +134,37 @@ public:
 
     /// Just set _data.lastWrite to now.
     /// FUTURE: possibly change name and actuall write the data to the FPGA.
-    void written();
+    void write();
 
 private:
+    /// Uses Config to set values using `name`.
+    /// FUTURE: Likely to need defines from the LaBView C API
+    DaqOut(std::string const& name);
+
     std::string const _name;  ///< The name of this DAQ.
     double _scale = 1.0;      ///< scale between source and outVal.
     Data _data;               ///< Data read from the DAQ for this analog value.
     std::mutex _mtx;          ///< protects _data
+    DaqIn::Ptr _link;         ///< If not nullptr, forward outVal to this DaqIn.
+    std::string _linkStr;     ///< Name of DaqIn for _link
 };
 
 /// Class to store a boolean value from the FPGA.
 class DaqBoolIn {
 public:
     using Ptr = std::shared_ptr<DaqBoolIn>;
-    /// Uses Config to set values using `name`.
-    /// FUTURE: Likely to need defines from the LaBView C API
-    DaqBoolIn(std::string const& name) : _name(name) {}
+
+    /// Uses Config to set values using `name` and add the object to `mapDaqBoolIn`.
+    static Ptr create(std::string const& name, std::map<std::string, DaqBoolIn::Ptr>* mapDaqBoolIn);
 
     DaqBoolIn() = delete;
     DaqBoolIn(DaqBoolIn const&) = delete;
     DaqBoolIn& operator=(DaqBoolIn const&) = delete;
 
     ~DaqBoolIn() = default;
+
+    /// Return `_name`.
+    std::string getName() const { return _name; }
 
     void setVal(bool v) {
         std::lock_guard<std::mutex> lg(_mtx);
@@ -162,6 +185,10 @@ public:
     }
 
 private:
+    /// Uses Config to set values using `name`.
+    /// FUTURE: Likely to need defines from the LaBView C API
+    DaqBoolIn(std::string const& name);
+
     std::string _name;        ///< Name of this input
     FpgaTimePoint _lastRead;  ///< Last time this input was read.
     bool _val = false;        ///< value read for this input.
@@ -173,9 +200,8 @@ class DaqBoolOut {
 public:
     using Ptr = std::shared_ptr<DaqBoolOut>;
 
-    /// Uses Config to set values using `name`.
-    /// FUTURE: Likely to need defines from the LaBView C API
-    DaqBoolOut(std::string const& name) : _name(name) {}
+    /// Uses Config to set values using `name`, and adds it to `mapDaqBoolOut`.
+    static Ptr create(std::string const& name, std::map<std::string, DaqBoolOut::Ptr>* mapDaqBoolOut);
 
     DaqBoolOut() = delete;
     DaqBoolOut(DaqBoolOut const&) = delete;
@@ -183,7 +209,14 @@ public:
 
     ~DaqBoolOut() = default;
 
-    /// Sewt `_val` to `v`.
+    /// Return `_name`.
+    std::string getName() const { return _name; }
+
+    /// Setup items that require all other FpgaIo members are defined.
+    void finalSetup(std::map<std::string, DaqBoolIn::Ptr>& mapDaqBoolIn,
+                    std::map<std::string, DaqOut::Ptr>& mapDaqOut);
+
+    /// Set `_val` to `v`.
     void setVal(bool v) { _val = v; }
 
     /// Return the last time this value was read.
@@ -192,14 +225,28 @@ public:
     /// Return the boolean value.
     bool getVal() { return _val; }
 
-    /// Just set _lastWrite to now.
+    /// Set _lastWrite to now and write the data.
     /// FUTURE: possibly change name and actually write the data to the FPGA.
-    void written() { _lastWrite = FpgaClock::now(); }
+    void write() { _lastWrite = FpgaClock::now(); }
 
 private:
+    /// Uses Config to set values using `name`.
+    /// FUTURE: Likely to need defines from the LaBView C API
+    DaqBoolOut(std::string const& name);
+
     std::string _name;         ///< Name of this input
     FpgaTimePoint _lastWrite;  ///< Last time this input was written.
     bool _val;                 ///< value read for this input.
+
+    DaqBoolIn::Ptr _linkBoolIn;  ///< If not nullptr, forward _val to this DaqBoolIn.
+    std::string _linkBoolInStr;  ///< Name of DaqIn for _link
+
+    DaqOut::Ptr _linkCurrentOut;     ///< Pointer to DaqOut for current.
+    std::string _linkCurrentOutStr;  ///< Name of the DaqOut for current.
+    double _linkCurrentOutVal;       ///< The value for DaqOut current when `_val` is true.
+    DaqOut::Ptr _linkVoltageOut;     ///< Pointer to DaqOut for voltage.
+    std::string _linkVoltageOutStr;  ///< Name of the DaqOut for voltage.
+    double _linkVoltageOutVal;       ///< The value for DaqOut voltage when `_val` is true.
 };
 
 /// This class contains information about one ILC.
@@ -291,21 +338,61 @@ class FpgaIo {
 public:
     /// Construct the FpgaIo instance, using mocks if `useMocks` is true.
     /// Mocks are meant for unit testing where no hardware is available.
-    FpgaIo(bool useMocks);
+    FpgaIo(bool useMocks = false);
+
+    /// Returns `_ilcMotorCurrent`
+    DaqIn::Ptr getIlcMotorCurrent() const { return _ilcMotorCurrent; }
+    /// Returns `_ilcCommCurrent`
+    DaqIn::Ptr getIlcCommCurrent() const { return _ilcCommCurrent; }
+    /// Returns `_ilcMotorVoltage`
+    DaqIn::Ptr getIlcMotorVoltage() const { return _ilcMotorVoltage; }
+    /// Returns `_ilcCommVoltage`
+    DaqIn::Ptr getIlcCommVoltage() const { return _ilcCommVoltage; }
+
+    /// Returns `_ilcMotorPowerOnOut`
+    DaqBoolOut::Ptr getIlcMotorPowerOnOut() const { return _ilcMotorPowerOnOut; }
+    /// Returns `_ilcCommPowerOnOut`
+    DaqBoolOut::Ptr getIlcCommPowerOnOut() const { return _ilcCommPowerOnOut; }
+    /// Returns `_crioInterlockEnableOut`
+    DaqBoolOut::Ptr getCrioInterlockEnableOut() const { return _crioInterlockEnableOut; }
+
+    /// Returns `_ilcMotorPowerOnIn`
+    DaqBoolIn::Ptr getIlcMotorPowerOnIn() const { return _ilcMotorPowerOnIn; }
+    /// Returns `_ilcCommPowerOnIn`
+    DaqBoolIn::Ptr getIlcCommPowerOnIn() const { return _ilcCommPowerOnIn; }
+    /// Returns `_crioInterlockEnableIn`
+    DaqBoolIn::Ptr getCrioInterlockEnableIn() const { return _crioInterlockEnableIn; }
+
+    /// Returns pointer container for all ILC instances.
+    AllIlcs::Ptr getAllIlcs() const { return _ilcs; }
+
+    /// Returns `_testIlcMotorCurrent`
+    DaqOut::Ptr getTestIlcMotorCurrent() const { return _testIlcMotorCurrent; }
+    /// Returns `_testIlcCommCurrent`
+    DaqOut::Ptr getTestIlcCommCurrent() const { return _testIlcCommCurrent; }
+    /// Returns `_testIlcMotorVoltage`
+    DaqOut::Ptr getTestIlcMotorVoltage() const { return _testIlcMotorVoltage; }
+    /// Returns `_testIlcCommVoltage`
+    DaqOut::Ptr getTestIlcCommVoltage() const { return _testIlcCommVoltage; }
 
 private:
-    DaqIn::Ptr _IlcMotorCurrent;  ///< ILC motor current input
-    DaqIn::Ptr _IlcCommCurrent;   ///< ILC comm current input
-    DaqIn::Ptr _IlcMotorVoltage;  ///< ILC motor voltage input
-    DaqIn::Ptr _IlcCommVoltage;   ///< ILC comm voltage input
+    std::map<std::string, DaqIn::Ptr> _mapDaqIn;            ///< map of all DaqIn instances.
+    std::map<std::string, DaqOut::Ptr> _mapDaqOut;          ///< map of all DaqOut instances.
+    std::map<std::string, DaqBoolIn::Ptr> _mapDaqBoolIn;    ///< map of all DaqBoolIn instances.
+    std::map<std::string, DaqBoolOut::Ptr> _mapDaqBoolOut;  ///< map of all DaqBoolOut instances.
 
-    DaqBoolOut::Ptr _IlcMotorPowerOnOut;      ///< ILC mototr power on output
-    DaqBoolOut::Ptr _IlcCommPowerOnOut;       //< ILomm power on output
-    DaqBoolOut::Ptr _CrioInterlockEnableOut;  ///< cRIO interlock enable output
+    DaqIn::Ptr _ilcMotorCurrent;  ///< ILC motor current input
+    DaqIn::Ptr _ilcCommCurrent;   ///< ILC comm current input
+    DaqIn::Ptr _ilcMotorVoltage;  ///< ILC motor voltage input
+    DaqIn::Ptr _ilcCommVoltage;   ///< ILC comm voltage input
 
-    DaqBoolIn::Ptr _IlcMotorPowerOnIn;      ///< ILC mototr power on input
-    DaqBoolIn::Ptr _IlcCommPowerOnIn;       ///< ILC comm power on input
-    DaqBoolIn::Ptr _CrioInterlockEnableIn;  ///< cRIO interlock enable input
+    DaqBoolOut::Ptr _ilcMotorPowerOnOut;      ///< ILC mototr power on output
+    DaqBoolOut::Ptr _ilcCommPowerOnOut;       //< ILomm power on output
+    DaqBoolOut::Ptr _crioInterlockEnableOut;  ///< cRIO interlock enable output
+
+    DaqBoolIn::Ptr _ilcMotorPowerOnIn;      ///< ILC mototr power on input
+    DaqBoolIn::Ptr _ilcCommPowerOnIn;       ///< ILC comm power on input
+    DaqBoolIn::Ptr _crioInterlockEnableIn;  ///< cRIO interlock enable input
 
     AllIlcs::Ptr _ilcs;  ///< Vector of all ILC
 

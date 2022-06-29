@@ -25,6 +25,7 @@
 // System headers
 
 // Project headers
+#include "system/Config.h"
 #include "util/Bug.h"
 #include "util/Log.h"
 
@@ -41,25 +42,33 @@ FpgaIo::FpgaIo(bool useMocks) {
         throw util::Bug(ERR_LOC, "Only Mock instances available.");
     }
 
-    _IlcMotorCurrent = std::make_shared<DaqIn>("ILC_Motor_Current");
-    _IlcCommCurrent = std::make_shared<DaqIn>("ILC_Comm_Current");
-    _IlcMotorVoltage = std::make_shared<DaqIn>("ILC_Motor_Voltage");
-    _IlcCommVoltage = std::make_shared<DaqIn>("ILC_Comm_Voltage");
+    _ilcMotorCurrent = DaqIn::create("ILC_Motor_Current", &_mapDaqIn);
+    _ilcCommCurrent = DaqIn::create("ILC_Comm_Current", &_mapDaqIn);
+    _ilcMotorVoltage = DaqIn::create("ILC_Motor_Voltage", &_mapDaqIn);
+    _ilcCommVoltage = DaqIn::create("ILC_Comm_Voltage", &_mapDaqIn);
 
-    _IlcMotorPowerOnOut = std::make_shared<DaqBoolOut>("ILC_Motor_Power_On_out");
-    _IlcCommPowerOnOut = std::make_shared<DaqBoolOut>("ILC_Comm_Power_On_out");
-    _CrioInterlockEnableOut = std::make_shared<DaqBoolOut>("cRIO_Interlock_Enable_out");
+    _ilcMotorPowerOnOut = DaqBoolOut::create("ILC_Motor_Power_On_out", &_mapDaqBoolOut);
+    _ilcCommPowerOnOut = DaqBoolOut::create("ILC_Comm_Power_On_out", &_mapDaqBoolOut);
+    _crioInterlockEnableOut = DaqBoolOut::create("cRIO_Interlock_Enable_out", &_mapDaqBoolOut);
 
-    _IlcMotorPowerOnIn = std::make_shared<DaqBoolIn>("ILC_Motor_Power_On_in");
-    _IlcCommPowerOnIn = std::make_shared<DaqBoolIn>("ILC_Comm_Power_On_in");
-    _CrioInterlockEnableIn = std::make_shared<DaqBoolIn>("cRIO_Interlock_Enable_in");
+    _ilcMotorPowerOnIn = DaqBoolIn::create("ILC_Motor_Power_On_in", &_mapDaqBoolIn);
+    _ilcCommPowerOnIn = DaqBoolIn::create("ILC_Comm_Power_On_in", &_mapDaqBoolIn);
+    _crioInterlockEnableIn = DaqBoolIn::create("cRIO_Interlock_Enable_in", &_mapDaqBoolIn);
 
-    _ilcs = std::make_shared<AllIlcs>(useMocks);
+    _ilcs = make_shared<AllIlcs>(useMocks);
 
-    _testIlcMotorCurrent = std::make_shared<DaqOut>("ILC_Motor_Current_test");
-    _testIlcCommCurrent = std::make_shared<DaqOut>("ILC_Comm_Current_test");
-    _testIlcMotorVoltage = std::make_shared<DaqOut>("ILC_Motor_Voltage_test");
-    _testIlcCommVoltage = std::make_shared<DaqOut>("ILC_Comm_Voltage_test");
+    _testIlcMotorCurrent = DaqOut::create("ILC_Motor_Current_test", &_mapDaqOut);
+    _testIlcCommCurrent = DaqOut::create("ILC_Comm_Current_test", &_mapDaqOut);
+    _testIlcMotorVoltage = DaqOut::create("ILC_Motor_Voltage_test", &_mapDaqOut);
+    _testIlcCommVoltage = DaqOut::create("ILC_Comm_Voltage_test", &_mapDaqOut);
+
+    for (auto& elem : _mapDaqOut) {
+        (elem.second)->finalSetup(_mapDaqIn);
+    }
+
+    for (auto& elem : _mapDaqBoolOut) {
+        (elem.second)->finalSetup(_mapDaqBoolIn, _mapDaqOut);
+    }
 }
 
 AllIlcs::AllIlcs(bool useMocks) {
@@ -83,12 +92,12 @@ AllIlcs::AllIlcs(bool useMocks) {
     }
 }
 
-Ilc::Ilc(std::string const& name, int idNum) : _name(name), _idNum(idNum) {}
+Ilc::Ilc(string const& name, int idNum) : _name(name), _idNum(idNum) {}
 
 Ilc::Ptr& AllIlcs::_getIlcPtr(unsigned int idNum) {
     if (idNum < 1 || idNum > _ilcs.size()) {
         LERROR("AllIlcs::_getIlcPtr ", idNum, " throwing out of range");
-        throw std::out_of_range("_getIlcPtr invalid val " + std::to_string(idNum));
+        throw std::out_of_range("_getIlcPtr invalid val " + to_string(idNum));
     }
     return _ilcs[idNum - 1];
 }
@@ -114,8 +123,28 @@ uint16_t Ilc::getBroadcastCommCount() {
     return out;
 }
 
+DaqIn::Ptr DaqIn::create(string const& name, map<string, DaqIn::Ptr>* mapDaqIn) {
+    Ptr ptr = shared_ptr<DaqIn>(new DaqIn(name));
+
+    if (mapDaqIn != nullptr) {
+        auto ret = mapDaqIn->insert(make_pair(name, ptr));
+        if (ret.second == false) {
+            string errMsg(name + " already in mapDaqIn");
+            LERROR(errMsg);
+            throw util::Bug(ERR_LOC, errMsg);
+        }
+    }
+    return ptr;
+}
+
 DaqIn::DaqIn(string const& name) : _name(name) {
-    // FUTURE: Probably set _scale from config file.
+    // Look for "scale" in Config
+    try {
+        _scale = system::Config::get().getSectionKeyAsDouble(_name, "scale");
+    } catch (system::ConfigException const& ex) {
+        LWARN("No scale entry found for ", _name);
+    }
+    LINFO("DaqIn config ", _name, " scale=", _scale);
 }
 
 void DaqIn::setRaw(double val) {
@@ -137,8 +166,49 @@ DaqIn::Data DaqIn::getData() {
     return _data;
 }
 
+DaqOut::Ptr DaqOut::create(string const& name, map<string, DaqOut::Ptr>* mapDaqOut) {
+    Ptr ptr = shared_ptr<DaqOut>(new DaqOut(name));
+
+    if (mapDaqOut != nullptr) {
+        auto ret = mapDaqOut->insert(make_pair(name, ptr));
+        if (ret.second == false) {
+            string errMsg(name + " already in mapDaqOut");
+            LERROR(errMsg);
+            throw util::Bug(ERR_LOC, errMsg);
+        }
+    }
+    return ptr;
+}
+
 DaqOut::DaqOut(string const& name) : _name(name) {
-    // FUTURE: Probably set _scale from config file.
+    // Look for "scale" in Config
+    try {
+        _scale = system::Config::get().getSectionKeyAsDouble(_name, "scale");
+    } catch (system::ConfigException const& ex) {
+        LWARN("No scale entry found for ", _name);
+    }
+    LINFO("DaqOut config ", _name, " scale=", _scale);
+
+    try {
+        _linkStr = system::Config::get().getSectionKeyAsString(_name, "link");
+    } catch (system::ConfigException const& ex) {
+        LWARN("No link entry found for ", _name);
+    }
+    LINFO("DaqOut config ", _name, " scale=", _scale);
+}
+
+void DaqOut::finalSetup(map<string, DaqIn::Ptr>& mapDaqIn) {
+    if (!_linkStr.empty()) {
+        auto iter = mapDaqIn.find(_linkStr);
+        if (iter != mapDaqIn.end()) {
+            _link = iter->second;
+            LINFO("Setting DaqOut ", _name, " link to ", _linkStr, " ", _link->getName());
+        } else {
+            string errMsg = string("DaqOut::finalSetup ") + _name + " couldn't find DaqIn " + _linkStr;
+            LERROR(errMsg);
+            throw util::Bug(ERR_LOC, errMsg);
+        }
+    }
 }
 
 void DaqOut::setSource(double val) {
@@ -158,10 +228,128 @@ DaqOut::Data DaqOut::getData() {
     return _data;
 }
 
-void DaqOut::written() {
+void DaqOut::write() {
     /// FUTURE: possibly change name and actuall write the data to the FPGA.
-    lock_guard<mutex> lg(_mtx);
-    _data.lastWrite = FpgaClock::now();
+    double outVal;
+    {
+        lock_guard<mutex> lg(_mtx);
+        _data.lastWrite = FpgaClock::now();
+        outVal = _data.outVal;
+    }
+    if (_link != nullptr) {
+        _link->setRaw(outVal);
+    }
+}
+
+DaqBoolIn::Ptr DaqBoolIn::create(string const& name, map<string, DaqBoolIn::Ptr>* mapDaqBoolIn) {
+    Ptr ptr = shared_ptr<DaqBoolIn>(new DaqBoolIn(name));
+
+    if (mapDaqBoolIn != nullptr) {
+        auto ret = mapDaqBoolIn->insert(make_pair(name, ptr));
+        if (ret.second == false) {
+            string errMsg(name + " already in mapDaqBoolIn");
+            LERROR(errMsg);
+            throw util::Bug(ERR_LOC, errMsg);
+        }
+    }
+    return ptr;
+}
+
+DaqBoolIn::DaqBoolIn(string const& name) : _name(name) {}
+
+DaqBoolOut::Ptr DaqBoolOut::create(string const& name, map<string, DaqBoolOut::Ptr>* mapDaqBoolOut) {
+    Ptr ptr = shared_ptr<DaqBoolOut>(new DaqBoolOut(name));
+
+    if (mapDaqBoolOut != nullptr) {
+        auto ret = mapDaqBoolOut->insert(make_pair(name, ptr));
+        if (ret.second == false) {
+            string errMsg(name + " already in mapDaqBoolOut");
+            LERROR(errMsg);
+            throw util::Bug(ERR_LOC, errMsg);
+        }
+    }
+    return ptr;
+}
+
+DaqBoolOut::DaqBoolOut(string const& name) : _name(name) {
+    try {
+        _linkBoolInStr = system::Config::get().getSectionKeyAsString(_name, "linkBoolOut");
+    } catch (system::ConfigException const& ex) {
+        LWARN("No link entry found for ", _name);
+    }
+    LINFO("DaqBoolOut config ", _name, " linkBoolIn=", _linkBoolInStr);
+
+    try {
+        _linkCurrentOutStr = system::Config::get().getSectionKeyAsString(_name, "linkCurrentOut");
+        try {
+            _linkCurrentOutVal = system::Config::get().getSectionKeyAsDouble(_name, "linkCurrentOutVal");
+        } catch (system::ConfigException const& ex) {
+            throw util::Bug(ERR_LOC, string("If linkCurrentOut is defined for ") + _name +
+                                             " linkCurrentOutVal must be defined");
+        }
+    } catch (system::ConfigException const& ex) {
+        LWARN("No linkCurrent entry found for ", _name);
+    }
+    LINFO("DaqBoolOut config ", _name, " linkCurrentOut=", _linkCurrentOutStr, " val=", _linkCurrentOutVal);
+
+    try {
+        _linkVoltageOutStr = system::Config::get().getSectionKeyAsString(_name, "linkVoltageOut");
+        try {
+            _linkVoltageOutVal = system::Config::get().getSectionKeyAsDouble(_name, "linkVoltageOutVal");
+        } catch (system::ConfigException const& ex) {
+            throw util::Bug(ERR_LOC, string("If linkVoltageOut is defined for ") + _name +
+                                             " linkVoltageOutVal must be defined");
+        }
+    } catch (system::ConfigException const& ex) {
+        LWARN("No linkVoltage entry found for ", _name);
+    }
+    LINFO("DaqBoolOut config ", _name, " linkVoltageOut=", _linkVoltageOutStr, " val=", _linkVoltageOutVal);
+}
+
+void DaqBoolOut::finalSetup(map<string, DaqBoolIn::Ptr>& mapDaqBoolIn, map<string, DaqOut::Ptr>& mapDaqOut) {
+    // Setup link to DaqBoolIn, if defined
+    if (!_linkBoolInStr.empty()) {
+        auto iter = mapDaqBoolIn.find(_linkBoolInStr);
+        if (iter != mapDaqBoolIn.end()) {
+            _linkBoolIn = iter->second;
+            LINFO("Setting DaqBoolOut ", _name, " link to ", _linkBoolInStr, " ", _linkBoolIn->getName());
+        } else {
+            string errMsg =
+                    string("DaqBoolOut::finalSetup ") + _name + " couldn't find DaqBoolIn " + _linkBoolInStr;
+            LERROR(errMsg);
+            throw util::Bug(ERR_LOC, errMsg);
+        }
+    }
+
+    // Setup link to DaqOut for current
+    if (!_linkCurrentOutStr.empty()) {
+        auto iter = mapDaqOut.find(_linkCurrentOutStr);
+        if (iter != mapDaqOut.end()) {
+            _linkCurrentOut = iter->second;
+            LINFO("Setting DaqBoolOut ", _name, " link to ", _linkCurrentOutStr, " ",
+                  _linkCurrentOut->getName());
+        } else {
+            string errMsg =
+                    string("DaqOut::finalSetup ") + _name + " couldn't find DaqOut " + _linkCurrentOutStr;
+            LERROR(errMsg);
+            throw util::Bug(ERR_LOC, errMsg);
+        }
+    }
+
+    // Setup link to DaqOut for Voltage
+    if (!_linkVoltageOutStr.empty()) {
+        auto iter = mapDaqOut.find(_linkVoltageOutStr);
+        if (iter != mapDaqOut.end()) {
+            _linkVoltageOut = iter->second;
+            LINFO("Setting DaqBoolOut ", _name, " link to ", _linkVoltageOutStr, " ",
+                  _linkVoltageOut->getName());
+        } else {
+            string errMsg =
+                    string("DaqOut::finalSetup ") + _name + " couldn't find DaqOut " + _linkVoltageOutStr;
+            LERROR(errMsg);
+            throw util::Bug(ERR_LOC, errMsg);
+        }
+    }
 }
 
 }  // namespace control

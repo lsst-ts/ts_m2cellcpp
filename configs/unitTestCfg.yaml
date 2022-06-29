@@ -15,3 +15,45 @@ TelemetryServer:
 # Entries made up for unit testing only.
 testconstant:
   pi: 3.14159265
+
+# DaqOut entries for testing, optional Config elements.
+ILC_Motor_Current_test:
+  link: "ILC_Motor_Current"
+  scale: 2.0
+
+ILC_Motor_Current:
+  scale: 2.0
+
+ILC_Motor_Voltage_test:
+  link: "ILC_Motor_Voltage"
+  scale: 1.0
+
+ILC_Comm_Current_test:
+  link: "ILC_Comm_Current"
+  scale: 1.0
+
+ILC_Comm_Voltage_test:
+  link: "ILC_Comm_Voltage"
+  scale: 1.0
+
+# DaqBoolOut entries for testing, optional Config elements.
+ILC_Motor_Power_On_in:
+  linkBoolIn: "ILC_Motor_Power_On_in"
+  linkCurrentOut: "ILC_Motor_Current_test"
+  linkCurrentOutVal: 0.5
+  linkVoltageOut: "ILC_Motor_Voltage_test"
+  linkVoltageOutVal: 8.0
+
+ILC_Comm_Power_On_in:
+  linkBoolIn: "ILC_Comm_Power_On_in"
+  linkCurrentOut: "ILC_Comm_Current_test"
+  linkCurrentOutVal: 0.1
+  linkVoltageOut: "ILC_Comm_Voltage_test"
+  linkVoltageOutVal: 12.0
+
+cRIO_Interlock_Enable_in:
+  linkBoolOut: "cRIO_Interlock_Enable_in"
+
+
+
+
