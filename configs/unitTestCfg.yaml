@@ -16,7 +16,7 @@ TelemetryServer:
 testconstant:
   pi: 3.14159265
 
-# DaqOut entries for testing, optional Config elements.
+# DaqOutMock entries for testing, optional Config elements.
 ILC_Motor_Current_test:
   link: "ILC_Motor_Current"
   scale: 2.0
@@ -36,7 +36,7 @@ ILC_Comm_Voltage_test:
   link: "ILC_Comm_Voltage"
   scale: 1.0
 
-# DaqBoolOut entries for testing, optional Config elements.
+# DaqBoolOutMock entries for testing, optional Config elements.
 ILC_Motor_Power_On_out:
   linkBoolIn: "ILC_Motor_Power_On_in"
   linkCurrentOut: "ILC_Motor_Current_test"

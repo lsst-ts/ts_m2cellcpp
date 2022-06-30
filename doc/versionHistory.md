@@ -1,5 +1,9 @@
 # Version History
 
+0.2.2
+
+- Added FpgaIo class and related mock classes for communicating with FPGA.
+
 0.2.1
 
 - Changed to build the main server program from serverMain/main.cpp.

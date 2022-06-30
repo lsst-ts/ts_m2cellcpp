@@ -1,0 +1,65 @@
+@startuml
+class Config
+class FpgaIo
+class DaqBase
+class DaqIn
+class DaqInMock
+class DaqInReal
+class DaqOut
+class DaqOutMock
+class DaqOutReal
+class DaqBoolIn
+class DaqBoolInMock
+class DaqBoolInReal
+class DaqBoolOut
+class DaqBoolOutMock
+class DaqBoolOutReal
+class Ilc
+class AllIlc
+
+
+DaqIn : theoretical, unimplemented
+DaqInReal : theoretical, unimplemented
+DaqOut : theoretical, unimplemented
+DaqOutReal : theoretical, unimplemented
+DaqBoolIn : theoretical, unimplemented
+DaqBoolInReal : theoretical, unimplemented
+DaqBoolOut : theoretical, unimplemented
+DaqBoolOutReal : theoretical, unimplemented
+
+
+DaqInMock <.. Config : Configuration data
+DaqOutMock <.. Config : Configuration data
+DaqBoolInMock <.. Config : Configuration data
+DaqBoolOutMock <.. Config : Configuration data
+DaqInReal <.. Config : Configuration data
+DaqOutReal <.. Config : Configuration data
+DaqBoolInReal <.. Config : Configuration data
+DaqBoolOutReal <.. Config : Configuration data
+
+DaqBase <|-- DaqIn
+DaqIn <|-- DaqInMock
+DaqIn <|-- DaqInReal
+
+DaqBase <|-- DaqBoolIn
+DaqBoolIn <|-- DaqBoolInMock
+DaqBoolIn <|-- DaqBoolInReal
+
+DaqBase <|-- DaqOut
+DaqOut <|-- DaqOutMock
+DaqOut <|-- DaqOutReal
+
+DaqBase <|-- DaqBoolOut
+DaqBoolOut <|-- DaqBoolOutMock
+DaqBoolOut <|-- DaqBoolOutReal
+
+AllIlc o-- Ilc
+
+FpgaIo o-- AllIlc
+
+FpgaIo o-- DaqIn
+FpgaIo o-- DaqOut
+FpgaIo o-- DaqBoolIn
+FpgaIo o-- DaqBoolOut
+
+@enduml
