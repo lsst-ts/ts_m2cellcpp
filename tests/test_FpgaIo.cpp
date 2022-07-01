@@ -68,16 +68,16 @@ TEST_CASE("Test FpgaIo", "[FpgaIo]") {
         LDEBUG("Testing AllIlcs");
         AllIlcs ilcs(true);
         auto a = ilcs.getIlc(1);
-        REQUIRE(a->getName() == "Tangent_1");
+        REQUIRE(a->getName() == "Axial_1");
         REQUIRE(a->getIdNum() == 1);
-        a = ilcs.getIlc(6);
-        REQUIRE(a->getName() == "Tangent_6");
-        REQUIRE(a->getIdNum() == 6);
-        a = ilcs.getIlc(7);
-        REQUIRE(a->getName() == "Axial_7");
-        REQUIRE(a->getIdNum() == 7);
+        a = ilcs.getIlc(72);
+        REQUIRE(a->getName() == "Axial_72");
+        REQUIRE(a->getIdNum() == 72);
+        a = ilcs.getIlc(73);
+        REQUIRE(a->getName() == "Tangent_73");
+        REQUIRE(a->getIdNum() == 73);
         a = ilcs.getIlc(78);
-        REQUIRE(a->getName() == "Axial_78");
+        REQUIRE(a->getName() == "Tangent_78");
         REQUIRE(a->getIdNum() == 78);
 
         REQUIRE_THROWS(ilcs.getIlc(0));

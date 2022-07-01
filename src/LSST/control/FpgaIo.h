@@ -99,25 +99,25 @@ private:
     std::map<std::string, DaqBoolOutMock::Ptr> _mapDaqBoolOut;  ///< map of all DaqBoolOutMock instances.
 
     DaqInMock::Ptr _ilcMotorCurrent;  ///< ILC motor current input
-    DaqInMock::Ptr _ilcCommCurrent;   ///< ILC comm current input
+    DaqInMock::Ptr _ilcCommCurrent;   ///< ILC communication current input
     DaqInMock::Ptr _ilcMotorVoltage;  ///< ILC motor voltage input
-    DaqInMock::Ptr _ilcCommVoltage;   ///< ILC comm voltage input
+    DaqInMock::Ptr _ilcCommVoltage;   ///< ILC communication voltage input
 
-    DaqBoolOutMock::Ptr _ilcMotorPowerOnOut;      ///< ILC mototr power on output
+    DaqBoolOutMock::Ptr _ilcMotorPowerOnOut;      ///< ILC motor power on output
     DaqBoolOutMock::Ptr _ilcCommPowerOnOut;       //< ILomm power on output
     DaqBoolOutMock::Ptr _crioInterlockEnableOut;  ///< cRIO interlock enable output
 
-    DaqBoolInMock::Ptr _ilcMotorPowerOnIn;      ///< ILC mototr power on input
-    DaqBoolInMock::Ptr _ilcCommPowerOnIn;       ///< ILC comm power on input
+    DaqBoolInMock::Ptr _ilcMotorPowerOnIn;      ///< ILC motor power on input
+    DaqBoolInMock::Ptr _ilcCommPowerOnIn;       ///< ILC communication power on input
     DaqBoolInMock::Ptr _crioInterlockEnableIn;  ///< cRIO interlock enable input
 
     AllIlcs::Ptr _ilcs;  ///< Vector of all ILC
 
     // The following are only expected to be found on the test hardware.
     DaqOutMock::Ptr _testIlcMotorCurrent;  ///< ILC motor current test output
-    DaqOutMock::Ptr _testIlcCommCurrent;   ///< ILC comm current test output
+    DaqOutMock::Ptr _testIlcCommCurrent;   ///< ILC communication current test output
     DaqOutMock::Ptr _testIlcMotorVoltage;  ///< ILC motor voltage test output
-    DaqOutMock::Ptr _testIlcCommVoltage;   ///< ILC comm voltage test output
+    DaqOutMock::Ptr _testIlcCommVoltage;   ///< ILC communication voltage test output
 };
 
 }  // namespace control

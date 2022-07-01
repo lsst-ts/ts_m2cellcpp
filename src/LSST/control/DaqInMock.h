@@ -118,7 +118,7 @@ public:
     Data getData();
 
     /// Just set _data.lastWrite to now.
-    /// FUTURE: possibly change name and actuall write the data to the FPGA.
+    /// FUTURE: possibly change name and actually write the data to the FPGA.
     void write();
 
     /// Dump information for the log.
@@ -151,6 +151,7 @@ public:
 
     ~DaqBoolInMock() = default;
 
+    /// Set `_val` to 'v'.
     void setVal(bool v) {
         std::lock_guard<std::mutex> lg(_mtx);
         LDEBUG(getName(), " setVal val=", v);

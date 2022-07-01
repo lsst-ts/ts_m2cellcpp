@@ -42,14 +42,14 @@ AllIlcs::AllIlcs(bool useMocks) {
         throw util::Bug(ERR_LOC, "Only Mock instances available.");
     }
 
-    // The first 6 ILC's are Tangential
-    // 7-78 are Axial.
+    // The first 72 ILC's are Axial
+    // while 73-78 are Tangential.
     for (int j = 1; j <= 78; ++j) {
         string name;
-        if (j <= 6) {
-            name = "Tangent_";
-        } else {
+        if (j <= 72) {
             name = "Axial_";
+        } else {
+            name = "Tangent_";
         }
         name += to_string(j);
         _ilcs.emplace_back(make_shared<Ilc>(name, j));

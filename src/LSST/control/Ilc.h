@@ -39,7 +39,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-/// This class contains information about one ILC.
+/// This class contains information about one ILC (Inner Loop Controller).
 /// FUTURE: Possibly use this as a base class for Axial and Tangential ILC classes.
 /// Unit tests in test_FpgaIo.cpp
 class Ilc {
@@ -61,10 +61,10 @@ public:
     /// Return the `_idNum` of the ILC.
     int getIdNum() { return _idNum; }
 
-    /// Return value of `bit` from `byt`.
+    /// Return value of `bit` from `byteIn`.
     /// `bit` 0 would be the left/least most bit.
     /// `bit` 7 would be the right most bit.
-    static bool getBit(int bit, uint8_t byt);
+    static bool getBit(int bit, uint8_t byteIn);
 
     /// Return true if ILC Fault
     bool getFault();
@@ -72,7 +72,7 @@ public:
     /// Return true if clockwise limit tripped
     bool getCWLimit();
 
-    /// Return true if clockwise limit tripped
+    /// Return true if counter clockwise limit tripped
     bool getCCWLimit();
 
     /// Return Broadcast communication counter

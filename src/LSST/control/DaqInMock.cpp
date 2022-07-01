@@ -76,7 +76,8 @@ DaqInMock::Data DaqInMock::getData() {
 std::ostream& DaqInMock::dump(std::ostream& os) {
     DaqBase::dump(os);
     os << "DaqInMock scale=" << _scale;
-    os << " lastRead=" << fpgaTimeStr(_data.lastRead) << " raw=" << _data.raw << " adjusted=" << _data.adjusted;
+    os << " lastRead=" << fpgaTimeStr(_data.lastRead) << " raw=" << _data.raw
+       << " adjusted=" << _data.adjusted;
     return os;
 }
 
@@ -142,7 +143,8 @@ DaqOutMock::Data DaqOutMock::getData() {
 std::ostream& DaqOutMock::dump(std::ostream& os) {
     DaqBase::dump(os);
     os << "DaqOutMock scale=" << _scale;
-    os << " lastWrite=" << fpgaTimeStr(_data.lastWrite) << " source=" << _data.source << " outVal=" << _data.outVal;
+    os << " lastWrite=" << fpgaTimeStr(_data.lastWrite) << " source=" << _data.source
+       << " outVal=" << _data.outVal;
     return os;
 }
 
