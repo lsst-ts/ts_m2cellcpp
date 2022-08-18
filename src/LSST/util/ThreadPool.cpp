@@ -259,9 +259,9 @@ void ThreadPool::_decrPoolThreadCount() {
 
 void ThreadPool::_waitIfAtMaxThreadPoolCount() {
     unique_lock<mutex> lockPool(_mxPool);
-    auto logLvl = Log::DEBUG;
+    auto logLvl = spdlog::level::debug;
     if (_poolThreadCount >= _maxThreadCount) {
-        logLvl = Log::WARN;
+        logLvl = spdlog::level::warn;
     }
     Log::logW(logLvl, __FILE__, __LINE__, "wait before _poolThreadCount=", _poolThreadCount);
     _cvPool.wait(lockPool, [this]() { return (_poolThreadCount <= _maxThreadCount); });
