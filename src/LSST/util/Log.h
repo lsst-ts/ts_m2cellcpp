@@ -95,19 +95,20 @@ namespace util {
 ///      - fast way to get time and date into the logs
 ///  cons:
 ///      - somewhat slower compile time
-///      - The format syntax it uses can cause is prone to runtime errors with missing
+///      - The format syntax it uses is prone to runtime errors with missing
 ///        or extra elements or unmatched curly brackets, such as
 ///        `SPDDEBUG("test msg {", 34.2);`, which results in nothing being
 ///        put in the log. This can be caught at runtime by using `FMT_STRING`, like
 ///        `SPDDEBUG(FMT_STRING("test msg {"), 34.2);`
-///        `FMT_STRING` should be used in all calls using spdlog directly.
+///        `FMT_STRING` should be used in all calls using spdlog directly, and
+///        can't be used inside of macros.
 ///      - Using spdlog::set_pattern() to get the thread id in the log results
 ///        in the spdlog macros (anything that uses SPDLOG_LOGGER_CALL) dropping
 ///        the file and line number (?!). This can probably be fixed, but is a currently a
 ///        mystery. So anything using spdlog directly will not have the
 ///        thread id unless added in the log statement.
 ///        Also, using spdlog::set_pattern causes `LDEBUG` and its kin to slow significantly,
-///        another mystery. Thankfully, the default pattern is adequate.
+///        another mystery. Thankfully, the default pattern is adequate for `LDEBUG`.
 /// At this time, using `LINFO` instead of `SPDINFO` is about 0.2-0.4 microseconds slower, but includes
 /// thread id. The contents of the log message, surprisingly, seem to have little impact (big
 /// messages with lots of conversions still only take about 0.3 microseconds longer).
@@ -116,6 +117,7 @@ namespace util {
 /// In most cases, `LINFO` and its ilk should be fast enough, include thread id, and are not
 /// prone to runtime errors.
 /// If speed is essential, `SPDINFO(FMT_STRING())` should be used.
+///
 /// unit tests in tests/test_Log.cpp
 class Log {
 public:
@@ -165,33 +167,32 @@ public:
     /// which will likely cause difficult race conditions.
     bool setupFileRotation(std::string const& fileName, size_t fileSize, size_t maxFiles);
 
+    /// Only log messages with a LogLvl greater than or equal to _logLvl will be recorded.
     /// @return the system wide log level.
-    /// Only log messages with a LogLvl greater than _logLvl will be recorded.
     spdlog::level::level_enum getLogLvl() const { return speedLog->level(); }
 
     /// Set the minimum logLvl to log. logLvl uses spdlog::level::level_enum.
+    /// This value is passed to `speedLog`.
     void setLogLvl(spdlog::level::level_enum logLvl);
 
-    /// Get a short version of the log level. This is usually redundant in
-    /// the log as spdlog also includes the log level, but can be useful
-    /// for COUT, BUFFER, and MIRROR modes.
-    /// @return a string version of the LogLvl.
+    /// Return a string version of the LogLvl.
     static const char* getLogLvl(spdlog::level::level_enum const lvl);
 
-    /// The base logging function called by macros.
+    /// The base logging function called by `LINFO` style macros.
+    /// It adds the thread id to the log message.
     template <typename... Args>
     static void logW(spdlog::level::level_enum lvl, const char* file, int line, const Args&... args) {
         Log& lg = Log::getLog();
         if (lvl < lg.getLogLvl()) {
             return;
         }
-        std::stringstream msg;
+        std::stringstream msg;  // This is a likely target for optimization.
         std::thread::id tid = std::this_thread::get_id();
         msg << "[" << file << ":" << line << "] tid:" << std::hex << tid << std::dec << " ";
         lg.logW(lvl, msg, args...);
     }
 
-    /// This function recursively adds the `argss` to `msg`.
+    /// This function recursively adds the `args` to `msg`.
     /// When `args` is empty, `logW(std::stringstream& msg)` is called.
     template <typename T, typename... Args>
     void logW(spdlog::level::level_enum lvl, std::stringstream& msg, T val, const Args&... args) {
@@ -201,26 +202,24 @@ public:
 
     /// The terminating function called in the recursive `logW` call.
     /// This function will write the contents of msg to the
-    /// location indicated by `_outputDest`
+    /// location indicated by `_outputDest`.
     void logW(spdlog::level::level_enum lvl, std::stringstream& msg);
 
-    /// @return the last string in _buffers.
-    /// Used for testing.
+    /// Return the last string in _buffers, used for testing.
     std::string getBufferLast();
 
-    /// @return the number of strings in _buffers.
-    /// Used for testing.
+    /// Return the number of strings in _buffers, used for testing.
     uint getBuffersSize() const;
 
     /// Set the maximum number of buffers stored when using
     /// BUFFER or MIRRORED as the destination.
     void setMaxBuffers(int maxBuffers);
 
-    /// @return value of environment variabe LOGLVL, defaults to TRACE (1).
-    /// Expected values of LOGLVL are associated with their corresponding LogLvl.
-    /// TRACE being 1, CRITICAL being 6. Values are constrained such that
-    /// values less than TRACE are set to TRACE, and values greater than
-    /// CRITCAL are set to CRITICAL.
+    /// Return the value of environment variabe LOGLVL, defaults to TRACE (1).
+    /// values are
+    /// TRACE=1, DEBUG=2, INFO=3, WARN=4, ERROR=5, CRITICAL = 6. Values are
+    /// constrained such that values less than TRACE are set to TRACE, and
+    /// values greater than CRITCAL are set to CRITICAL.
     static spdlog::level::level_enum getEnvironmentLogLvl();
 
     /// Set the current _logLvl to the environment LOGLVL
@@ -243,12 +242,14 @@ private:
     /// note: _mtx must be held before calling
     void _reduceBuffers();
 
-    std::atomic<spdlog::level::level_enum> _logLvl;  ///< System wide log level.
+    /// System wide log level, passed to `speedlog`.
+    std::atomic<spdlog::level::level_enum> _logLvl;
 
     OutputDest _outputDest{COUT};  ///< Where the log messages will be stored.
 
     std::string _logFileBaseName;  ///< Log file name when `_outputDest == FILE`.
-    /// List of string to temporarily store log messages.
+
+    /// List of strings to temporarily store log messages.
     std::deque<std::string> _buffers;
     uint _maxBuffers = 2000;  ///< maximum size of _buffers (need enough to read config)
 
