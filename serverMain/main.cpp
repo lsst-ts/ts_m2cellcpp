@@ -28,10 +28,31 @@
 using namespace std;
 using namespace LSST::m2cellcpp;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
+    // Store log messages and send to cout until the logfile is setup.
+    // If environment LOGLVL is undefined, defaults to `trace`.
+    LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
+    util::Log& lg = util::Log::getLog();
+    lg.setOutputDest(util::Log::MIRRORED);
     LINFO("starting main");
+
+    // Read the configuration
     string cfgPath = system::Config::getEnvironmentCfgPath("./configs");
     system::Config::setup(cfgPath + "m2cellCfg.yaml");
+    system::Config& sysCfg = system::Config::get();
+
+    // Setup logging
+    string logFileName = sysCfg.getLogFileName();
+    int logFileSizeMB = sysCfg.getLogFileSizeMB();
+    int logMaxFiles = sysCfg.getLogMaxFiles();
+    LINFO("Starting logger name=", logFileName, " sizeMB=", logFileSizeMB, " maxFiles=", logMaxFiles);
+    if (!lg.setupFileRotation(logFileName, 1024 * 1024 * logFileSizeMB, logMaxFiles)) {
+        LCRITICAL("FAILED to setup logging name=", logFileName, " sizeMB=", logFileSizeMB,
+                  " maxFiles=", logMaxFiles);
+        exit(-1);
+    }
+    lg.setOutputDest(util::Log::SPEEDLOG);
+    lg.flush();
 
     // Start the control system
     control::Context::setup();
@@ -39,6 +60,8 @@ int main(int argc, char *argv[]) {
     // Start the telemetry server
 
     // Start a ComControlServer
+    LDEBUG("ComControlServer starting...");
+    lg.flush();
     system::IoContextPtr ioContext = make_shared<boost::asio::io_context>();
     int port = system::Config::get().getControlServerPort();
     auto cmdFactory = control::NetCommandFactory::create();

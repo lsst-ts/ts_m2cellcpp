@@ -17,12 +17,12 @@ m2cell: $(BIN_DIR)/m2cell run_tests
 	@echo 'make m2cell'
 
 # Make the bin dir and build the server main program.
-$(BIN_DIR)/m2cell: $(LIB_DIR)/libm2cellcpp.a $(BUILD_DIR)/m2cell.o
+$(BIN_DIR)/m2cell: $(BUILD_DIR)/m2cell.o $(LIB_DIR)/libm2cellcpp.a
 	mkdir -p bin
 	$(CPP) $(OBJS) $(BUILD_DIR)/m2cell.o -o $@ $(LDFLAGS) $(CPP_LIBS)
 
 # Build the main server object.
-$(BUILD_DIR)/m2cell.o:
+$(BUILD_DIR)/m2cell.o: serverMain/main.cpp
 	$(CPP) $(CPPFLAGS) $(CXXFLAGS) $(CPPARGS) -c serverMain/main.cpp -o $@ $(CPP_LIBS)
 
 $(LIB_DIR)/libm2cellcpp.a: $(BUILD_DIR)/libm2cellcpp.a

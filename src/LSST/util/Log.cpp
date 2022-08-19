@@ -56,6 +56,7 @@ Log::Log() {
 Log::~Log() {}
 
 bool Log::setupFileRotation(std::string const& fileName, size_t fileSize, size_t maxFiles) {
+    LINFO("Log::setupFileRotation ", fileName, " size=", fileSize, " max=", maxFiles);
     lock_guard<mutex> lck(_mtx);
     if (fileName == "") {
         LERROR("Log::setupFileRotation fileName was empty.");
@@ -163,6 +164,7 @@ bool Log::setOutputDest(OutputDest dest) {
                     auto spl = spdlog::get("rt");
                     if (spl != nullptr) {
                         speedLog = spl;
+                        speedLog->info("using speedLog");
                     } else {
                         speedLog = spdlog::get("console");
                         string eStr("Log::setOutputDest logger 'rt' was not found.");

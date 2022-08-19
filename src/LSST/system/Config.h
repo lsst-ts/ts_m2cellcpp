@@ -83,6 +83,21 @@ public:
     /// @throws `ConfigException` if it's missing.
     std::string getControlServerHost();
 
+    /// Get the `Log: fileName` value from the config file.
+    /// @return the `Log: fileName` value.
+    /// @throws `ConfigException` if it's missing.
+    std::string getLogFileName();
+
+    /// Get the `Log: fileSizeMB` value from the config file.
+    /// @return the `Log: fileSizeMB` value.
+    /// @throws `ConfigException` if it's missing.
+    int getLogFileSizeMB();
+
+    /// Get the `Log: maxFiles` value from the config file.
+    /// @return the `Log: maxFiles` value.
+    /// @throws `ConfigException` if it's missing.
+    int getLogMaxFiles();
+
     /// Get the `ControlServer: port` value from the config file.
     /// @return the `ControlServer: port` int value.
     /// @throws `ConfigException` if it's missing or out of range.
