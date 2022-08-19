@@ -13,7 +13,7 @@ MKDIR_P ?= mkdir -p
 CPPARGS ?= $(INC_FLAGS) $(CPP_FLAGS) -MMD -MP -DVERSION="\"$(VERSION)\""
 
 # The main server application.
-m2cell: $(BIN_DIR)/m2cell run_tests
+m2cell: run_tests $(BIN_DIR)/m2cell
 	@echo 'make m2cell'
 
 # Make the bin dir and build the server main program.
