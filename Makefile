@@ -22,7 +22,7 @@ $(BIN_DIR)/m2cell: $(BUILD_DIR)/m2cell.o $(LIB_DIR)/libm2cellcpp.a
 	$(CPP) $(OBJS) $(BUILD_DIR)/m2cell.o -o $@ $(LDFLAGS) $(CPP_LIBS)
 
 # Build the main server object.
-$(BUILD_DIR)/m2cell.o: serverMain/main.cpp
+$(BUILD_DIR)/m2cell.o:
 	$(CPP) $(CPPFLAGS) $(CXXFLAGS) $(CPPARGS) -c serverMain/main.cpp -o $@ $(CPP_LIBS)
 
 $(LIB_DIR)/libm2cellcpp.a: $(BUILD_DIR)/libm2cellcpp.a
