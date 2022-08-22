@@ -93,6 +93,15 @@ void Config::verifyRequiredElements() {
         threads = getTelemetryServerThreads();
         LINFO("TelemetryServer:threads=", threads);
 
+        string logFileName = getLogFileName();
+        LINFO("Log::fileName=", logFileName);
+
+        int logFileSizeMB = getLogFileSizeMB();
+        LINFO("Log::fileSizeMB=", logFileSizeMB);
+
+        int logMaxFiles = getLogMaxFiles();
+        LINFO("Log::maxFiles=", logMaxFiles);
+
     } catch (exception const& ex) {
         LCRITICAL("Config::verifyRequiredElements config file ", _source, " needs valid ", ex.what());
         throw;
@@ -122,6 +131,24 @@ string Config::getControlServerHost() {
     string section = "ControlServer";
     string key = "host";
     return getSectionKeyAsString(section, key);
+}
+
+string Config::getLogFileName() {
+    string section = "Log";
+    string key = "fileName";
+    return getSectionKeyAsString(section, key);
+}
+
+int Config::getLogFileSizeMB() {
+    string section = "Log";
+    string key = "fileSizeMB";
+    return getSectionKeyAsInt(section, key);
+}
+
+int Config::getLogMaxFiles() {
+    string section = "Log";
+    string key = "maxFiles";
+    return getSectionKeyAsInt(section, key);
 }
 
 int Config::getTelemetryServerPort() {

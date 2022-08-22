@@ -1,5 +1,11 @@
 # Normal Unit Test configuration
 
+# Acceptable values for log file setup
+Log:
+  fileName: "logs/testLog.log"
+  fileSizeMB: 10
+  maxFiles: 11
+
 # Acceptable values for the control server.
 ControlServer:
   host: "127.0.0.1"

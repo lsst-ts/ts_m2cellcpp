@@ -38,11 +38,11 @@ TEST_CASE("Test Log", "[Log]") {
     int bufferLines = 0;
     auto file = __FILE__;
     auto line = __LINE__;
-    REQUIRE_NOTHROW(Log::logW(Log::DEBUG, file, line, "dbg=", 9));
+    REQUIRE_NOTHROW(Log::logW(spdlog::level::debug, file, line, "dbg=", 9));
     ++bufferLines;
     string buff = Log::getLog().getBufferLast();
     std::stringstream sstm;
-    sstm << file << ":" << line << " tid:" << std::hex << tid << " DEBUG dbg=9";
+    sstm << "[" << file << ":" << line << "] tid:" << std::hex << tid << " dbg=9";
     REQUIRE(buff == sstm.str());
 
     int x = 7;
@@ -62,11 +62,13 @@ TEST_CASE("Test Log", "[Log]") {
     REQUIRE(expectedSz == lg.getBuffersSize());
     string tmpLog("/tmp/test_Log.log");
     // Contens of the log buffer should be put into the file.
-    lg.setOutputDest(Log::FILE, tmpLog);
+    lg.setupFileRotation(tmpLog, 1024 * 1024 * 1000, 3);  // 10 5MB files.
+    lg.setOutputDest(Log::SPEEDLOG);
+    ++expectedSz;  // setOutputDest(Log::SPEEDLOG) adds an info level log message.
     // Test that normal log line gets into the file.
     LINFO("one more line");
     ++expectedSz;
-    lg.setOutputDest(Log::COUT);  /// This should close tmpLog
+    lg.flush();
     REQUIRE(lg.getBuffersSize() == 0);
     ifstream tmp(tmpLog);
     REQUIRE(tmp.is_open() == true);
@@ -81,24 +83,74 @@ TEST_CASE("Test Log", "[Log]") {
     // Test log levels
     lg.setOutputDest(Log::MIRRORED);
     auto startSize = lg.getBuffersSize();
-    lg.setLogLvl(Log::DEBUG);
+    lg.setLogLvl(spdlog::level::debug);
     LTRACE("a");
     REQUIRE(startSize == lg.getBuffersSize());
-    lg.setLogLvl(Log::INFO);
+    lg.setLogLvl(spdlog::level::info);
     LDEBUG("b");
     REQUIRE(startSize == lg.getBuffersSize());
-    lg.setLogLvl(Log::WARN);
+    lg.setLogLvl(spdlog::level::warn);
     LINFO("c");
     REQUIRE(startSize == lg.getBuffersSize());
-    lg.setLogLvl(Log::ERROR);
+    lg.setLogLvl(spdlog::level::err);
     LWARN("d");
     REQUIRE(startSize == lg.getBuffersSize());
-    lg.setLogLvl(Log::CRITICAL);
+    lg.setLogLvl(spdlog::level::critical);
     LERROR("e");
     REQUIRE(startSize == lg.getBuffersSize());
     LCRITICAL("f");
     REQUIRE(startSize + 1 == lg.getBuffersSize());
-    lg.setLogLvl(Log::DEBUG);
+    lg.setLogLvl(spdlog::level::debug);
     LDEBUG("g");
     REQUIRE(startSize + 2 == lg.getBuffersSize());
+
+    // spdlog testing of inmproperly formed messages. `FMT_STRING` catches all at compile time,
+    //    but this is what log file output looks like in some improperly formed cases.
+    // spdlog::info("spdlog test3 {", 34.2); /// message missing from output
+    // spdlog::info("spdlog test4 }", 34.2); /// no number in message
+    // spdlog::info("spdlog test5 {} {}", 34.2);
+    //        /// [*** LOG ERROR #0001 ***] [2022-08-11 12:56:10] [] {invalid format string}
+
+    // Test 'SPD' macros.
+    REQUIRE_NOTHROW(SPDTRACE(FMT_STRING("basic test {} {} {}"), "df } {", 6, 9.8765));
+    REQUIRE_NOTHROW(SPDDEBUG(FMT_STRING("basic test {} {} {}"), "df } {", 7, 9.8765));
+    REQUIRE_NOTHROW(SPDINFO(FMT_STRING("basic test {} {} {}"), "df } {", 8, 9.8765));
+    REQUIRE_NOTHROW(SPDWARN(FMT_STRING("basic test {} {} {}"), "df } {", 9, 9.8765));
+    REQUIRE_NOTHROW(SPDERROR(FMT_STRING("basic test {} {} {}"), "df } {", 1, 9.8765));
+    REQUIRE_NOTHROW(SPDCRITICAL(FMT_STRING("basic test {} {} {}"), "df } {", 2, 9.8765));
+    REQUIRE_NOTHROW(SPDINFO(FMT_STRING("spdlog test11 {}, {}"), 34.2, "bob"));
+    REQUIRE_NOTHROW(SPDINFO(FMT_STRING("{}"), "spdlog test12 THIS { is valid?"));
+
+#if 0   // Timing tests
+    // Before running test `rm /tmp/test_Lo*` as log file rotation can foul the results.
+    lg.setOutputDest(Log::SPEEDLOG);
+    lg.setLogLvl(spdlog::level::debug);
+    spdlog::set_level(spdlog::level::debug);
+
+    int limit= 1'000'000;
+    string loglogTimes("loglog:");
+    string spdlogTimes("spdlog:");
+    for (int trial=0; trial<2; ++trial) {
+        auto begin = chrono::steady_clock::now();
+        for (int j=0;j<limit;++j) {
+            LINFO("LogLog ", j, " ", trial, " ", 3.145674312465, " ", 9823.1234345, " ", 987654321);
+            //LINFO("LogLog ", j, " ", trial, " ", 3.145674312465);
+            //LINFO("LogLog ", j);
+        }
+        auto end = chrono::steady_clock::now();
+        loglogTimes += to_string(chrono::duration_cast<chrono::milliseconds>(end - begin).count()) + ", ";
+
+        begin = chrono::steady_clock::now();
+        for (int j=0;j<limit;++j) {
+            SPDINFO(FMT_STRING("InfLog {} {} {} {} {}"), j, trial, 3.145674312465, 9823.1234345, 987654321);
+            //SPDINFO(FMT_STRING("InfLog {} {} {}"), j, trial, 3.145674312465);
+            //SPDINFO(FMT_STRING("InfLog {}"), j);
+        }
+        end = chrono::steady_clock::now();
+        spdlogTimes += to_string(chrono::duration_cast<chrono::milliseconds>(end - begin).count()) + ", ";
+    }
+
+    cout << loglogTimes << endl;
+    cout << spdlogTimes << endl;
+#endif  // end timing tests
 }

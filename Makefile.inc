@@ -5,6 +5,7 @@ endif
 
 BUILD_DIR ?= $(RELATIVE_DIR)build
 SRC_DIRS ?= $(RELATIVE_DIR)src
+SPDLOG_DIR ?= $(RELATIVE_DIR)spdlog
 LIB_DIR ?= $(RELATIVE_DIR)lib
 BIN_DIR ?= $(RELATIVE_DIR)bin
 
@@ -12,11 +13,11 @@ SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
-INC_DIRS := $(shell find $(SRC_DIRS) -type d)
+INC_DIRS := $(shell find $(SRC_DIRS) -type d) $(SPDLOG_DIR)/include
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 ifdef DEBUG
-  c_opts := -g
+  c_opts := -g -O3
 else
   c_opts := -O3
 endif
@@ -30,7 +31,7 @@ endif
 
 # g++ flags used in all g++ calls.
 CPP_COMMON := -std=c++17 -fPIE -pthread -Wall ${c_opts} $(GCOVR_FLAGS)
-CPP_LIBS := -L/usr/local/lib -lyaml-cpp
+CPP_LIBS := -L/usr/local/lib  -lyaml-cpp
 
 # compile x86 simulator or real cRIO stuff
 ifdef SIMULATOR
@@ -40,8 +41,6 @@ else
   C := gcc -Wall -fmessage-length=0 ${c_opts}
   CPP := g++ $(CPP_COMMON) -fmessage-length=0
 endif
-
-
 
 LIBS += $(shell pkg-config yaml-cpp --libs) -ldl
 

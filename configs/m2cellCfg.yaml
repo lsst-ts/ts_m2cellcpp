@@ -1,5 +1,11 @@
 # m2cell configuration file.
 
+# Setting for logging
+Log:
+  fileName: "logs/m2cellLog.log"
+  fileSizeMB: 10
+  maxFiles: 11
+
 # Control server details.
 # host is only used by client applications
 # Possible port values are 55555 (old) or 50000 (new).

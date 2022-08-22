@@ -1,5 +1,9 @@
 # Version History
 
+0.2.3
+
+- Changed to use spdlog and log file rotation.
+
 0.2.2
 
 - Added FpgaIo class and related mock classes for communicating with FPGA.
