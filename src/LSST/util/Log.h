@@ -62,10 +62,6 @@
 #define SPDCRITICAL(...) \
     SPDLOG_LOGGER_CALL(LSST::m2cellcpp::util::Log::speedLog, spdlog::level::critical, __VA_ARGS__)
 
-#define LTEST(...)                                                                                 \
-    LSST::m2cellcpp::util::Log::logWTest(LSST::m2cellcpp::util::Log::CRITICAL, __FILE__, __LINE__, \
-                                         __VA_ARGS__)
-
 namespace LSST {
 namespace m2cellcpp {
 namespace util {

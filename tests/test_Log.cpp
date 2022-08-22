@@ -57,15 +57,6 @@ TEST_CASE("Test Log", "[Log]") {
     REQUIRE_NOTHROW(LERROR("d y=", y, " x=", x));
     REQUIRE_NOTHROW(LCRITICAL("d y=", y, " x=", x));
 
-    REQUIRE_NOTHROW(SPDTRACE(FMT_STRING("basic test {} {} {}"), "df } {", 6, 9.8765));
-    REQUIRE_NOTHROW(SPDDEBUG(FMT_STRING("basic test {} {} {}"), "df } {", 7, 9.8765));
-    REQUIRE_NOTHROW(SPDINFO(FMT_STRING("basic test {} {} {}"), "df } {", 8, 9.8765));
-    REQUIRE_NOTHROW(SPDWARN(FMT_STRING("basic test {} {} {}"), "df } {", 9, 9.8765));
-    REQUIRE_NOTHROW(SPDERROR(FMT_STRING("basic test {} {} {}"), "df } {", 1, 9.8765));
-    REQUIRE_NOTHROW(SPDCRITICAL(FMT_STRING("basic test {} {} {}"), "df } {", 2, 9.8765));
-    REQUIRE_NOTHROW(SPDINFO(FMT_STRING("spdlog test11 {}, {}"), 34.2, "bob"));
-    REQUIRE_NOTHROW(SPDINFO(FMT_STRING("{}"), "spdlog test12 THIS { is valid?"));
-
     uint expectedSz = 4;  /// Must be smaller than number of log lines above.
     lg.setMaxBuffers(expectedSz);
     REQUIRE(expectedSz == lg.getBuffersSize());
@@ -73,6 +64,7 @@ TEST_CASE("Test Log", "[Log]") {
     // Contens of the log buffer should be put into the file.
     lg.setupFileRotation(tmpLog, 1024 * 1024 * 1000, 3);  // 10 5MB files.
     lg.setOutputDest(Log::SPEEDLOG);
+    ++expectedSz;  // setOutputDest(Log::SPEEDLOG) adds an info level log message.
     // Test that normal log line gets into the file.
     LINFO("one more line");
     ++expectedSz;
@@ -112,11 +104,22 @@ TEST_CASE("Test Log", "[Log]") {
     LDEBUG("g");
     REQUIRE(startSize + 2 == lg.getBuffersSize());
 
-    // spdlog testing of inmproperly formed messages. `FMT_STRING` catches all at compile time.
+    // spdlog testing of inmproperly formed messages. `FMT_STRING` catches all at compile time,
+    //    but this is what log file output looks like in some improperly formed cases.
     // spdlog::info("spdlog test3 {", 34.2); /// message missing from output
     // spdlog::info("spdlog test4 }", 34.2); /// no number in message
-    // spdlog::info("spdlog test5 {} {}", 34.2); /// [*** LOG ERROR #0001 ***] [2022-08-11 12:56:10] []
-    // {invalid format string}
+    // spdlog::info("spdlog test5 {} {}", 34.2);
+    //        /// [*** LOG ERROR #0001 ***] [2022-08-11 12:56:10] [] {invalid format string}
+
+    // Test 'SPD' macros.
+    REQUIRE_NOTHROW(SPDTRACE(FMT_STRING("basic test {} {} {}"), "df } {", 6, 9.8765));
+    REQUIRE_NOTHROW(SPDDEBUG(FMT_STRING("basic test {} {} {}"), "df } {", 7, 9.8765));
+    REQUIRE_NOTHROW(SPDINFO(FMT_STRING("basic test {} {} {}"), "df } {", 8, 9.8765));
+    REQUIRE_NOTHROW(SPDWARN(FMT_STRING("basic test {} {} {}"), "df } {", 9, 9.8765));
+    REQUIRE_NOTHROW(SPDERROR(FMT_STRING("basic test {} {} {}"), "df } {", 1, 9.8765));
+    REQUIRE_NOTHROW(SPDCRITICAL(FMT_STRING("basic test {} {} {}"), "df } {", 2, 9.8765));
+    REQUIRE_NOTHROW(SPDINFO(FMT_STRING("spdlog test11 {}, {}"), 34.2, "bob"));
+    REQUIRE_NOTHROW(SPDINFO(FMT_STRING("{}"), "spdlog test12 THIS { is valid?"));
 
 #if 0   // Timing tests
     // Before running test `rm /tmp/test_Lo*` as log file rotation can foul the results.
