@@ -213,7 +213,7 @@ public:
 
     /// Return the value of environment variabe LOGLVL, defaults to TRACE (1).
     /// values are
-    /// TRACE=1, DEBUG=2, INFO=3, WARN=4, ERROR=5, CRITICAL = 6. Values are
+    /// TRACE=1, DEBUG=2, INFO=3, WARN=4, ERROR=5, CRITICAL=6. Values are
     /// constrained such that values less than TRACE are set to TRACE, and
     /// values greater than CRITCAL are set to CRITICAL.
     static spdlog::level::level_enum getEnvironmentLogLvl();
