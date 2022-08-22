@@ -62,7 +62,8 @@ TEST_CASE("Test Log", "[Log]") {
     REQUIRE(expectedSz == lg.getBuffersSize());
     string tmpLog("/tmp/test_Log.log");
     // Contens of the log buffer should be put into the file.
-    lg.setupFileRotation(tmpLog, 1024 * 1024 * 1000, 3);  // 10 5MB files.
+    int const megabyte = 1024 * 1024;
+    lg.setupFileRotation(tmpLog, 11 * megabyte, 10);  // Keep ten 11MB files.
     lg.setOutputDest(Log::SPEEDLOG);
     ++expectedSz;  // setOutputDest(Log::SPEEDLOG) adds an info level log message.
     // Test that normal log line gets into the file.
@@ -122,7 +123,11 @@ TEST_CASE("Test Log", "[Log]") {
     REQUIRE_NOTHROW(SPDINFO(FMT_STRING("{}"), "spdlog test12 THIS { is valid?"));
 
 #if 0   // Timing tests
-    // Before running test `rm /tmp/test_Lo*` as log file rotation can foul the results.
+    // Before running test `rm /tmp/test_Lo*` as log file rotation takes time and can
+    // foul the results. It's also important the log file rotation set above has
+    // a max filesize large enough not to cause a rotation (see setupFileRotation).
+    // The tests run twice and make 1 million similar entries using similar input
+    // and records the time spent.
     lg.setOutputDest(Log::SPEEDLOG);
     lg.setLogLvl(spdlog::level::debug);
     spdlog::set_level(spdlog::level::debug);

@@ -64,8 +64,14 @@ make clean
 make run_tests
 ```
 
-The output of most unit tests can be reduced by setting the environment
-variable `LOGLVL` to 6, for minimal output.
+## Logging - This applies to the executables, as well as most unit tests.
+
+Logging now uses spdlog. There is an in depth explanation in `src/LSST/util/Log.h`
+The environment variable `LOGLVL` sets the minimum level of
+log message to log.
+   1 - trace, 2 - debug, 3 - info, 4 - warn, 5 - error, 6 - critical
+The amount of output of most unit tests can be reduced by setting the
+environment variable `LOGLVL` to 6, for minimal output.
 
 ```bash
 export LOGLVL=6
