@@ -1,5 +1,9 @@
 # Version History
 
+0.2.4
+
+- Added code to help with CSV file test data.
+
 0.2.3
 
 - Changed to use spdlog and log file rotation.

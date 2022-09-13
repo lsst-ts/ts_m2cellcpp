@@ -38,7 +38,7 @@
 using namespace std;
 using namespace LSST::m2cellcpp::control;
 
-TEST_CASE("Test Context", "[Context]") {
+TEST_CASE("Test Csv", "[CSV]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
     string cfgPath = LSST::m2cellcpp::system::Config::getEnvironmentCfgPath("../configs");
 
