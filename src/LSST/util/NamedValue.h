@@ -103,7 +103,7 @@ public:
 };
 
 /// This class extends `NamedValue` to store a bool value so it can be set from a CSV file or similar.
-/// Acceptable sting inputs are `true` and `false` where capitalization doen't matter.
+/// Acceptable string inputs are `true` and `false` where capitalization doesn't matter.
 class NamedBool : public NamedValue<bool> {
 public:
     using Ptr = std::shared_ptr<NamedBool>;
@@ -154,7 +154,7 @@ public:
     double getAllowedTolorance() const { return _allowedTolorance; }
 
 private:
-    /// The acceptable variation at which this can be considered approcimately equal.
+    /// The acceptable variation at which this can be considered approximately equal.
     double _allowedTolorance;
 };
 
@@ -168,7 +168,7 @@ public:
 
     enum UnitType { RADIAN, DEGREE };
 
-    /// FUTURE: constants and constrain functions should probably liove somewhere else.
+    /// FUTURE: constants and constrain functions should probably live somewhere else.
     /// The value of PI and related constants.
     static constexpr double PI = M_PI;
     static constexpr double PI2 = PI * 2.0;
@@ -196,7 +196,7 @@ public:
     NamedAngle(std::string const& name, UnitType expectedUnits = DEGREE)
             : NamedDouble(name), _expectedUnits(expectedUnits) {}
 
-    /// Set the double value from the string `str`, using radians or degres as
+    /// Set the double value from the string `str`, using radians or degrees as
     /// indicated by `_expectedUnits`.
     /// @throws runtime_error when the conversion is not clean (extra characters, etc.).
     void setFromString(std::string const& str) override;

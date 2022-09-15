@@ -99,9 +99,7 @@ void NamedAngle::setFromString(std::string const& str) {
     throw runtime_error(eMsg);
 }
 
-bool NamedAngle::approxEqualRad(double const& val) const {
-    return NamedDouble::approxEqual(val);
-}
+bool NamedAngle::approxEqualRad(double const& val) const { return NamedDouble::approxEqual(val); }
 
 bool NamedAngle::approxEqualDeg(double const& val) const {
     double v = val * RADPERDEG;
@@ -118,7 +116,6 @@ bool NamedAngle::approxEqual(double const& val) const {
     LERROR("NamedAngle::approxEqual ", val, " unknown units", _expectedUnits, " ", getName());
     return false;
 }
-
 
 }  // namespace util
 }  // namespace m2cellcpp

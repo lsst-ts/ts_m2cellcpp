@@ -82,8 +82,7 @@ void CsvFile::read() {
     _columnCount = _columnNames.size();
 
     // Read in the data rows of the file.
-    int rowCount = 0;
-    for (; getline(fstrm, line); ++rowCount) {
+    for (int rowCount = 0; getline(fstrm, line); ++rowCount) {
         vector<std::string> row;
         stringstream lineStrm(line);
         _readRow(lineStrm, row);
@@ -98,7 +97,7 @@ void CsvFile::read() {
         }
         _rowStrings.push_back(row);
     }
-    _rowCount = rowCount;
+    _rowCount = _rowStrings.size();
     _organize();
 }
 

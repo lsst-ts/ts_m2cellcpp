@@ -1,0 +1,19 @@
+# Copy and paste the following into http://www.plantuml.com/plantuml/uml/
+
+@startuml
+
+class NamedValue
+class NamedString
+class NamedBool
+class NamedInt
+class NamedDouble
+class NamedAngle
+class CsvFile
+
+NamedValue <|-- NamedString
+NamedValue <|-- NamedBool
+NamedValue <|-- NamedInt
+NamedValue <|-- NamedDouble
+NamedDouble <|-- NamedAngle
+
+@enduml

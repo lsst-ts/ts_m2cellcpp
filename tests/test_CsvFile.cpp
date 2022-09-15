@@ -25,7 +25,8 @@
 // System headers
 
 // 3rd party headers
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_session.hpp>
 
 // Project headers
 #include "system/Config.h"
@@ -145,7 +146,7 @@ TEST_CASE("Test CsvFile", "[CsvFile]") {
         REQUIRE(nvA.getName() == "nvA");
         REQUIRE(nvA.getValue() == 0.0);
         REQUIRE(nvA.approxEqual(0.0));
-        double radians = NamedAngle::PI + (30*NamedAngle::PI2);
+        double radians = NamedAngle::PI + (30 * NamedAngle::PI2);
         nvA.setRad(radians);
         REQUIRE(nvA.approxEqualRad(radians));
         NamedAngle nvA1("nvA1");
@@ -166,6 +167,5 @@ TEST_CASE("Test CsvFile", "[CsvFile]") {
         REQUIRE(nvA3.approxEqual(0.5342));
         REQUIRE(!nvA3.approxEqualDeg(180.0));
         REQUIRE(nvA3.approxEqualRad(0.5342));
-
     }
 }
