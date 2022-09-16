@@ -61,7 +61,7 @@ public:
     /// Return the number of data rows read from the file.
     int getRowCount() const { return _rowCount; }
 
-    /// Return the valaue for column with name `col` from `row`.
+    /// Return the valaue for column with name `col` from `row`, first data row is 0.
     /// @throws runtime_error if there is a problem.
     std::string getValue(std::string const& col, int row);
 

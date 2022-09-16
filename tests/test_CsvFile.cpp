@@ -65,14 +65,14 @@ TEST_CASE("Test CsvFile", "[CsvFile]") {
     {
         NamedString nvS("nv");
         REQUIRE(nvS.getName() == "nv");
-        REQUIRE(nvS.getValue() == "");
+        REQUIRE(nvS.getValueRead() == "");
         REQUIRE(nvS.approxEqual(""));
         REQUIRE(!nvS.approxEqual("r"));
         nvS.setFromString("Hello");
-        REQUIRE(nvS.getValue() == "Hello");
+        REQUIRE(nvS.getValueRead() == "Hello");
         REQUIRE(nvS.approxEqual("Hello"));
         REQUIRE(!nvS.approxEqual("hello"));
-        string str = nvS.dump();
+        string str = nvS.dumpStr();
         LDEBUG(str);
     }
 
@@ -80,11 +80,11 @@ TEST_CASE("Test CsvFile", "[CsvFile]") {
     {
         NamedBool nvB("nvB");
         REQUIRE(nvB.getName() == "nvB");
-        REQUIRE(nvB.getValue() == false);
+        REQUIRE(nvB.getValueRead() == false);
         REQUIRE(nvB.approxEqual(false));
         REQUIRE(!nvB.approxEqual(true));
         nvB.setFromString("true");
-        REQUIRE(nvB.getValue() == true);
+        REQUIRE(nvB.getValueRead() == true);
         REQUIRE(nvB.approxEqual(true));
         REQUIRE(!nvB.approxEqual(false));
         REQUIRE_NOTHROW(nvB.setFromString("false"));
@@ -98,18 +98,18 @@ TEST_CASE("Test CsvFile", "[CsvFile]") {
     {
         NamedInt nvI("nvI");
         REQUIRE(nvI.getName() == "nvI");
-        REQUIRE(nvI.getValue() == 0);
+        REQUIRE(nvI.getValueRead() == 0);
         REQUIRE(nvI.approxEqual(0));
         REQUIRE(!nvI.approxEqual(1));
         int j = 453;
-        nvI.setValue(j);
-        REQUIRE(nvI.getValue() == j);
+        nvI.setValueRead(j);
+        REQUIRE(nvI.getValueRead() == j);
         REQUIRE(nvI.approxEqual(j));
         REQUIRE(!nvI.approxEqual(1));
         nvI.setFromString("945");
-        REQUIRE(nvI.getValue() == 945);
+        REQUIRE(nvI.getValueRead() == 945);
         nvI.setFromString("-945");
-        REQUIRE(nvI.getValue() == -945);
+        REQUIRE(nvI.getValueRead() == -945);
         REQUIRE_THROWS(nvI.setFromString("945.4"));
     }
 
@@ -118,15 +118,15 @@ TEST_CASE("Test CsvFile", "[CsvFile]") {
         double tolorance = 0.0000001;
         NamedDouble nvD("nvD", tolorance);
         REQUIRE(nvD.getName() == "nvD");
-        REQUIRE(nvD.getValue() == 0.0);
+        REQUIRE(nvD.getValueRead() == 0.0);
         REQUIRE(nvD.approxEqual(0.0));
         REQUIRE(nvD.approxEqual(tolorance * 0.9));
         REQUIRE(nvD.approxEqual(tolorance * -0.9));
         REQUIRE(!nvD.approxEqual(tolorance * 1.1));
         REQUIRE(!nvD.approxEqual(tolorance * -1.1));
         double jj = 7238.8125;
-        nvD.setValue(jj);
-        REQUIRE(nvD.getValue() == jj);
+        nvD.setValueRead(jj);
+        REQUIRE(nvD.getValueRead() == jj);
         REQUIRE(nvD.approxEqual(jj));
         REQUIRE(nvD.approxEqual(jj + tolorance * 0.9));
         REQUIRE(nvD.approxEqual(jj + tolorance * -0.9));
@@ -134,9 +134,9 @@ TEST_CASE("Test CsvFile", "[CsvFile]") {
         REQUIRE(!nvD.approxEqual(jj + tolorance * -1.1));
 
         nvD.setFromString("9743.9872");
-        REQUIRE(nvD.getValue() == 9743.9872);
+        REQUIRE(nvD.getValueRead() == 9743.9872);
         nvD.setFromString("-472.198");
-        REQUIRE(nvD.getValue() == -472.198);
+        REQUIRE(nvD.getValueRead() == -472.198);
         REQUIRE_THROWS(nvD.setFromString("19.4aw"));
     }
 
@@ -144,15 +144,15 @@ TEST_CASE("Test CsvFile", "[CsvFile]") {
     {
         NamedAngle nvA("nvA");
         REQUIRE(nvA.getName() == "nvA");
-        REQUIRE(nvA.getValue() == 0.0);
+        REQUIRE(nvA.getValueRead() == 0.0);
         REQUIRE(nvA.approxEqual(0.0));
         double radians = NamedAngle::PI + (30 * NamedAngle::PI2);
-        nvA.setRad(radians);
+        nvA.setRadRead(radians);
         REQUIRE(nvA.approxEqualRad(radians));
         NamedAngle nvA1("nvA1");
-        nvA1.setRad(NamedAngle::PI);
-        REQUIRE(nvA1.approxEqualRad(NamedAngle::constrain0to2Pi(nvA.getRad())));
-        REQUIRE(nvA1.approxEqualRad(NamedAngle::constrain(nvA.getRad())));
+        nvA1.setRadRead(NamedAngle::PI);
+        REQUIRE(nvA1.approxEqualRad(NamedAngle::constrain0to2Pi(nvA.getRadRead())));
+        REQUIRE(nvA1.approxEqualRad(NamedAngle::constrain(nvA.getRadRead())));
 
         NamedAngle nvA2("nvA2");
         nvA2.setFromString("180.0");
@@ -168,4 +168,40 @@ TEST_CASE("Test CsvFile", "[CsvFile]") {
         REQUIRE(!nvA3.approxEqualDeg(180.0));
         REQUIRE(nvA3.approxEqualRad(0.5342));
     }
+
+    /// &&& add test for putting values in maps.
+    NamedValue::Map nvMap;  ///< &&& doc
+    NamedDouble::Ptr inFA1 = NamedDouble::create("in_fA1", nvMap);
+    NamedDouble::Ptr inFA5 = NamedDouble::create("in_fA5", nvMap);
+    NamedAngle::Ptr inElevationAngle = NamedAngle::create("in_elevation_angle", nvMap);
+
+    NamedInt::Ptr constNetMomentError = NamedInt::create("const_net_moment_error", nvMap);
+
+    NamedBool::Ptr outNetMomentBool = NamedBool::create("out_net_moment_bool", nvMap);
+    NamedBool::Ptr outTanLoadCellBool = NamedBool::create("out_tan_load_cell_bool", nvMap);
+
+    int row = 2;
+    for (auto const& elem : nvMap) {
+        string name = elem.first;
+        NamedValue::Ptr nvp = elem.second;
+        REQUIRE(name == nvp->getName());
+        nvp->setFromString(cFile.getValue(name, row));
+        nvp->setValFromValueRead();
+        LINFO("&&&read ", cFile.getValue(name, row), " ", nvp->dumpStr(), nvp->check());
+        REQUIRE(nvp->check());
+    }
+
+    LCRITICAL("&&&", cFile.getValue("in_fA1", row));
+    LCRITICAL("&&&", inFA1->dumpStr());
+    REQUIRE(inFA1->approxEqual(150.8));
+    REQUIRE(inFA5->approxEqual(102.5));
+    LCRITICAL("&&& inElevation DEG check");
+    REQUIRE(inElevationAngle->approxEqual(50));
+    LCRITICAL("&&& inElevation Rad check");
+    REQUIRE(inElevationAngle->approxEqualRad(0.872665));  // 50 degrees ~ 0.872665 radians
+    REQUIRE(constNetMomentError->approxEqual(1000));
+    REQUIRE(outNetMomentBool->approxEqual(false));
+    REQUIRE(outTanLoadCellBool->approxEqual(true));
+
+    /// &&& add tests for check()
 }
