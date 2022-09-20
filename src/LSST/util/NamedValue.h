@@ -211,7 +211,7 @@ public:
 
     /// &&& doc
     NamedDouble(std::string const& name, double tolerance = TOLERANCE, double defaultVal = 0.0)
-            : NamedValueType(name, defaultVal), _allowedTolerance(tolerance) {}
+            : NamedValueType(name, defaultVal), _tolerance(tolerance) {}
 
     /// &&& doc
     static Ptr create(std::string const& name, Map& nvMap, double tolerance = TOLERANCE,
@@ -235,14 +235,14 @@ public:
         std::string msg = "&&&approxEqual inV=" + std::to_string(inV);
         logWarn(msg);
         double delta = getDelta(inV);
-        return ((delta * delta) <= (_allowedTolerance * _allowedTolerance));
+        return ((delta * delta) <= (_tolerance * _tolerance));
     }
 
     /// &&& doc
     double getDelta(double const& inV) const { return getValueRead() - inV; }
 
     /// Return the allowed tolerance.
-    double getAllowedTolerance() const { return _allowedTolerance; }
+    double getAllowedTolerance() const { return _tolerance; }
 
     // &&& doc
     bool check() const override {
@@ -251,21 +251,21 @@ public:
             double delta = getDelta(val);
             double mag = 1'000'000'000;  // &&&
             std::string msg = "check failed " + dumpStr() + " delta=" + std::to_string(delta) +
-                              " tol=" + std::to_string(_allowedTolerance);
+                              " tol=" + std::to_string(_tolerance);
             logWarn(msg);
             msg = "&&& check failed " + dumpStr() + " delta=" + std::to_string(delta * delta * mag) +
-                  " tol=" + std::to_string(_allowedTolerance * _allowedTolerance * mag);
+                  " tol=" + std::to_string(_tolerance * _tolerance * mag);
             logWarn(msg);
         }
         return result;
     }
 
     /// Return `_tolerance`
-    double getTolerance() const { return _allowedTolerance; }
+    double getTolerance() const { return _tolerance; }
 
 private:
     /// The acceptable variation at which this can be considered approximately equal.
-    double _allowedTolerance;  // &&& change allowedTolerance to tolerance
+    double _tolerance;  // &&& change allowedTolerance to tolerance
 };
 
 /// This class repressents a named angle, based on `NamedDouble`, the internal units

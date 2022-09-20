@@ -202,6 +202,4 @@ TEST_CASE("Test CsvFile", "[CsvFile]") {
     REQUIRE(constNetMomentError->approxEqual(1000));
     REQUIRE(outNetMomentBool->approxEqual(false));
     REQUIRE(outTanLoadCellBool->approxEqual(true));
-
-    /// &&& add tests for check()
 }
