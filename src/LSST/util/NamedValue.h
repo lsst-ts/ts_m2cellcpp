@@ -48,6 +48,10 @@ public:
     /// &&& doc
     static void setup(Ptr const& obj, Map& nvMap) { nvMap.insert(std::make_pair(obj->getName(), obj)); }
 
+    /// Insert the individual map elements of `src` into `dest`.
+    /// @throw runtime_error if there's a duplicate element key in the list.
+    static void insertMapElements(Map& src, Map& dest);
+
     /// Return the name for this value.
     std::string getName() const { return _name; }
 

@@ -71,39 +71,43 @@ private:
     //    2823.354,-            2344.182,            -2165.001,                 860.7,                   2000,
     //    1000,                   1000,                         2500,                TRUE, TRUE, FALSE, FALSE,
     //    TRUE
-    util::NamedValue::Map _inMap;             ///< &&& doc
+    util::NamedValue::Map _inMap;             ///< Map of inputs for this VI.
     util::NamedDouble::Ptr _inFA1;            ///< &&& doc VI->"TangentMeasured Forces 1"
     util::NamedDouble::Ptr _inFA2;            ///< &&& doc VI->"TangentMeasured Forces 2"
     util::NamedDouble::Ptr _inFA3;            ///< &&& doc VI->"TangentMeasured Forces 3"
     util::NamedDouble::Ptr _inFA4;            ///< &&& doc VI->"TangentMeasured Forces 4"
     util::NamedDouble::Ptr _inFA5;            ///< &&& doc VI->"TangentMeasured Forces 5"
     util::NamedDouble::Ptr _inFA6;            ///< &&& doc VI->"TangentMeasured Forces 6"
-    util::NamedAngle::Ptr _inElevationAngle;  ///< &&& doc
+    util::NamedAngle::Ptr _inElevationAngle;  ///< &&& doc VI->"Inclination Angle" deg  &&& is this really elevation???
 
     // All items in the `_constMap` should be set from the Config, except during unit tests.
-    util::NamedValue::Map _constMap;                   ///< &&& doc
-    util::NamedDouble::Ptr _constTanWeightError;       ///< &&& doc
-    util::NamedDouble::Ptr _constLoadBearingError;     ///< &&& doc
-    util::NamedDouble::Ptr _constNetMomentError;       ///< &&& doc
-    util::NamedDouble::Ptr _constNotLoadBearingError;  ///< &&& doc VI->"Non Load Bearing Link Threshold"
+    util::NamedValue::Map _constMap;                   ///< Map of constant values for this VI.
+    util::NamedDouble::Ptr _constTanWeightError;       ///< &&& doc VI->"Theta Z Moment Error Threshold [N]"
+    util::NamedDouble::Ptr _constLoadBearingError;     ///< &&& doc VI->"Load Bearing Link Threshold [N]"
+    util::NamedDouble::Ptr _constNetMomentError;       ///< &&& doc VI->"Total Weight Error Threshold [N]"
+    util::NamedDouble::Ptr _constNotLoadBearingError;  ///< &&& doc VI->"Non Load Bearing Link Threshold [N]"
 
-    util::NamedValue::Map _outMap;                     ///< &&& doc
+    util::NamedDouble::Ptr _hmmMirrorWeightN; ///< &&&hmm VI->"Mirror Weight [N]"
+    util::NamedDouble::Ptr _hmmNonLoadBearingLinkThresholdN; ///< &&&hmm VI->"Non Load Bearing Link Threshold [N]"
+
+    util::NamedValue::Map _outMap;                     ///< Map of outputs for this VI
     util::NamedDouble::Ptr _outTangentialTotalWeight;  ///< &&& doc ??? VI->"Total Weight Error [N]"
-    util::NamedDouble::Ptr _outLoadBearingFA2;         ///< &&& doc VI->"Individual Weight Error 2"
-    util::NamedDouble::Ptr _outLoadBearingFA3;         ///< &&& doc VI->"Individual Weight Error 3"
-    util::NamedDouble::Ptr _outLoadBearingFA5;         ///< &&& doc VI->"Individual Weight Error 5"
-    util::NamedDouble::Ptr _outLoadBearingFA6;         ///< &&& doc VI->"Individual Weight Error 6"
-    util::NamedDouble::Ptr _outNetMomentForces;        ///< &&& doc
-    // &&& ???in VI "Tangent Sum [N]"
+    util::NamedDouble::Ptr _outLoadBearingFA2;         ///< &&& doc VI->"Individual Weight Error [N], index 0" FA2
+    util::NamedDouble::Ptr _outLoadBearingFA3;         ///< &&& doc VI->"Individual Weight Error [N], index 1" FA3
+    util::NamedDouble::Ptr _outLoadBearingFA5;         ///< &&& doc VI->"Individual Weight Error [N], index 2" FA5
+    util::NamedDouble::Ptr _outLoadBearingFA6;         ///< &&& doc VI->"Individual Weight Error [N], index 4" FA6
+    util::NamedDouble::Ptr _outNetMomentForces;        ///< &&& doc VI->"Tangent Sum [N]"
 
-    // &&& ???in VI "Non Load Bearing Forces 1  (index 0)"
-    // &&& ???in VI "Non Load Bearing Forces 4  (index 3)"
+    util::NamedDouble::Ptr _hmmNonLoadBearing1; ///< &&& ??? VI->"Non Load Bearing Forces [N], index 0" FA1
+    util::NamedDouble::Ptr _hmmNonLoadBearing4; ///< &&& ???in VI->"Non Load Bearing Forces [N], index 1" FA4
 
-    util::NamedBool::Ptr _outTanWeightBool;       ///< &&& doc
-    util::NamedBool::Ptr _outLoadBearingBool;     ///< &&& doc
-    util::NamedBool::Ptr _outNetMomentBool;       ///< &&& doc
-    util::NamedBool::Ptr _outNonLoadBearingBool;  ///< &&& doc in VI "Non Load Bearing Link Error"
-    util::NamedBool::Ptr _outTanLoadCellBool;     ///< &&& doc
+    util::NamedBool::Ptr _outTanWeightBool;       ///< &&& doc VI->"Total Weight Error [N]"
+    util::NamedBool::Ptr _outLoadBearingBool;     ///< &&& doc VI->"Individual Weight Error"
+    util::NamedBool::Ptr _outNetMomentBool;       ///< &&& doc VI->"Tangent Sum Error"
+    util::NamedBool::Ptr _outNonLoadBearingBool;  ///< &&& doc VI->"Non Load Bearing Link Error"
+    util::NamedBool::Ptr _outTanLoadCellBool;     ///< &&& doc VI->"Tangent Load Fault"
+
+    util::NamedValue::Map _completeMap; ///< A map of all inputs, outputs, and constants for this VI.
 
     util::CsvFile::Ptr _testFile;
 

@@ -65,6 +65,10 @@ TangentLoadCellFaultDetection::TangentLoadCellFaultDetection() {
     _constLoadBearingError = util::NamedDouble::create("const_load_bearing_error", _constMap);
     _constNetMomentError = util::NamedDouble::create("const_net_moment_error", _constMap);
     _constNotLoadBearingError = util::NamedDouble::create("const_not_load_bearing_error", _constMap);
+    _hmmMirrorWeightN = util::NamedDouble::create("&&& need a column name for mirror weight &&&",
+                                                  _constMap);  // &&& check
+    _hmmNonLoadBearingLinkThresholdN = util::NamedDouble::create(
+            "&&& need a column name for Non Loda bearing link threshold N &&&", _constMap);  // &&& check
 
     _outTangentialTotalWeight = util::NamedDouble::create("out_tangential_total_weight", _outMap);
     _outLoadBearingFA2 = util::NamedDouble::create("out_load_bearing_fA2", _outMap);
@@ -72,12 +76,20 @@ TangentLoadCellFaultDetection::TangentLoadCellFaultDetection() {
     _outLoadBearingFA5 = util::NamedDouble::create("out_load_bearing_fA5", _outMap);
     _outLoadBearingFA6 = util::NamedDouble::create("out_load_bearing_fA6", _outMap);
     _outNetMomentForces = util::NamedDouble::create("out_net_moment_forces", _outMap);
+    _hmmNonLoadBearing1 =
+            util::NamedDouble::create("&&& need col name for non-load bearing fA1", _outMap);  // &&& check
+    _hmmNonLoadBearing4 =
+            util::NamedDouble::create("&&& need col name for non-load bearing fA4", _outMap);  // &&& check
 
     _outTanWeightBool = util::NamedBool::create("out_tan_weight_bool", _outMap);
     _outLoadBearingBool = util::NamedBool::create("out_load_bearing_bool", _outMap);
     _outNetMomentBool = util::NamedBool::create("out_net_moment_bool", _outMap);
     _outNonLoadBearingBool = util::NamedBool::create("out_non_load_bearing_bool", _outMap);
     _outTanLoadCellBool = util::NamedBool::create("out_tan_load_cell_bool", _outMap);
+
+    util::NamedValue::appendMap(_completeMap, _inMap);
+    util::NamedValue::appendMap(_completeMap, _outMap);
+    util::NamedValue::appendMap(_completeMap, _constMap);
 }
 
 void TangentLoadCellFaultDetection::readTestFile(std::string const& fileName) {
@@ -134,8 +146,45 @@ bool TangentLoadCellFaultDetection::checkMap(util::NamedValue::Map& nvMap, int r
 }
 
 void TangentLoadCellFaultDetection::run() {
-    double tangentSum = _inFa1.val + _inFa2 + _inFa3 + _inFa4 + _inFa5 + _inFa6;
-    bool tangentSumError = fabs(tangentSum) >
+    constexpr double cos30Deg = cos(30.0 * util::NamedAngle::PI / 180.0);
+    double elevationComp =
+            sin(util::NamedAngle::PI / 2.0 - _inElevationAngle->val);  // sin(90Deg - elevation)
+    double mirrorWeightCompDiv4 = elevationComp * _hmmMirrorWeightN->val / 4.0;
+
+    // Tangential weight error
+    double fa2W = (-_inFA2->val * cos30Deg) - elevationComp;
+    double fa3W = (-_inFA3->val * cos30Deg) - elevationComp;
+    double fa5W = (_inFA5->val * cos30Deg) - elevationComp;
+    double fa6W = (_inFA6->val * cos30Deg) - elevationComp;
+    _outTangentialTotalWeight->val = fa2W + fa3W + fa5W + fa6W;
+    _outTanWeightBool->val = fabs(_outTangentialTotalWeight->val) >= _constNetMomentError->val;
+
+    // Individual load bearing error
+    _outLoadBearingFA2->val = cos30Deg * _inFA2->val + mirrorWeightCompDiv4;
+    _outLoadBearingFA3->val = cos30Deg * _inFA3->val + mirrorWeightCompDiv4;
+    _outLoadBearingFA5->val = cos30Deg * _inFA5->val - mirrorWeightCompDiv4;
+    _outLoadBearingFA6->val = cos30Deg * _inFA6->val - mirrorWeightCompDiv4;
+
+    bool individualWeightError2 = fabs(_outLoadBearingFA2->val) >= _constLoadBearingError->val;
+    bool individualWeightError3 = fabs(_outLoadBearingFA3->val) >= _constLoadBearingError->val;
+    bool individualWeightError5 = fabs(_outLoadBearingFA5->val) >= _constLoadBearingError->val;
+    bool individualWeightError6 = fabs(_outLoadBearingFA6->val) >= _constLoadBearingError->val;
+    _outLoadBearingBool->val = individualWeightError2 || individualWeightError3 ||
+                               individualWeightError5 || individualWeightError6;
+
+    // Tangent Sum, Theta Z Moment Error
+    _outNetMomentForces->val =
+            _inFA1->val + _inFA2->val + _inFA3->val + _inFA4->val + _inFA5->val + _inFA6->val;
+    _outNetMomentBool->val = fabs(_outNetMomentForces->val) > _constTanWeightError->val;
+
+    // Non-load bearing
+    _hmmNonLoadBearing1->val = _inFA1->val;
+    _hmmNonLoadBearing4->val = _inFA4->val;
+    _outNonLoadBearingBool->val = (fabs(_inFA1->val) > _hmmNonLoadBearingLinkThresholdN->val) ||
+                                  (fabs(_inFA4->val) > _hmmNonLoadBearingLinkThresholdN->val);
+
+    _outTanLoadCellBool->val = _outTanWeightBool->val || _outLoadBearingBool->val ||
+                               _outNonLoadBearingBool->val || _outNetMomentBool->val;
 }
 
 }  // namespace vis
