@@ -13,7 +13,7 @@ class CommandTracked
 
 Tracker <|-- CommandTracked
 Command <|-- CommandTracked
-Command <.. CmdData : argument 
+Command <.. CmdData : argument
 
 class CommandQueue
 class EventThread

@@ -169,8 +169,8 @@ TEST_CASE("Test CsvFile", "[CsvFile]") {
         REQUIRE(nvA3.approxEqualRad(0.5342));
     }
 
-    /// &&& add test for putting values in maps.
-    NamedValue::Map nvMap;  ///< &&& doc
+    /// add test for putting values in maps.
+    NamedValue::Map nvMap;
     NamedDouble::Ptr inFA1 = NamedDouble::create("in_fA1", nvMap);
     NamedDouble::Ptr inFA5 = NamedDouble::create("in_fA5", nvMap);
     NamedAngle::Ptr inElevationAngle = NamedAngle::create("in_elevation_angle", nvMap);
@@ -191,13 +191,13 @@ TEST_CASE("Test CsvFile", "[CsvFile]") {
         REQUIRE(nvp->check());
     }
 
-    LCRITICAL("&&&", cFile.getValue("in_fA1", row));
-    LCRITICAL("&&&", inFA1->dumpStr());
+    LINFO("&&&", cFile.getValue("in_fA1", row));
+    LINFO("&&&", inFA1->dumpStr());
     REQUIRE(inFA1->approxEqual(150.8));
     REQUIRE(inFA5->approxEqual(102.5));
-    LCRITICAL("&&& inElevation DEG check");
+    LINFO("&&& inElevation DEG check");
     REQUIRE(inElevationAngle->approxEqual(50));
-    LCRITICAL("&&& inElevation Rad check");
+    LINFO("&&& inElevation Rad check");
     REQUIRE(inElevationAngle->approxEqualRad(0.872665));  // 50 degrees ~ 0.872665 radians
     REQUIRE(constNetMomentError->approxEqual(1000));
     REQUIRE(outNetMomentBool->approxEqual(false));

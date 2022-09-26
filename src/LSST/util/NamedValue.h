@@ -26,6 +26,7 @@
 #include <cmath>
 #include <map>
 #include <memory>
+#include <sstream>
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -34,6 +35,13 @@ namespace LSST {
 namespace m2cellcpp {
 namespace util {
 
+class CsvFile;
+
+/// This is the base class for storing the name key and a value that can be set elsewhere.
+/// Currently, the value is set from a `util::CsvFile`, but this is not required. It is
+/// done for testing purposes.
+/// UML diagram doc/LabViewVIUML.txt
+/// Unit tests in test_CsvFile.cpp
 class NamedValue {
 public:
     using Ptr = std::shared_ptr<NamedValue>;
@@ -45,12 +53,12 @@ public:
 
     virtual ~NamedValue() = default;
 
-    /// &&& doc
-    static void setup(Ptr const& obj, Map& nvMap) { nvMap.insert(std::make_pair(obj->getName(), obj)); }
+    /// Add NamedValue::Ptr `obj` to `nvMap`.
+    /// @throw runtime_error if `obj` was already in the map.
+    static void setup(Ptr const& obj, Map& nvMap);
 
-    /// Insert the individual map elements of `src` into `dest`.
-    /// @throw runtime_error if there's a duplicate element key in the list.
-    static void insertMapElements(Map& src, Map& dest);
+    /// Set the values in `outputMap` so that they don't equal the values read from the CSV file.
+    static void voidValForTest(Map& outputMap);
 
     /// Return the name for this value.
     std::string getName() const { return _name; }
@@ -58,12 +66,31 @@ public:
     /// Set `_valueRead` using the value of `val`.
     virtual void setValFromValueRead() = 0;
 
-    /// &&& doc
+    /// Set the `_valueRead` and `val` for everything in `nvMap` from the `row` in `csvFile`.
+    /// The first row of `csvFile` must contain the column names. Duplicate
+    /// column names are not allowed.
+    /// @throw runtime_error if a `NamedValue` in `nvMap` cannot be found in `csvFile`, or the row doesn't
+    /// exist.
+    static void setMapValuesFromFile(Map& nvMap, CsvFile& csvFile, int row);
+
+    /// Return true if the value (`val`) is within tolerance of its expected value (`_valueRead`).
     virtual bool check() const = 0;
 
     /// Set `_valueRead` to an appropriate value based on the contents of string.
     /// @throws runtime_error if `str` has an inappropriate value for type `T`.
     virtual void setFromString(std::string const& str) = 0;
+
+    /// Set member `val` to a value different from the `_valueRead`.
+    /// This helps determine that the value was during the test and isn't just
+    /// leftover from reading the file.
+    virtual void voidValForTest() = 0;
+
+    /// Insert the individual map elements of `src` into `dest`.
+    /// @throw runtime_error if there's a duplicate element key in the list.
+    static void insertMapElements(Map& src, Map& dest);
+
+    /// Write the contents of `nvMap` into the `os` stream.
+    static std::ostream& mapDump(std::ostream& os, Map const& nvMap);
 
     /// Return a log worthy string of this object, see `std::ostream& dump(std::ostream& os)`.
     std::string dumpStr() const {
@@ -98,7 +125,9 @@ class NamedValueType : public NamedValue {
 public:
     using Ptr = std::shared_ptr<NamedValueType>;
 
-    /// &&& doc
+    /// Constructor
+    /// @param name - Name of the key for this value.
+    /// @param defaultVal - Default value this item (`val`).
     NamedValueType(std::string const& name, T const& defaultVal)
             : NamedValue(name), val(defaultVal), _valueRead(defaultVal) {}
 
@@ -117,7 +146,7 @@ public:
     /// Return true if `val` is equal, or in the case of floats, nearly equal to `_valueRead`.
     virtual bool approxEqual(T const& val) const { return (_valueRead == val); }
 
-    /// &&& doc
+    /// Return true if `val` is within `_tolerance` of `_valueRead`.
     bool check() const override {
         bool result = approxEqual(val);
         if (!result) {
@@ -149,11 +178,13 @@ class NamedString : public NamedValueType<std::string> {
 public:
     using Ptr = std::shared_ptr<NamedString>;
 
-    /// &&& doc
+    /// Constructor
+    /// @param name - Name of the key for this value.
+    /// @param defaultVal - Default string value this item (`val`).
     NamedString(std::string const& name, std::string const& defaultVal = "")
             : NamedValueType(name, defaultVal) {}
 
-    /// &&& doc
+    /// Create a pointer to a new instance of `NamedString` and add it to `nvMap`.
     static Ptr create(std::string const& name, Map& nvMap, std::string const& defaultVal = "") {
         Ptr obj = Ptr(new NamedString(name, defaultVal));
         setup(obj, nvMap);
@@ -162,6 +193,9 @@ public:
 
     /// Set `_valueRead` from `str`, no conversion needed.
     void setFromString(std::string const& str) override { setValueRead(str); }
+
+    /// Set member `val` to a value different from the `_valueRead`.
+    void voidValForTest() override { val = ""; }
 };
 
 /// This class extends `NamedValue` to store a bool value so it can be set from a CSV file or similar.
@@ -170,10 +204,12 @@ class NamedBool : public NamedValueType<bool> {
 public:
     using Ptr = std::shared_ptr<NamedBool>;
 
-    /// &&& doc
+    /// Constructor
+    /// @param name - Name of the key for this value.
+    /// @param defaultVal - Default bool value this item (`val`).
     NamedBool(std::string const& name, bool defaultVal = false) : NamedValueType(name, defaultVal) {}
 
-    /// &&& doc
+    /// Create a pointer to a new instance of `NamedBool` and add it to `nvMap`.
     static Ptr create(std::string const& name, Map& nvMap, bool defaultVal = 0) {
         Ptr obj = Ptr(new NamedBool(name, defaultVal));
         setup(obj, nvMap);
@@ -183,6 +219,9 @@ public:
     /// Set `_valueRead` from `str`, must be 'true' or 'false' (ignores case).
     /// @throws runtime_error when `str` is not 'true' or 'false'.
     void setFromString(std::string const& str) override;
+
+    /// Set member `val` to a value different from the `_valueRead`.
+    void voidValForTest() override { val = !getValueRead(); }
 };
 
 /// This class extends `NamedValue` to store an integer value so it can be set from a CSV file or similar.
@@ -190,10 +229,12 @@ class NamedInt : public NamedValueType<int> {
 public:
     using Ptr = std::shared_ptr<NamedInt>;
 
-    /// &&& doc
+    /// Constructor
+    /// @param name - Name of the key for this value.
+    /// @param defaultVal - Default int value this item (`val`).
     NamedInt(std::string const& name, int defaultVal = false) : NamedValueType(name, defaultVal) {}
 
-    /// &&& doc
+    /// Create a pointer to a new instance of `NamedInt` and add it to `nvMap`.
     static Ptr create(std::string const& name, Map& nvMap, int defaultVal = 0) {
         Ptr obj = Ptr(new NamedInt(name, defaultVal));
         setup(obj, nvMap);
@@ -203,6 +244,9 @@ public:
     /// Set the integer value from the string `str`.
     /// @throws runtime_error when the conversion is not clean (extra characters, etc.).
     void setFromString(std::string const& str) override;
+
+    /// Set member `val` to a value different from the `_valueRead`.
+    void voidValForTest() override { val = -987654; }
 };
 
 /// This class extends `NamedValue` to store a double value so it can be set from a CSV file or similar.
@@ -213,11 +257,13 @@ public:
 
     static constexpr double TOLERANCE = 0.000'001;
 
-    /// &&& doc
+    /// Constructor
+    /// @param name - Name of the key for this value.
+    /// @param defaultVal - Default double value this item (`val`).
     NamedDouble(std::string const& name, double tolerance = TOLERANCE, double defaultVal = 0.0)
             : NamedValueType(name, defaultVal), _tolerance(tolerance) {}
 
-    /// &&& doc
+    /// Create a pointer to a new instance of `NamedDouble` and add it to `nvMap`.
     static Ptr create(std::string const& name, Map& nvMap, double tolerance = TOLERANCE,
                       double defaultVal = 0.0) {
         Ptr obj = Ptr(new NamedDouble(name, tolerance, defaultVal));
@@ -242,13 +288,13 @@ public:
         return ((delta * delta) <= (_tolerance * _tolerance));
     }
 
-    /// &&& doc
+    /// Return the difference between `_valueRead` and `inV`.
     double getDelta(double const& inV) const { return getValueRead() - inV; }
 
     /// Return the allowed tolerance.
     double getAllowedTolerance() const { return _tolerance; }
 
-    // &&& doc
+    /// Return true if `val` is within `_tolerance` of `_valueRead`.
     bool check() const override {
         bool result = approxEqual(val);
         if (!result) {
@@ -267,9 +313,12 @@ public:
     /// Return `_tolerance`
     double getTolerance() const { return _tolerance; }
 
+    /// Set member `val` to a value different from the `_valueRead`.
+    void voidValForTest() override { val = -9876543210.0; }
+
 private:
     /// The acceptable variation at which this can be considered approximately equal.
-    double _tolerance;  // &&& change allowedTolerance to tolerance
+    double _tolerance;
 };
 
 /// This class repressents a named angle, based on `NamedDouble`, the internal units
@@ -307,12 +356,16 @@ public:
     }
 
     /// Constructor, `expectedUnits` are RADIAN or DEGREE, which is used in `setFromString()`
-    /// @param name
+    /// @param name - Name of the key for this item.
+    /// @param expectedUnits - Units used with `setFromString()` `RADIAN` or `DEGREE`
+    /// @param tolerance - Always radians, how much `val` can differ from `_valueRead` and still be
+    ///                    `approxEqual()`.
+    /// @param defaultVal - Always radians, default value of `val`.
     NamedAngle(std::string const& name, UnitType expectedUnits = DEGREE, double tolerance = TOLERANCE,
                double defaultVal = 0.0)
             : NamedDouble(name, tolerance, defaultVal), _expectedUnits(expectedUnits) {}
 
-    /// &&& doc
+    /// Create a pointer to a new instance of `NamedAngle` and add it to `nvMap`.
     static Ptr create(std::string const& name, Map& nvMap, UnitType expectedUnits = DEGREE,
                       double tolerance = TOLERANCE, double defaultVal = 0) {
         Ptr obj = Ptr(new NamedAngle(name, expectedUnits, tolerance, defaultVal));
@@ -339,7 +392,7 @@ public:
         setDegRead(v);
     }
 
-    // &&& doc
+    /// Return true if `val` is within `_tolerance` of `_valueRead`.
     bool check() const override {
         bool result = approxEqualRad(val);
         if (!result) {

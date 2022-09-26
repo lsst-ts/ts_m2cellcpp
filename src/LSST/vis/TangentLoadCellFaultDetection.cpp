@@ -34,115 +34,48 @@
 
 using namespace std;
 
-namespace {
-
-/// &&& doc  move to different location
-void setMapValuesFromFile(LSST::m2cellcpp::util::NamedValue::Map& nvMap,
-                          LSST::m2cellcpp::util::CsvFile& csvFile, int row) {
-    for (auto&& elem : nvMap) {
-        LSST::m2cellcpp::util::NamedValue::Ptr const& nVal = elem.second;
-        string valFileRowJ = csvFile.getValue(nVal->getName(), row);
-        nVal->setFromString(valFileRowJ);
-    }
-}
-
-}  // namespace
-
 namespace LSST {
 namespace m2cellcpp {
 namespace vis {
 
-TangentLoadCellFaultDetection::TangentLoadCellFaultDetection() {
-    _inFA1 = util::NamedDouble::create("in_fA1", _inMap);
-    _inFA2 = util::NamedDouble::create("in_fA2", _inMap);
-    _inFA3 = util::NamedDouble::create("in_fA3", _inMap);
-    _inFA4 = util::NamedDouble::create("in_fA4", _inMap);
-    _inFA5 = util::NamedDouble::create("in_fA5", _inMap);
-    _inFA6 = util::NamedDouble::create("in_fA6", _inMap);
-    _inElevationAngle = util::NamedAngle::create("in_elevation_angle", _inMap);
+TangentLoadCellFaultDetection::TangentLoadCellFaultDetection() : LabViewVI("TangentLoadCellFaultDetection") {
+    _inFA1 = util::NamedDouble::create("in_fA1", inMap);
+    _inFA2 = util::NamedDouble::create("in_fA2", inMap);
+    _inFA3 = util::NamedDouble::create("in_fA3", inMap);
+    _inFA4 = util::NamedDouble::create("in_fA4", inMap);
+    _inFA5 = util::NamedDouble::create("in_fA5", inMap);
+    _inFA6 = util::NamedDouble::create("in_fA6", inMap);
+    _inElevationAngle = util::NamedAngle::create("in_elevation_angle", inMap);
 
-    _constTanWeightError = util::NamedDouble::create("const_tan_weight_error", _constMap);
-    _constLoadBearingError = util::NamedDouble::create("const_load_bearing_error", _constMap);
-    _constNetMomentError = util::NamedDouble::create("const_net_moment_error", _constMap);
-    _constNotLoadBearingError = util::NamedDouble::create("const_not_load_bearing_error", _constMap);
+    _constTanWeightError = util::NamedDouble::create("const_tan_weight_error", constMap);
+    _constLoadBearingError = util::NamedDouble::create("const_load_bearing_error", constMap);
+    _constNetMomentError = util::NamedDouble::create("const_net_moment_error", constMap);
+    _constNotLoadBearingError = util::NamedDouble::create("const_not_load_bearing_error", constMap);
     _hmmMirrorWeightN = util::NamedDouble::create("&&& need a column name for mirror weight &&&",
-                                                  _constMap);  // &&& check
+                                                  constMap);  // &&& check
     _hmmNonLoadBearingLinkThresholdN = util::NamedDouble::create(
-            "&&& need a column name for Non Loda bearing link threshold N &&&", _constMap);  // &&& check
+            "&&& need a column name for Non Loda bearing link threshold N &&&", constMap);  // &&& check
 
-    _outTangentialTotalWeight = util::NamedDouble::create("out_tangential_total_weight", _outMap);
-    _outLoadBearingFA2 = util::NamedDouble::create("out_load_bearing_fA2", _outMap);
-    _outLoadBearingFA3 = util::NamedDouble::create("out_load_bearing_fA3", _outMap);
-    _outLoadBearingFA5 = util::NamedDouble::create("out_load_bearing_fA5", _outMap);
-    _outLoadBearingFA6 = util::NamedDouble::create("out_load_bearing_fA6", _outMap);
-    _outNetMomentForces = util::NamedDouble::create("out_net_moment_forces", _outMap);
+    _outTangentialTotalWeight = util::NamedDouble::create("out_tangential_total_weight", outMap);
+    _outLoadBearingFA2 = util::NamedDouble::create("out_load_bearing_fA2", outMap);
+    _outLoadBearingFA3 = util::NamedDouble::create("out_load_bearing_fA3", outMap);
+    _outLoadBearingFA5 = util::NamedDouble::create("out_load_bearing_fA5", outMap);
+    _outLoadBearingFA6 = util::NamedDouble::create("out_load_bearing_fA6", outMap);
+    _outNetMomentForces = util::NamedDouble::create("out_net_moment_forces", outMap);
     _hmmNonLoadBearing1 =
-            util::NamedDouble::create("&&& need col name for non-load bearing fA1", _outMap);  // &&& check
+            util::NamedDouble::create("&&& need col name for non-load bearing fA1", outMap);  // &&& check
     _hmmNonLoadBearing4 =
-            util::NamedDouble::create("&&& need col name for non-load bearing fA4", _outMap);  // &&& check
+            util::NamedDouble::create("&&& need col name for non-load bearing fA4", outMap);  // &&& check
 
-    _outTanWeightBool = util::NamedBool::create("out_tan_weight_bool", _outMap);
-    _outLoadBearingBool = util::NamedBool::create("out_load_bearing_bool", _outMap);
-    _outNetMomentBool = util::NamedBool::create("out_net_moment_bool", _outMap);
-    _outNonLoadBearingBool = util::NamedBool::create("out_non_load_bearing_bool", _outMap);
-    _outTanLoadCellBool = util::NamedBool::create("out_tan_load_cell_bool", _outMap);
+    _outTanWeightBool = util::NamedBool::create("out_tan_weight_bool", outMap);
+    _outLoadBearingBool = util::NamedBool::create("out_load_bearing_bool", outMap);
+    _outNetMomentBool = util::NamedBool::create("out_net_moment_bool", outMap);
+    _outNonLoadBearingBool = util::NamedBool::create("out_non_load_bearing_bool", outMap);
+    _outTanLoadCellBool = util::NamedBool::create("out_tan_load_cell_bool", outMap);
 
-    util::NamedValue::appendMap(_completeMap, _inMap);
-    util::NamedValue::appendMap(_completeMap, _outMap);
-    util::NamedValue::appendMap(_completeMap, _constMap);
-}
-
-void TangentLoadCellFaultDetection::readTestFile(std::string const& fileName) {
-    _testFile = std::make_shared<util::CsvFile>(fileName);
-    _testFile->read();
-    LDEBUG("TangentLoadFaultDetection::readTestFile ", fileName, ":\n", _testFile->dumpStr());
-}
-
-bool TangentLoadCellFaultDetection::runTest() {
-    if (_testFile == nullptr) {
-        LERROR("TangentLoadFaultDetection::runTest no testFile.");
-        return false;
-    }
-    int rows = _testFile->getRowCount();
-    if (rows == 0) {
-        LERROR("TangentLoadFaultDetection::runTest no rows to tests.");
-        return false;
-    }
-
-    for (int j = 0; j < rows; ++j) {
-        setMapValuesFromFile(_inMap, *_testFile, j);
-        setMapValuesFromFile(_constMap, *_testFile, j);
-        setMapValuesFromFile(_outMap, *_testFile, j);
-        run();
-        // While only the outMap should be interesting, none of the other values
-        // should have changed.
-        if (!checkMap(_inMap, j)) {
-            LERROR("inMap failure ", getTestName());
-            return false;
-        }
-        if (!checkMap(_constMap, j)) {
-            LERROR("constMap failure ", getTestName());
-            return false;
-        }
-        if (!checkMap(_outMap, j)) {
-            LERROR("outMap failure ", getTestName());
-            return false;
-        }
-    }
-    return true;
-}
-
-// &&& move to parent
-bool TangentLoadCellFaultDetection::checkMap(util::NamedValue::Map& nvMap, int row) {
-    bool success = true;
-    for (auto&& elem : nvMap) {
-        util::NamedValue::Ptr const& nVal = elem.second;
-        if (!nVal->check()) {
-            LERROR("checkMap failed for ", getTestName(), " row=", row, " test=", nVal->dumpStr());
-            success = false;
-        }
-    }
-    return success;
+    util::NamedValue::insertMapElements(completeMap, inMap);
+    util::NamedValue::insertMapElements(completeMap, outMap);
+    util::NamedValue::insertMapElements(completeMap, constMap);
 }
 
 void TangentLoadCellFaultDetection::run() {
@@ -169,8 +102,8 @@ void TangentLoadCellFaultDetection::run() {
     bool individualWeightError3 = fabs(_outLoadBearingFA3->val) >= _constLoadBearingError->val;
     bool individualWeightError5 = fabs(_outLoadBearingFA5->val) >= _constLoadBearingError->val;
     bool individualWeightError6 = fabs(_outLoadBearingFA6->val) >= _constLoadBearingError->val;
-    _outLoadBearingBool->val = individualWeightError2 || individualWeightError3 ||
-                               individualWeightError5 || individualWeightError6;
+    _outLoadBearingBool->val = individualWeightError2 || individualWeightError3 || individualWeightError5 ||
+                               individualWeightError6;
 
     // Tangent Sum, Theta Z Moment Error
     _outNetMomentForces->val =
@@ -185,6 +118,8 @@ void TangentLoadCellFaultDetection::run() {
 
     _outTanLoadCellBool->val = _outTanWeightBool->val || _outLoadBearingBool->val ||
                                _outNonLoadBearingBool->val || _outNetMomentBool->val;
+
+    LDEBUG("TangentLoadCellFaultDetection::run() ", dumpStr());
 }
 
 }  // namespace vis

@@ -20,16 +20,17 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+// Class header
+#include "util/NamedValue.h"
+
 /// System headers
 #include <fstream>
 #include <sstream>
 #include <system_error>
 #include <utility>
 
-// Class header
-#include "util/NamedValue.h"
-
-// LSST headers
+// Project headers
+#include "util/CsvFile.h"
 #include "util/Log.h"
 
 using namespace std;
@@ -39,6 +40,48 @@ namespace m2cellcpp {
 namespace util {
 
 void NamedValue::logWarn(string const& msg) const { LWARN(msg); }
+
+void NamedValue::setup(Ptr const& obj, Map& nvMap) {
+    auto ret = nvMap.insert(std::make_pair(obj->getName(), obj));
+    if (ret.second == false) {
+        string eMsg = "NamedValue::setup duplicate entry " + obj->dumpStr();
+        LERROR(eMsg);
+        throw runtime_error(eMsg);
+    }
+}
+
+void NamedValue::insertMapElements(Map& src, Map& dest) {
+    for (auto&& elem : src) {
+        auto ret = dest.insert(elem);
+        if (ret.second == false) {
+            string eMsg = "NamedValue::insertMapElements duplicate entry " + elem.second->dumpStr();
+            LERROR(eMsg);
+            throw runtime_error(eMsg);
+        }
+    }
+}
+
+std::ostream& NamedValue::mapDump(std::ostream& os, Map const& nvMap) {
+    for (auto const& elem : nvMap) {
+        elem.second->dump(os);
+    }
+    return os;
+}
+
+void NamedValue::setMapValuesFromFile(Map& nvMap, CsvFile& csvFile, int row) {
+    for (auto&& elem : nvMap) {
+        Ptr const& nVal = elem.second;
+        string valFileRowJ = csvFile.getValue(nVal->getName(), row);
+        nVal->setFromString(valFileRowJ);
+    }
+}
+
+void NamedValue::voidValForTest(Map& outputMap) {
+    for (auto&& elem : outputMap) {
+        Ptr const& nVal = elem.second;
+        nVal->voidValForTest();
+    }
+}
 
 void NamedBool::setFromString(string const& str) {
     string upper;

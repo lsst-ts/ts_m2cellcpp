@@ -28,33 +28,30 @@
 #include <vector>
 
 // Project headers
-#include "util/CsvFile.h"
-#include "util/NamedValue.h"
+#include "vis/LabViewVI.h"
 
 namespace LSST {
 namespace m2cellcpp {
 namespace vis {
 
-/// &&&
-class TangentLoadCellFaultDetection {
+/// This class represnets the logic in the `TangentLoadCellFaultDetection.vi`.
+/// Its purpose is to detect unsafe loads on the secondary mirror.
+/// see https://confluence.lsstcorp.org/display/LTS/Tangent+Load+Cell+Fault+Detection
+/// Unit testing done in `test_TangentLoadCellFaultDetection.cpp`
+class TangentLoadCellFaultDetection : public LabViewVI {
 public:
+    using Ptr = std::shared_ptr<TangentLoadCellFaultDetection>;
+
     TangentLoadCellFaultDetection();
-    std::vector<double> inFA;
 
-    /// &&& doc move to parent, virtual and override
-    std::string getTestName() { return "TangentLoadFaultDetection"; }
+    TangentLoadCellFaultDetection(TangentLoadCellFaultDetection const&) = delete;
+    TangentLoadCellFaultDetection& operator=(TangentLoadCellFaultDetection const&) = delete;
+    ~TangentLoadCellFaultDetection() = default;
 
-    /// &&& doc
-    void run();
+    /// This function does the actual checking of the loads.
+    void run() override;
 
-    /// &&& doc
-    void readTestFile(std::string const& fileName);
-
-    /// &&& doc
-    bool runTest();
-
-    /// &&& doc
-    bool checkMap(util::NamedValue::Map& nvMap, int row);
+    /// Return a log appropriate string describing the contents of this class.
 
 private:
     // &&& delete following comment
@@ -71,35 +68,34 @@ private:
     //    2823.354,-            2344.182,            -2165.001,                 860.7,                   2000,
     //    1000,                   1000,                         2500,                TRUE, TRUE, FALSE, FALSE,
     //    TRUE
-    util::NamedValue::Map _inMap;             ///< Map of inputs for this VI.
-    util::NamedDouble::Ptr _inFA1;            ///< &&& doc VI->"TangentMeasured Forces 1"
-    util::NamedDouble::Ptr _inFA2;            ///< &&& doc VI->"TangentMeasured Forces 2"
-    util::NamedDouble::Ptr _inFA3;            ///< &&& doc VI->"TangentMeasured Forces 3"
-    util::NamedDouble::Ptr _inFA4;            ///< &&& doc VI->"TangentMeasured Forces 4"
-    util::NamedDouble::Ptr _inFA5;            ///< &&& doc VI->"TangentMeasured Forces 5"
-    util::NamedDouble::Ptr _inFA6;            ///< &&& doc VI->"TangentMeasured Forces 6"
-    util::NamedAngle::Ptr _inElevationAngle;  ///< &&& doc VI->"Inclination Angle" deg  &&& is this really elevation???
+    util::NamedDouble::Ptr _inFA1;  ///< &&& doc VI->"TangentMeasured Forces 1"
+    util::NamedDouble::Ptr _inFA2;  ///< &&& doc VI->"TangentMeasured Forces 2"
+    util::NamedDouble::Ptr _inFA3;  ///< &&& doc VI->"TangentMeasured Forces 3"
+    util::NamedDouble::Ptr _inFA4;  ///< &&& doc VI->"TangentMeasured Forces 4"
+    util::NamedDouble::Ptr _inFA5;  ///< &&& doc VI->"TangentMeasured Forces 5"
+    util::NamedDouble::Ptr _inFA6;  ///< &&& doc VI->"TangentMeasured Forces 6"
+    util::NamedAngle::Ptr
+            _inElevationAngle;  ///< &&& doc VI->"Inclination Angle" deg  &&& is this really elevation???
 
-    // All items in the `_constMap` should be set from the Config, except during unit tests.
-    util::NamedValue::Map _constMap;                   ///< Map of constant values for this VI.
+    // All items in the `constMap` should be set from the Config, except during unit tests.
     util::NamedDouble::Ptr _constTanWeightError;       ///< &&& doc VI->"Theta Z Moment Error Threshold [N]"
     util::NamedDouble::Ptr _constLoadBearingError;     ///< &&& doc VI->"Load Bearing Link Threshold [N]"
     util::NamedDouble::Ptr _constNetMomentError;       ///< &&& doc VI->"Total Weight Error Threshold [N]"
     util::NamedDouble::Ptr _constNotLoadBearingError;  ///< &&& doc VI->"Non Load Bearing Link Threshold [N]"
 
-    util::NamedDouble::Ptr _hmmMirrorWeightN; ///< &&&hmm VI->"Mirror Weight [N]"
-    util::NamedDouble::Ptr _hmmNonLoadBearingLinkThresholdN; ///< &&&hmm VI->"Non Load Bearing Link Threshold [N]"
+    util::NamedDouble::Ptr _hmmMirrorWeightN;  ///< &&&hmm VI->"Mirror Weight [N]"
+    util::NamedDouble::Ptr
+            _hmmNonLoadBearingLinkThresholdN;  ///< &&&hmm VI->"Non Load Bearing Link Threshold [N]"
 
-    util::NamedValue::Map _outMap;                     ///< Map of outputs for this VI
     util::NamedDouble::Ptr _outTangentialTotalWeight;  ///< &&& doc ??? VI->"Total Weight Error [N]"
-    util::NamedDouble::Ptr _outLoadBearingFA2;         ///< &&& doc VI->"Individual Weight Error [N], index 0" FA2
-    util::NamedDouble::Ptr _outLoadBearingFA3;         ///< &&& doc VI->"Individual Weight Error [N], index 1" FA3
-    util::NamedDouble::Ptr _outLoadBearingFA5;         ///< &&& doc VI->"Individual Weight Error [N], index 2" FA5
-    util::NamedDouble::Ptr _outLoadBearingFA6;         ///< &&& doc VI->"Individual Weight Error [N], index 4" FA6
-    util::NamedDouble::Ptr _outNetMomentForces;        ///< &&& doc VI->"Tangent Sum [N]"
+    util::NamedDouble::Ptr _outLoadBearingFA2;   ///< &&& doc VI->"Individual Weight Error [N], index 0" FA2
+    util::NamedDouble::Ptr _outLoadBearingFA3;   ///< &&& doc VI->"Individual Weight Error [N], index 1" FA3
+    util::NamedDouble::Ptr _outLoadBearingFA5;   ///< &&& doc VI->"Individual Weight Error [N], index 2" FA5
+    util::NamedDouble::Ptr _outLoadBearingFA6;   ///< &&& doc VI->"Individual Weight Error [N], index 4" FA6
+    util::NamedDouble::Ptr _outNetMomentForces;  ///< &&& doc VI->"Tangent Sum [N]"
 
-    util::NamedDouble::Ptr _hmmNonLoadBearing1; ///< &&& ??? VI->"Non Load Bearing Forces [N], index 0" FA1
-    util::NamedDouble::Ptr _hmmNonLoadBearing4; ///< &&& ???in VI->"Non Load Bearing Forces [N], index 1" FA4
+    util::NamedDouble::Ptr _hmmNonLoadBearing1;  ///< &&& ??? VI->"Non Load Bearing Forces [N], index 0" FA1
+    util::NamedDouble::Ptr _hmmNonLoadBearing4;  ///< &&& ???in VI->"Non Load Bearing Forces [N], index 1" FA4
 
     util::NamedBool::Ptr _outTanWeightBool;       ///< &&& doc VI->"Total Weight Error [N]"
     util::NamedBool::Ptr _outLoadBearingBool;     ///< &&& doc VI->"Individual Weight Error"
@@ -107,12 +103,8 @@ private:
     util::NamedBool::Ptr _outNonLoadBearingBool;  ///< &&& doc VI->"Non Load Bearing Link Error"
     util::NamedBool::Ptr _outTanLoadCellBool;     ///< &&& doc VI->"Tangent Load Fault"
 
-    util::NamedValue::Map _completeMap; ///< A map of all inputs, outputs, and constants for this VI.
-
-    util::CsvFile::Ptr _testFile;
-
     /// Weight of the mirror
-    /// TODO: this should be a constant in the csv file and otherwise set from the config.
+    /// TODO: this should be a constant in the csv file and otherwise set from the config. &&&
     double _mirrorWeight = 15140.0;
 };
 
