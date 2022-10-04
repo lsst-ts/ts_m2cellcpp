@@ -52,6 +52,7 @@ void NamedValue::setup(Ptr const& obj, Map& nvMap) {
 
 void NamedValue::insertMapElements(Map& src, Map& dest) {
     for (auto&& elem : src) {
+        NamedValue::Ptr sec = elem.second;
         auto ret = dest.insert(elem);
         if (ret.second == false) {
             string eMsg = "NamedValue::insertMapElements duplicate entry " + elem.second->dumpStr();
@@ -61,11 +62,22 @@ void NamedValue::insertMapElements(Map& src, Map& dest) {
     }
 }
 
-std::ostream& NamedValue::mapDump(std::ostream& os, Map const& nvMap) {
+ostream& NamedValue::mapDump(ostream& os, Map const& nvMap) {
+    bool first = true;
     for (auto const& elem : nvMap) {
+        if (first)
+            first = false;
+        else
+            os << ", ";
         elem.second->dump(os);
     }
     return os;
+}
+
+std::string NamedValue::mapDumpStr(Map const& nvMap) {
+    stringstream os;
+    mapDump(os, nvMap);
+    return os.str();
 }
 
 void NamedValue::setMapValuesFromFile(Map& nvMap, CsvFile& csvFile, int row) {
@@ -73,6 +85,7 @@ void NamedValue::setMapValuesFromFile(Map& nvMap, CsvFile& csvFile, int row) {
         Ptr const& nVal = elem.second;
         string valFileRowJ = csvFile.getValue(nVal->getName(), row);
         nVal->setFromString(valFileRowJ);
+        LINFO("set from file ", nVal->dumpStr());
     }
 }
 
@@ -128,18 +141,14 @@ double NamedDouble::getValOfString(std::string const& str) const {
 
 void NamedDouble::setFromString(std::string const& str) {
     double v = getValOfString(str);
-    LINFO("&&& NamedDouble::setFromString ", str, " v=", v);
     setValueRead(v);
 }
 
 void NamedAngle::setFromString(std::string const& str) {
-    LINFO("&&& NamedAngle::setFromString ", str);
     switch (_expectedUnits) {
         case RADIAN:
-            LINFO("&&& NamedAngle::setFromString RAD", str);
             return setFromStringRad(str);
         case DEGREE:
-            LINFO("&&& NamedAngle::setFromString DEG", str);
             return setFromStringDeg(str);
     }
     string eMsg = "NamedAngle::setFromString " + str + " unknown units" + to_string(_expectedUnits) + " " +

@@ -54,19 +54,20 @@ bool LabViewVI::runTest() {
         /// For the output map ONLY, reset all the values so it can be shown
         /// the `run()` function set the outputs.
         LSST::m2cellcpp::util::NamedValue::voidValForTest(outMap);
+        LINFO("runTest file=", _testFile->getFileName(), " row=", j, " ", dumpStr());
         run();
         // While only the outMap should be interesting, none of the other values
         // should have changed.
         if (!checkMap(inMap, j)) {
-            LERROR("inMap failure ", getViName());
+            LERROR("inMap failure ", getViName(), " ", dumpStr());
             return false;
         }
         if (!checkMap(constMap, j)) {
-            LERROR("constMap failure ", getViName());
+            LERROR("constMap failure ", getViName(), " ", dumpStr());
             return false;
         }
         if (!checkMap(outMap, j)) {
-            LERROR("outMap failure ", getViName());
+            LERROR("outMap failure ", getViName(), " ", dumpStr());
             return false;
         }
     }

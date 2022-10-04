@@ -187,17 +187,14 @@ TEST_CASE("Test CsvFile", "[CsvFile]") {
         REQUIRE(name == nvp->getName());
         nvp->setFromString(cFile.getValue(name, row));
         nvp->setValFromValueRead();
-        LINFO("&&&read ", cFile.getValue(name, row), " ", nvp->dumpStr(), nvp->check());
+        LINFO("Read ", cFile.getValue(name, row), " ", nvp->dumpStr(), nvp->check());
         REQUIRE(nvp->check());
     }
 
-    LINFO("&&&", cFile.getValue("in_fA1", row));
-    LINFO("&&&", inFA1->dumpStr());
+    LDEBUG(inFA1->dumpStr());
     REQUIRE(inFA1->approxEqual(150.8));
     REQUIRE(inFA5->approxEqual(102.5));
-    LINFO("&&& inElevation DEG check");
     REQUIRE(inElevationAngle->approxEqual(50));
-    LINFO("&&& inElevation Rad check");
     REQUIRE(inElevationAngle->approxEqualRad(0.872665));  // 50 degrees ~ 0.872665 radians
     REQUIRE(constNetMomentError->approxEqual(1000));
     REQUIRE(outNetMomentBool->approxEqual(false));

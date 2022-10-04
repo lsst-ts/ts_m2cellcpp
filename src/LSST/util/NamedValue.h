@@ -92,6 +92,9 @@ public:
     /// Write the contents of `nvMap` into the `os` stream.
     static std::ostream& mapDump(std::ostream& os, Map const& nvMap);
 
+    /// Return a string, appropriate for the log, with the contents of `nvMap`.
+    static std::string mapDumpStr(Map const& nvMap);
+
     /// Return a log worthy string of this object, see `std::ostream& dump(std::ostream& os)`.
     std::string dumpStr() const {
         std::stringstream os;
@@ -133,9 +136,11 @@ public:
 
     virtual ~NamedValueType() = default;
 
-    /// Set `_valueRead` to `val`.
-    /// @param val
-    void setValueRead(T const& val) { _valueRead = val; }
+    /// Set `_valueRead` and `val` to `value`.
+    void setValueRead(T const& value) {
+        val = value;
+        _valueRead = val;
+    }
 
     /// Return the `valueRead` for this.
     T getValueRead() const { return _valueRead; }
@@ -282,8 +287,6 @@ public:
 
     /// Return true if `inV` is within tolerance of the stored value.
     bool approxEqual(double const& inV) const override {
-        std::string msg = "&&&approxEqual inV=" + std::to_string(inV);
-        logWarn(msg);
         double delta = getDelta(inV);
         return ((delta * delta) <= (_tolerance * _tolerance));
     }
@@ -299,12 +302,8 @@ public:
         bool result = approxEqual(val);
         if (!result) {
             double delta = getDelta(val);
-            double mag = 1'000'000'000;  // &&&
             std::string msg = "check failed " + dumpStr() + " delta=" + std::to_string(delta) +
                               " tol=" + std::to_string(_tolerance);
-            logWarn(msg);
-            msg = "&&& check failed " + dumpStr() + " delta=" + std::to_string(delta * delta * mag) +
-                  " tol=" + std::to_string(_tolerance * _tolerance * mag);
             logWarn(msg);
         }
         return result;
@@ -397,12 +396,8 @@ public:
         bool result = approxEqualRad(val);
         if (!result) {
             double delta = getDelta(val);
-            double mag = 1'000'000'000;  // &&&
             std::string msg = "check failed " + dumpStr() + " delta=" + std::to_string(delta) +
                               " tol=" + std::to_string(getTolerance());
-            logWarn(msg);
-            msg = "&&& check failed " + dumpStr() + " delta=" + std::to_string(delta * delta * mag) +
-                  " tol=" + std::to_string(getTolerance() * getTolerance() * mag);
             logWarn(msg);
         }
         return result;
