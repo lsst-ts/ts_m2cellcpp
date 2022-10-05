@@ -1,0 +1,29 @@
+# Copy and paste the following into http://www.plantuml.com/plantuml/uml/
+
+@startuml
+
+class NamedValue
+class NamedString
+class NamedBool
+class NamedInt
+class NamedDouble
+class NamedAngle
+class CsvFile
+
+class LabViewVI
+class NamedValue::Map
+class TangentLoadCellFaultDetection
+
+NamedValue <|-- NamedString
+NamedValue <|-- NamedBool
+NamedValue <|-- NamedInt
+NamedValue <|-- NamedDouble
+NamedDouble <|-- NamedAngle
+
+LabViewVI <|-- TangentLoadCellFaultDetection
+LabViewVI *-- NamedValue::Map
+NamedValue::Map *-- NamedValue : many
+
+LabViewVI o-- CsvFile
+
+@enduml
