@@ -42,7 +42,7 @@ TEST_CASE("Test VIs", "[VIs]") {
 
     {
         TangentLoadCellFaultDetection tangCellFaultDetect;
-        tangCellFaultDetect.readTestFile("../testFiles/io_TangentLoadCell_v02.csv");
+        tangCellFaultDetect.readTestFile("../testFiles/io_TangentLoadCell_v03.csv");
         REQUIRE(tangCellFaultDetect.runTest() == true);
     }
 }

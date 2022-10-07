@@ -27,7 +27,7 @@
 #include <utility>
 
 // Class header
-#include "vis/LabVIewVI.h"
+#include "vis/LabViewVI.h"
 
 // LSST headers
 #include "util/Log.h"
