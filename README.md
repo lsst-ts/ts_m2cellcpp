@@ -2,8 +2,8 @@
 
 Documentation can be found in the `doc` directory.
 A description of the logic behind some of the original LabView VI's
-can be found in `doc/viDocs`. Much thanks to Patrecio Cortes for
-putting those together.
+can be found in `doc/viDocs`.
+Much thanks to Patricio Cortes for putting those together.
 
 ## Required Package
 

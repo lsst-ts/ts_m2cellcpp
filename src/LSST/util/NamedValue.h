@@ -236,7 +236,7 @@ public:
 
     /// Constructor
     /// @param name - Name of the key for this value.
-    /// @param defaultVal - Default int value this item (`val`).
+    /// @param defaultVal - Default int value for this item (`val`).
     NamedInt(std::string const& name, int defaultVal = false) : NamedValueType(name, defaultVal) {}
 
     /// Create a pointer to a new instance of `NamedInt` and add it to `nvMap`.
@@ -320,9 +320,9 @@ private:
     double _tolerance;
 };
 
-/// This class repressents a named angle, based on `NamedDouble`, the internal units
+/// This class represents a named angle, based on `NamedDouble`, the internal units
 /// are radians. The CSV files tend to be in degrees as they are generated from
-/// LabView that uses degrees.
+/// LabView VIs that use degrees.
 /// `val` from the parent is in radians.
 /// Unit tests in test_CsvFile.cpp
 class NamedAngle : public NamedDouble {
@@ -365,6 +365,11 @@ public:
             : NamedDouble(name, tolerance, defaultVal), _expectedUnits(expectedUnits) {}
 
     /// Create a pointer to a new instance of `NamedAngle` and add it to `nvMap`.
+    /// @param name - Name of the key for this item.
+    /// @param expectedUnits - Units used with `setFromString()` `RADIAN` or `DEGREE`
+    /// @param tolerance - Always radians, how much `val` can differ from `_valueRead` and still be
+    ///                    `approxEqual()`.
+    /// @param defaultVal - Always radians, default value of `val`.
     static Ptr create(std::string const& name, Map& nvMap, UnitType expectedUnits = DEGREE,
                       double tolerance = TOLERANCE, double defaultVal = 0) {
         Ptr obj = Ptr(new NamedAngle(name, expectedUnits, tolerance, defaultVal));
@@ -418,7 +423,7 @@ public:
     /// Set the value of the angle in `radians`.
     void setRadRead(double radians) { setValueRead(radians); }
 
-    /// Returns the value of the angle in degrees.
+    /// Returns the value from the file of the angle in degrees.
     double getDegRead() const { return getValueRead() * DEGPERRAD; }
 
     /// Returns the value from the file of the angle in radians.
@@ -426,7 +431,8 @@ public:
 
     /// Show both radian and degree values
     std::ostream& dump(std::ostream& os) const override {
-        os << getName() << "(Rad=" << val << " read(Rad=" << getRadRead() << ",Deg=" << getDegRead() << "))";
+        os << getName() << "(Rad=" << val << " Deg=" << val * RADPERDEG << " read(Rad=" << getRadRead()
+           << ",Deg=" << getDegRead() << "))";
         return os;
     }
 
