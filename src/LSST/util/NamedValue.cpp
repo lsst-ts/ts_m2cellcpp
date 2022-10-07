@@ -20,16 +20,17 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+// Class header
+#include "util/NamedValue.h"
+
 /// System headers
 #include <fstream>
 #include <sstream>
 #include <system_error>
 #include <utility>
 
-// Class header
-#include "util/NamedValue.h"
-
-// LSST headers
+// Project headers
+#include "util/CsvFile.h"
 #include "util/Log.h"
 
 using namespace std;
@@ -38,15 +39,72 @@ namespace LSST {
 namespace m2cellcpp {
 namespace util {
 
+void NamedValue::logWarn(string const& msg) const { LWARN(msg); }
+
+void NamedValue::setup(Ptr const& obj, Map& nvMap) {
+    auto ret = nvMap.insert(std::make_pair(obj->getName(), obj));
+    if (ret.second == false) {
+        string eMsg = "NamedValue::setup duplicate entry " + obj->dumpStr();
+        LERROR(eMsg);
+        throw runtime_error(eMsg);
+    }
+}
+
+void NamedValue::insertMapElements(Map& src, Map& dest) {
+    for (auto&& elem : src) {
+        NamedValue::Ptr sec = elem.second;
+        auto ret = dest.insert(elem);
+        if (ret.second == false) {
+            string eMsg = "NamedValue::insertMapElements duplicate entry " + elem.second->dumpStr();
+            LERROR(eMsg);
+            throw runtime_error(eMsg);
+        }
+    }
+}
+
+ostream& NamedValue::mapDump(ostream& os, Map const& nvMap) {
+    bool first = true;
+    for (auto const& elem : nvMap) {
+        if (first)
+            first = false;
+        else
+            os << ", ";
+        elem.second->dump(os);
+    }
+    return os;
+}
+
+std::string NamedValue::mapDumpStr(Map const& nvMap) {
+    stringstream os;
+    mapDump(os, nvMap);
+    return os.str();
+}
+
+void NamedValue::setMapValuesFromFile(Map& nvMap, CsvFile& csvFile, int row) {
+    for (auto&& elem : nvMap) {
+        Ptr const& nVal = elem.second;
+        string valFileRowJ = csvFile.getValue(nVal->getName(), row);
+        nVal->setFromString(valFileRowJ);
+        LINFO("set from file ", nVal->dumpStr());
+    }
+}
+
+void NamedValue::voidValForTest(Map& outputMap) {
+    for (auto&& elem : outputMap) {
+        Ptr const& nVal = elem.second;
+        nVal->voidValForTest();
+    }
+}
+
 void NamedBool::setFromString(string const& str) {
     string upper;
     for (size_t j = 0; j < str.size(); ++j) {
         upper += toupper(str[j]);
     }
     if (upper == "TRUE") {
-        setValue(true);
+        setValueRead(true);
     } else if (upper == "FALSE") {
-        setValue(false);
+        setValueRead(false);
     } else {
         string eMsg = "NamedBool::setFromString " + str +
                       " is not an acceptable variant of 'true' or 'false'." + getName();
@@ -65,7 +123,7 @@ void NamedInt::setFromString(std::string const& str) {
         LERROR(eMsg);
         throw runtime_error(eMsg);
     }
-    setValue(v);
+    setValueRead(v);
 }
 
 double NamedDouble::getValOfString(std::string const& str) const {
@@ -83,7 +141,7 @@ double NamedDouble::getValOfString(std::string const& str) const {
 
 void NamedDouble::setFromString(std::string const& str) {
     double v = getValOfString(str);
-    setValue(v);
+    setValueRead(v);
 }
 
 void NamedAngle::setFromString(std::string const& str) {
@@ -99,21 +157,21 @@ void NamedAngle::setFromString(std::string const& str) {
     throw runtime_error(eMsg);
 }
 
-bool NamedAngle::approxEqualRad(double const& val) const { return NamedDouble::approxEqual(val); }
+bool NamedAngle::approxEqualRad(double const& inV) const { return NamedDouble::approxEqual(inV); }
 
-bool NamedAngle::approxEqualDeg(double const& val) const {
-    double v = val * RADPERDEG;
+bool NamedAngle::approxEqualDeg(double const& inV) const {
+    double v = inV * RADPERDEG;
     return NamedDouble::approxEqual(v);
 }
 
-bool NamedAngle::approxEqual(double const& val) const {
+bool NamedAngle::approxEqual(double const& inV) const {
     switch (_expectedUnits) {
         case RADIAN:
-            return approxEqualRad(val);
+            return approxEqualRad(inV);
         case DEGREE:
-            return approxEqualDeg(val);
+            return approxEqualDeg(inV);
     }
-    LERROR("NamedAngle::approxEqual ", val, " unknown units", _expectedUnits, " ", getName());
+    LERROR("NamedAngle::approxEqual ", inV, " unknown units", _expectedUnits, " ", getName());
     return false;
 }
 

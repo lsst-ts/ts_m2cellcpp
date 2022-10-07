@@ -1,5 +1,9 @@
 # Version History
 
+0.2.5
+
+- Added TangentLoadFaultDetection and code for testing.
+
 0.2.4
 
 - Added code to help with CSV file test data.

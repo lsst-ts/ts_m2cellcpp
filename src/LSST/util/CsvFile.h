@@ -26,6 +26,7 @@
 #include <cmath>
 #include <fstream>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -38,6 +39,7 @@ namespace util {
 /// Unit tests in test_CsvFile.cpp
 class CsvFile {
 public:
+    using Ptr = std::shared_ptr<CsvFile>;
     using Row = std::vector<std::string>;
 
     CsvFile(std::string const& fileName) : _fileName(fileName) {}
@@ -61,9 +63,12 @@ public:
     /// Return the number of data rows read from the file.
     int getRowCount() const { return _rowCount; }
 
-    /// Return the valaue for column with name `col` from `row`.
+    /// Return the valaue for column with name `col` from `row`, first data row is 0.
     /// @throws runtime_error if there is a problem.
     std::string getValue(std::string const& col, int row);
+
+    /// Return the name of the file.
+    std::string getFileName() const { return _fileName; }
 
 private:
     /// Read a single row from the CSV file.
