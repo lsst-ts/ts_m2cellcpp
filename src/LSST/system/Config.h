@@ -60,6 +60,12 @@ class Config {
 public:
     typedef std::shared_ptr<Config> Ptr;
 
+    Config() = delete;
+    Config(Config const&) = delete;
+    Config& operator=(Config const&) = delete;
+
+    ~Config() = default;
+
     /// Get the value of `M2CELL_CFG_PATH`, return `defaultPath` if it
     /// is undefined.
     static std::string getEnvironmentCfgPath(std::string const& defaultPath);

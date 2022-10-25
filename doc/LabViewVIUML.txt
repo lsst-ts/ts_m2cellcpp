@@ -9,6 +9,7 @@ class NamedInt
 class NamedDouble
 class NamedAngle
 class CsvFile
+class system::Config
 
 class LabViewVI
 class NamedValue::Map
@@ -25,5 +26,6 @@ LabViewVI *-- NamedValue::Map
 NamedValue::Map *-- NamedValue : many
 
 LabViewVI o-- CsvFile
+LabViewVI .. system::Config
 
 @enduml

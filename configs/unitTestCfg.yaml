@@ -59,3 +59,15 @@ ILC_Comm_Power_On_out:
 
 cRIO_Interlock_Enable_out:
   linkBoolIn: "cRIO_Interlock_Enable_in"
+
+# Global constants
+Globals:
+  # weight of the seconrary mirror. Units???
+  const_mirror_weight: 15140
+
+# Constants for the TangentLoadCellFaultDetector VI Units???
+TangentLoadCellFaultDetection:
+  const_tan_weight_error: 2000
+  const_load_bearing_error: 1000
+  const_net_moment_error: 1000
+  const_not_load_bearing_error: 2500

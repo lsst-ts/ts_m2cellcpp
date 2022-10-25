@@ -21,3 +21,15 @@ TelemetryServer:
   host: "127.0.0.1"
   port: 50001
   threads: 3
+
+# Global constants
+Globals:
+  # weight of the seconrary mirror. Units???
+  const_mirror_weight: 15140
+
+# Constants for the TangentLoadCellFaultDetector VI Units???
+TangentLoadCellFaultDetection:
+  const_tan_weight_error: 2000
+  const_load_bearing_error: 1000
+  const_net_moment_error: 1000
+  const_not_load_bearing_error: 2500

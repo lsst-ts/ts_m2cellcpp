@@ -1,5 +1,9 @@
 # Version History
 
+0.2.6
+
+- Added configuration file setup for vi constants.
+
 0.2.5
 
 - Added TangentLoadFaultDetection and code for testing.

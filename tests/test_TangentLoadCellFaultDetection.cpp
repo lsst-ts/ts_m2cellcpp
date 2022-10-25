@@ -39,9 +39,12 @@ using namespace LSST::m2cellcpp::vis;
 TEST_CASE("Test VIs", "[VIs]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
     string cfgPath = LSST::m2cellcpp::system::Config::getEnvironmentCfgPath("../configs");
+    LSST::m2cellcpp::system::Config::setup(cfgPath + "unitTestCfg.yaml");
 
     {
         TangentLoadCellFaultDetection tangCellFaultDetect;
+        REQUIRE(tangCellFaultDetect.getMirrorWeight() == 15140);
+        REQUIRE(tangCellFaultDetect.getTangentWieghtErr() == 2000);
         tangCellFaultDetect.readTestFile("../testFiles/io_TangentLoadCell_v03.csv");
         REQUIRE(tangCellFaultDetect.runTest() == true);
     }
