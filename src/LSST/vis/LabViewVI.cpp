@@ -121,7 +121,7 @@ void LabViewVI::setConstFromConfig() {
     string section = getViNameId();
     _searchConfig(undefConsts, section);
 
-    // Check the Globals section for all undefined elements
+    // Check the Globals section of the configurtation for all undefined elements.
     section = "Globals";
     _searchConfig(undefConsts, section);
 
