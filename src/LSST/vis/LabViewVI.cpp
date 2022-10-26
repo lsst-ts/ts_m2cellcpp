@@ -30,6 +30,7 @@
 #include "vis/LabViewVI.h"
 
 // LSST headers
+#include "system/Config.h"
 #include "util/Log.h"
 
 using namespace std;
@@ -59,15 +60,15 @@ bool LabViewVI::runTest() {
         // While only the outMap should be interesting, none of the other values
         // should have changed.
         if (!checkMap(inMap, j)) {
-            LERROR("inMap failure ", getViName(), " ", dumpStr());
+            LERROR("inMap failure ", getViNameId(), " ", dumpStr());
             return false;
         }
         if (!checkMap(constMap, j)) {
-            LERROR("constMap failure ", getViName(), " ", dumpStr());
+            LERROR("constMap failure ", getViNameId(), " ", dumpStr());
             return false;
         }
         if (!checkMap(outMap, j)) {
-            LERROR("outMap failure ", getViName(), " ", dumpStr());
+            LERROR("outMap failure ", getViNameId(), " ", dumpStr());
             return false;
         }
     }
@@ -85,11 +86,53 @@ bool LabViewVI::checkMap(util::NamedValue::Map& nvMap, int row) {
     for (auto&& elem : nvMap) {
         util::NamedValue::Ptr const& nVal = elem.second;
         if (!nVal->check()) {
-            LERROR("checkMap failed for ", getViName(), " row=", row, " test=", nVal->dumpStr());
+            LERROR("checkMap failed for ", getViNameId(), " row=", row, " test=", nVal->dumpStr());
             success = false;
         }
     }
     return success;
+}
+
+void LabViewVI::_searchConfig(util::NamedValue::Map& undefCMap, string const& section) {
+    auto& cfg = system::Config::get();
+    vector<string> found;
+    for (auto const& elem : undefCMap) {
+        util::NamedValue::Ptr nv = elem.second;
+        string key = nv->getName();
+        try {
+            string val = cfg.getSectionKeyAsString(section, key);
+            nv->setFromString(val);
+            found.push_back(key);
+        } catch (system::ConfigException const& ex) {
+            LDEBUG("LabViewVI::setConstFromConfig no local key for ", section, ", ", key);
+        }
+    }
+    // Remove elements that were found
+    for (auto const& key : found) {
+        undefCMap.erase(key);
+    }
+}
+
+void LabViewVI::setConstFromConfig() {
+    // Copy the constMap
+    util::NamedValue::Map undefConsts = constMap;
+
+    // First try to set elements from the local version
+    string section = getViNameId();
+    _searchConfig(undefConsts, section);
+
+    // Check the Globals section of the configurtation for all undefined elements.
+    section = "Globals";
+    _searchConfig(undefConsts, section);
+
+    if (!undefConsts.empty()) {
+        string eMsg = "LabViewVI::setConstFromConfig() udefined constants for " + getViNameId() + ": ";
+        for (auto const& elem : undefConsts) {
+            eMsg += elem.second->getName() + ", ";
+        }
+        LERROR(eMsg);
+        throw system::ConfigException(ERR_LOC, eMsg);
+    }
 }
 
 }  // namespace vis

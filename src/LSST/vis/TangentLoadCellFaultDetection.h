@@ -99,6 +99,12 @@ public:
     /// True if any other errors were tripped VI->"Tangent Load Fault"
     util::NamedBool::Ptr outTanLoadCellBool;
 
+    /// Return mirror weight constant.
+    double getMirrorWeight() const { return _constMirrorWeight->val; }
+
+    /// Return the tangent weight error constant.
+    double getTangentWieghtErr() const { return _constTanWeightError->val; }
+
 private:
     // All items in the `constMap` should be set from the Config, except during unit tests. TODO:DM-36500
     /// Maximum allowable value for `outTangentialTotalWeight` VI->"Theta Z Moment Error Threshold [N]".

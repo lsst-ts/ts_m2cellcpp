@@ -46,7 +46,11 @@ class LabViewVI {
 public:
     using Ptr = std::shared_ptr<LabViewVI>;
 
-    LabViewVI(std::string viName) : _viName(viName) {}
+    /// Constructor.
+    /// @param viName - the name of th VI
+    /// @param id - optional id if the VI occurs multiple times in the system.
+    /// @throws system::ConfigException if a constant is not defined in the configuration.
+    LabViewVI(std::string const& viName, std::string const& id = "") : _viName(viName), _id(id) {}
     LabViewVI() = delete;
 
     /// Return a log worthy string of this object, see `std::ostream& dump(std::ostream& os)`.
@@ -59,7 +63,7 @@ public:
     /// Return a log worthy string of this object. Child classes should override
     /// this function. This is called by the `operator<<` function below.
     virtual std::ostream& dump(std::ostream& os) const {
-        os << "VI " << _viName << " constants(";
+        os << "VI " << getViNameId() << " constants(";
         util::NamedValue::mapDump(os, constMap);
         os << ")  inputs(";
         util::NamedValue::mapDump(os, inMap);
@@ -72,6 +76,12 @@ public:
     /// Return the name of this VI.
     std::string getViName() const { return _viName; }
 
+    /// Return the id of this VI.
+    std::string getId() const { return _id; }
+
+    /// Return  the name and id of this VI.
+    std::string getViNameId() const { return (_id.empty()) ? getViName() : getViName() + "_" + _id; }
+
     /// This is the function that does what the original VI does.
     virtual void run() = 0;
 
@@ -79,6 +89,7 @@ public:
     void readTestFile(std::string const& fileName);
 
     /// Run the test by reading the CSV file to set inputs and then check all of the outputs.
+    /// WARNING: This is only for use in unit tests, it will overwrite constants.
     /// @return false if any tests are failed.
     bool runTest();
 
@@ -86,6 +97,10 @@ public:
     bool checkMap(util::NamedValue::Map& nvMap, int row);
 
 protected:
+    /// Set constant values from the configuration file.
+    /// @throw `system::ConfigException` if any constant cannot be defined.
+    void setConstFromConfig();
+
     util::NamedValue::Map constMap;     ///< Map of constant values for this VI.
     util::NamedValue::Map inMap;        ///< Map of inputs for this VI.
     util::NamedValue::Map outMap;       ///< Map of outputs for this VI
@@ -94,7 +109,11 @@ protected:
     util::CsvFile::Ptr _testFile;  ///< CSV file used for test data.
 
 private:
-    std::string const _viName;
+    /// Helper function for finding constants in the Config.
+    void _searchConfig(util::NamedValue::Map& undefCMap, std::string const& section);
+
+    std::string const _viName;  ///< The name of the kind of VI (child class realted)
+    std::string const _id;      ///< Id of the specific VI (instance related)
 };
 
 /// `operator<<` for `LabViewVI` and all of its derived classes.

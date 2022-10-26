@@ -73,6 +73,8 @@ TangentLoadCellFaultDetection::TangentLoadCellFaultDetection() : LabViewVI("Tang
     util::NamedValue::insertMapElements(inMap, completeMap);
     util::NamedValue::insertMapElements(outMap, completeMap);
     util::NamedValue::insertMapElements(constMap, completeMap);
+
+    setConstFromConfig();
 }
 
 void TangentLoadCellFaultDetection::run() {

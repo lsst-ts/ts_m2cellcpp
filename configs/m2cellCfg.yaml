@@ -21,3 +21,18 @@ TelemetryServer:
   host: "127.0.0.1"
   port: 50001
   threads: 3
+
+# Global constants, used in multiple VI's.
+# These are used when a value for the entry could not be
+# found in a more specific section.
+Globals:
+  # weight of the seconrary mirror in Newtons
+  const_mirror_weight: 15140
+
+# Constants for the TangentLoadCellFaultDetector VI.
+# All of them are in Newtons.
+TangentLoadCellFaultDetection:
+  const_tan_weight_error: 2000
+  const_load_bearing_error: 1000
+  const_net_moment_error: 1000
+  const_not_load_bearing_error: 2500
