@@ -126,7 +126,7 @@ void LabViewVI::setConstFromConfig() {
     _searchConfig(undefConsts, section);
 
     if (!undefConsts.empty()) {
-        string eMsg = "LabViewVI::setConstFromConfig() udefined constants for " + getViNameId() + ": ";
+        string eMsg = "LabViewVI::setConstFromConfig() undefined constants for " + getViNameId() + ": ";
         for (auto const& elem : undefConsts) {
             eMsg += elem.second->getName() + ", ";
         }

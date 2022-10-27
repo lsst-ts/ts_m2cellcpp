@@ -56,37 +56,37 @@ public:
     void run() override;
 
     // Inputs
-    util::NamedDouble::Ptr inFA1;            ///< Tangential Actuator force 1 VI->"TangentMeasured Forces 1"
-    util::NamedDouble::Ptr inFA2;            ///< Tangential Actuator force 2 VI->"TangentMeasured Forces 2"
-    util::NamedDouble::Ptr inFA3;            ///< Tangential Actuator force 3 VI->"TangentMeasured Forces 3"
-    util::NamedDouble::Ptr inFA4;            ///< Tangential Actuator force 4 VI->"TangentMeasured Forces 4"
-    util::NamedDouble::Ptr inFA5;            ///< Tangential Actuator force 5 VI->"TangentMeasured Forces 5"
-    util::NamedDouble::Ptr inFA6;            ///< Tangential Actuator force 6 VI->"TangentMeasured Forces 6"
-    util::NamedAngle::Ptr inElevationAngle;  ///< Elevation VI->"Inclination Angle"
+    util::NamedDouble::Ptr inFa1N;            ///< Tangential Actuator force 1 VI->"TangentMeasured Forces 1"
+    util::NamedDouble::Ptr inFa2N;            ///< Tangential Actuator force 2 VI->"TangentMeasured Forces 2"
+    util::NamedDouble::Ptr inFa3N;            ///< Tangential Actuator force 3 VI->"TangentMeasured Forces 3"
+    util::NamedDouble::Ptr inFa4N;            ///< Tangential Actuator force 4 VI->"TangentMeasured Forces 4"
+    util::NamedDouble::Ptr inFa5N;            ///< Tangential Actuator force 5 VI->"TangentMeasured Forces 5"
+    util::NamedDouble::Ptr inFa6N;            ///< Tangential Actuator force 6 VI->"TangentMeasured Forces 6"
+    util::NamedAngle::Ptr inElevationAngleD;  ///< Elevation VI->"Inclination Angle"
 
     // Outputs
     /// Total weight on the load bearing Tangential Actuators VI->"Total Weight Error [N]".
     /// This is the load on the tangential actuators not parallel to the ground:
-    ///  `inFA2`, `inFA3`, `inFA5`, and `inFA6`,
-    util::NamedDouble::Ptr outTangentialTotalWeight;
-    /// Load Bearing for `inFA2` VI->"Individual Weight Error [N], index 0"
-    util::NamedDouble::Ptr outLoadBearingFA2;
-    /// Load Bearing for `inFA3` VI->"Individual Weight Error [N], index 1" FA3
-    util::NamedDouble::Ptr outLoadBearingFA3;
-    /// Load Bearing for `inFA5` VI->"Individual Weight Error [N], index 2" FA5
-    util::NamedDouble::Ptr outLoadBearingFA5;
-    /// Load Bearing for `inFA6` VI->"Individual Weight Error [N], index 4" FA6
-    util::NamedDouble::Ptr outLoadBearingFA6;
+    ///  `inFa2N`, `inFa3N`, `inFa5N`, and `inFa6N`,
+    util::NamedDouble::Ptr outTangentialTotalWeightN;
+    /// Load Bearing for `inFa2N` VI->"Individual Weight Error [N], index 0" FA2
+    util::NamedDouble::Ptr outLoadBearingFa2N;
+    /// Load Bearing for `inFa3N` VI->"Individual Weight Error [N], index 1" FA3
+    util::NamedDouble::Ptr outLoadBearingFa3N;
+    /// Load Bearing for `inFa5N` VI->"Individual Weight Error [N], index 2" FA5
+    util::NamedDouble::Ptr outLoadBearingFa5N;
+    /// Load Bearing for `inFa6N` VI->"Individual Weight Error [N], index 4" FA6
+    util::NamedDouble::Ptr outLoadBearingFa6N;
 
     /// Sum of all Tangential actuator forces VI->"Tangent Sum [N]"
-    util::NamedDouble::Ptr outNetMomentForces;
+    util::NamedDouble::Ptr outNetMomentForcesN;
 
-    /// Same as `inFA1` VI->"Non Load Bearing Forces [N], index 0".
+    /// Same as `inFa1N` VI->"Non Load Bearing Forces [N], index 0".
     /// This actuator is parallel to the ground, so load should not change with elevation.
-    util::NamedDouble::Ptr outFA1;
-    /// Same as `inFA4` VI->"Non Load Bearing Forces [N], index 1".
+    util::NamedDouble::Ptr outFa1N;
+    /// Same as `inFa4N` VI->"Non Load Bearing Forces [N], index 1".
     /// This actuator is parallel to the ground, so load should not change with elevation.
-    util::NamedDouble::Ptr outFA4;
+    util::NamedDouble::Ptr outFa4N;
 
     ///< True if the sum of load bearing actuator forces were out of range VI->"Total Weight Error [N]".
     util::NamedBool::Ptr outTanWeightBool;
@@ -100,23 +100,23 @@ public:
     util::NamedBool::Ptr outTanLoadCellBool;
 
     /// Return mirror weight constant.
-    double getMirrorWeight() const { return _constMirrorWeight->val; }
+    double getMirrorWeightN() const { return _constMirrorWeightN->val; }
 
     /// Return the tangent weight error constant.
-    double getTangentWieghtErr() const { return _constTanWeightError->val; }
+    double getTangentWeightErrorN() const { return _constTanWeightErrorN->val; }
 
 private:
     // All items in the `constMap` should be set from the Config, except during unit tests. TODO:DM-36500
     /// Maximum allowable value for `outTangentialTotalWeight` VI->"Theta Z Moment Error Threshold [N]".
-    util::NamedDouble::Ptr _constTanWeightError;
+    util::NamedDouble::Ptr _constTanWeightErrorN;
     /// Maximum allowable value for individual `_outLoadBearingFA#` VI->"Load Bearing Link Threshold [N]"
-    util::NamedDouble::Ptr _constLoadBearingError;
+    util::NamedDouble::Ptr _constLoadBearingErrorN;
     /// Maximum allowable value for `outNetMomentForces` VI->"Total Weight Error Threshold [N]"
-    util::NamedDouble::Ptr _constNetMomentError;
+    util::NamedDouble::Ptr _constNetMomentErrorN;
     /// Maximum allowable value for `outFA1` and `outFA4`  VI->"Non Load Bearing Link Threshold [N]"
-    util::NamedDouble::Ptr _constNotLoadBearingError;
-    /// Weight of the mirror VI->"Mirror Weight [N]"
-    util::NamedDouble::Ptr _constMirrorWeight;
+    util::NamedDouble::Ptr _constNotLoadBearingErrorN;
+    /// Weight of the mirror in Newtons VI->"Mirror Weight [N]"
+    util::NamedDouble::Ptr _constMirrorWeightN;
 };
 
 }  // namespace vis
