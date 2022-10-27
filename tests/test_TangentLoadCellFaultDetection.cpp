@@ -43,9 +43,9 @@ TEST_CASE("Test VIs", "[VIs]") {
 
     {
         TangentLoadCellFaultDetection tangCellFaultDetect;
-        REQUIRE(tangCellFaultDetect.getMirrorWeight() == 15140);
-        REQUIRE(tangCellFaultDetect.getTangentWieghtErr() == 2000);
-        tangCellFaultDetect.readTestFile("../testFiles/io_TangentLoadCell_v03.csv");
+        REQUIRE(tangCellFaultDetect.getMirrorWeightN() == 15140);
+        REQUIRE(tangCellFaultDetect.getTangentWeightErrorN() == 2000);
+        tangCellFaultDetect.readTestFile("../testFiles/io_TangentLoadCell_v05.csv");
         REQUIRE(tangCellFaultDetect.runTest() == true);
     }
 }

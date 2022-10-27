@@ -27,12 +27,12 @@ TelemetryServer:
 # found in a more specific section.
 Globals:
   # weight of the seconrary mirror in Newtons
-  const_mirror_weight: 15140
+  constMirrorWeightN: 15140
 
 # Constants for the TangentLoadCellFaultDetector VI.
 # All of them are in Newtons.
 TangentLoadCellFaultDetection:
-  const_tan_weight_error: 2000
-  const_load_bearing_error: 1000
-  const_net_moment_error: 1000
-  const_not_load_bearing_error: 2500
+  constTanWeightErrorN: 2000
+  constLoadBearingErrorN: 1000
+  constNetMomentErrorN: 1000
+  constNotLoadBearingErrorN: 2500

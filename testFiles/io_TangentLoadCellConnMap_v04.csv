@@ -1,0 +1,26 @@
+Input Outputs and Constants,Elements in the TangentLoadCellFaultDetection.vi,Index Number,Comments
+inFa1N,TangentMeasured Forces 1,Index 0,
+inFa2N,TangentMeasured Forces 2,Index 1,
+inFa3N,TangentMeasured Forces 3,Index 2,
+inFa4N,TangentMeasured Forces 4,Index 3,
+inFa5N,TangentMeasured Forces 5,Index 4,
+inFa6N,TangentMeasured Forces 6,Index 5,
+inElevationAngleD,Inclination Angle,,
+outTangentialTotalWeightN,Total Weight Error [N],,
+outLoadBearingFa2N,Individual Weight Error [N],Index 0,FA2
+outLoadBearingFa3N,Individual Weight Error [N],Index 1,FA3
+outLoadBearingFa5N,Individual Weight Error [N],Index 2,FA5
+outLoadBearingFa6N,Individual Weight Error [N],Index 3,FA6
+outNetMomentForcesN,Tangent Sum [N],,
+constTanWeightErrorN,Total Weight Error Threshold [N],,
+constLoadBearingErrorN,Load Bearing Link Threshold [N],,
+constNetMomentErrorN,Theta Z Moment Error Threshold [N],,
+constNonLoadBearingErrorN,Non Load Bearing Link Threshold [N],,
+constMirrorWeightN,Mirror Weight [N],,
+outTanWeightBool,Total Weight Error [N],,
+outLoadBearingBool,Individual Weight Error,,
+outNetMomentBool,Tangent Sum Error,,
+outNonLoadBearingBool,Non Load Bearing Link Error,,
+outTanLoadCellBool,Tangent Load Fault,,
+outFa1N,Non Load Bearing Forces [N],Index 0,
+outFa4N,Non Load Bearing Forces [N],Index 1,

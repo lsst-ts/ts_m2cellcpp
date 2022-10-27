@@ -1,5 +1,9 @@
 # Version History
 
+0.2.7
+
+- Changed VI names to match new names in the csv file.
+
 0.2.6
 
 - Added configuration file setup for vi constants.
