@@ -37,6 +37,7 @@
 // Third party headers
 
 // project headers
+#include "system/TelemetryItem.h"
 
 namespace LSST {
 namespace m2cellcpp {
@@ -69,7 +70,7 @@ public:
     /// @return true if the server is running.
     bool waitForServerRunning(int seconds);
 
-    static bool test();  // &&& move code to test_TelemetryCom.cpp
+    //&&& static bool test();  // &&& move code to test_TelemetryCom.cpp
 
 private:
     TelemetryCom();
@@ -92,6 +93,8 @@ private:
     std::atomic<bool> _loop{true};                ///< &&& doc
     std::atomic<bool> _shutdownComCalled{false};  ///< &&& doc
     std::atomic<bool> _serverRunning{false};      ///< &&& doc replace with bool and mtx.
+
+    TelemetryMap::Ptr _telemMap;  ///< &&& doc
 };
 
 }  // namespace system

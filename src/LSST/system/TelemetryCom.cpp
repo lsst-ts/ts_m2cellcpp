@@ -39,6 +39,7 @@ namespace system {
 
 atomic<uint32_t> TelemetryCom::_seqIdSource{0};
 
+/* &&&
 bool TelemetryCom::test() {
     {
         LINFO("Creating serv");
@@ -78,6 +79,7 @@ bool TelemetryCom::test() {
     }
     return true;
 }
+*/
 
 TelemetryCom::TelemetryCom() { LDEBUG("TelemetryCom::TelemetryCom() _seqId=", _seqId); }
 
@@ -192,12 +194,9 @@ void TelemetryCom::server() {
 }
 
 void TelemetryCom::_serverConnectionHandler(int sock) {
-    //&&& char buffer[1024] = {0};
-    //&&&const char* hello = "Hello from server";
     // int valread = read(sock, buffer, 1024); // &&& make separate read thread for inclination
     LDEBUG("&&& TelemetryCom::_serverConnectionHandler sock=", sock, " starting");
-    //&&&printf("%s\n  %d\n", buffer, valread);
-    //&&&send(sock, hello, strlen(hello), 0);
+
     int j = 0;
     while (_loop) {
         string msg = "server says hi j=" + to_string(j) + TERMINATOR();
