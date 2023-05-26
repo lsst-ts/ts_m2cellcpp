@@ -37,11 +37,12 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
+atomic<uint32_t> TelemetryCom::_seqIdSource{0};
+
 bool TelemetryCom::test() {
     {
-        LINFO("Creating serv + client");
+        LINFO("Creating serv");
         auto serv = TelemetryCom::create();
-        auto client = TelemetryCom::create();
 
         auto servFunc = [serv]() {
             LINFO("&&& servFunc start");
@@ -50,37 +51,38 @@ bool TelemetryCom::test() {
         };
         LINFO("&&& Running serv");
         thread servThrd(servFunc);
-        serv->waitForServerRunning(3);
+        serv->waitForServerRunning(1);
         // &&& wait and verify server started.
 
         LINFO("&&& Running clients");
+        std::vector<TelemetryCom::Ptr> clients;
         std::vector<thread> clientThreads;
-        auto clientFunc = [](TelemetryCom::Ptr client, int j) {
-            LINFO("&&& clientFunc start j=", j);
-            client->client();
-            LINFO("&&& clientFunc end j=", j);
-        };
 
         for (int j = 0; j < 10; ++j) {
-            clientThreads.emplace_back(clientFunc, client, j);
+            //&&&clientThreads.emplace_back(clientFunc, client, j);
+            TelemetryCom::Ptr client = TelemetryCom::create();
+            clients.push_back(client);
+            clientThreads.emplace_back(&TelemetryCom::client, client, j);
         }
         sleep(5);  //&&& replace with wait for client complete flag
         LINFO("&&& Stopping server");
         serv->shutdownCom();
-        client->shutdownCom();
         LINFO("&&& waiting for joins");
-        //&&& clientThrd1.join();
-        for (auto& thrd : clientThreads) {
-            thrd.join();
-        }
-        LINFO("&&& client joined");
         servThrd.join();
         LINFO("&&& serv joined");
+        for (auto& thrd : clientThreads) {
+            LINFO("&&& client joining");
+            thrd.join();
+        }
+        LINFO("&&& clients joined");
     }
     return true;
 }
 
+TelemetryCom::TelemetryCom() { LDEBUG("TelemetryCom::TelemetryCom() _seqId=", _seqId); }
+
 TelemetryCom::~TelemetryCom() {
+    LDEBUG("TelemetryCom::~TelemetryCom() _seqId=", _seqId);
     shutdownCom();
     // &&& join threads, if needed.
 }
@@ -140,13 +142,13 @@ void TelemetryCom::server() {
     if ((_serverFd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         LINFO("&&& server a1");
         throw util::Bug(ERR_LOC,
-                        "TelemetryCom::sever() failed to create listening socket");  //&&& change type
+                        "TelemetryCom::server() failed to create listening socket");  //&&& change type
     }
     LINFO("&&& server b");
     int opt = 1;
     if (setsockopt(_serverFd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
         LINFO("&&& server b1");
-        throw util::Bug(ERR_LOC, "TelemetryCom::sever() failed to setsockopt");  //&&& change type
+        throw util::Bug(ERR_LOC, "TelemetryCom::server() failed to setsockopt");  //&&& change type
     }
 
     struct sockaddr_in address;
@@ -158,12 +160,12 @@ void TelemetryCom::server() {
     LINFO("&&& server c");
     if (bind(_serverFd, (struct sockaddr*)&address, sizeof(address)) < 0) {
         throw util::Bug(ERR_LOC,
-                        "TelemetryCom::sever() failed to bind " + to_string(_port));  //&&& change type
+                        "TelemetryCom::server() failed to bind " + to_string(_port));  //&&& change type
     }
     LINFO("&&& server d");
     if (listen(_serverFd, 3) < 0) {
         LINFO("&&& server d1");
-        throw util::Bug(ERR_LOC, "TelemetryCom::sever() failed to listen " + to_string(_port));
+        throw util::Bug(ERR_LOC, "TelemetryCom::server() failed to listen " + to_string(_port));
     }
     _serverRunning = true;  // &&& needs unique_lock to be thread safe
     LINFO("&&& server e");
@@ -175,24 +177,12 @@ void TelemetryCom::server() {
             continue;
         }
         if (sock < 0) {
-            LERROR("TelemetryCom::sever() failed to accept on ", _port, " sock=", sock);
+            LERROR("TelemetryCom::server() failed to accept on ", _port, " sock=", sock);
             _loop = false;
             continue;
         }
         // &&& move to separate thread.
         _serverConnectionHandler(sock);
-        /* &&&
-        char buffer[1024] = {0};
-        const char* hello = "Hello from server";
-        int valread = read(sock, buffer, 1024);
-        LINFO("&&& server f2");
-        printf("%s\n  %d\n", buffer, valread);
-        send(sock, hello, strlen(hello), 0);
-        LINFO("&&& server f3");
-        printf("server sent message\n"); //&&&
-        close(sock);
-        LINFO("&&& server f4");
-        */
     }
 
     LINFO("&&& server shutdown");
@@ -202,6 +192,32 @@ void TelemetryCom::server() {
 }
 
 void TelemetryCom::_serverConnectionHandler(int sock) {
+    //&&& char buffer[1024] = {0};
+    //&&&const char* hello = "Hello from server";
+    // int valread = read(sock, buffer, 1024); // &&& make separate read thread for inclination
+    LDEBUG("&&& TelemetryCom::_serverConnectionHandler sock=", sock, " starting");
+    //&&&printf("%s\n  %d\n", buffer, valread);
+    //&&&send(sock, hello, strlen(hello), 0);
+    int j = 0;
+    while (_loop) {
+        string msg = "server says hi j=" + to_string(j) + TERMINATOR();
+        LINFO("&&& server sending msg=", msg);
+        ssize_t status = send(sock, msg.c_str(), msg.length(), 0);
+        if (status < 0) {
+            LWARN("TelemetryCom::_serverConnectionHandler failure status=", status);
+            // &&& call shutdown???
+            break;
+        }
+        LINFO("&&& server msg sent");
+        ++j;
+        sleep(1);
+    }
+    LDEBUG("&&& TelemetryCom::_serverConnectionHandler sock=", sock, " closing");
+    close(sock);
+    LDEBUG("&&& TelemetryCom::_serverConnectionHandler sock=", sock, " done");
+}
+
+void TelemetryCom::_serverConnectionHandlerOld(int sock) {
     char buffer[1024] = {0};
     const char* hello = "Hello from server";
     int valread = read(sock, buffer, 1024);
@@ -214,7 +230,39 @@ void TelemetryCom::_serverConnectionHandler(int sock) {
     LINFO("&&& server f4");
 }
 
-int TelemetryCom::client() {
+int TelemetryCom::client(int j) {
+    int clientFd = _clientConnect();
+    LINFO("&&& client() clientFd=", clientFd, " j=", j, "_seqId=", _seqId);
+    bool serverOk = true;
+    string inMsg;
+    while (_loop && serverOk) {
+        char buffer[3];
+        // LINFO("&&& client() reading clientFd=", clientFd, " j=",j);
+        ssize_t status = read(clientFd, buffer, 1);  // &&& replace read with recv()
+        // LINFO("&&& client() read buffer[0]=", (int)(buffer[0]), "=", buffer[0], " msg=", inMsg);
+        if (status <= 0) {
+            LINFO("TelemetryCom::client() j=", j, " recv failed with status=", status);
+            serverOk = false;
+            break;
+        }
+        char inChar = buffer[0];
+        if (inChar == '\n' && inMsg.back() == '\r') {
+            inMsg.pop_back();
+            LINFO("&&& client j=", j, " seq=", _seqId, " fd=", clientFd, " got message ", inMsg);
+            inMsg.clear();
+        } else {
+            inMsg += inChar;
+        }
+    }
+    LDEBUG("TelemetryCom::client() closing j=", j, " seq=", _seqId);
+    LDEBUG("TelemetryCom::client() closing j=", j, " seq=", _seqId, " inMsg=", inMsg);
+    close(clientFd);
+    LINFO("&&& TelemetryCom::client() done j=", j, " seq=", _seqId);
+    return 0;
+}
+
+/* &&&
+int TelemetryCom::clientOld() {
     const char* hello = "Hello from client";
     char buffer[1024] = {0};
     int client_fd = _clientConnect();
@@ -230,6 +278,7 @@ int TelemetryCom::client() {
     LINFO("&&& client end");
     return 0;
 }
+*/
 
 }  // namespace system
 }  // namespace m2cellcpp

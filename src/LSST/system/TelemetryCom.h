@@ -18,12 +18,13 @@
  * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
-#ifndef LSST_M2CELLCPP_SYSTEM_TELEMETRYSERVER_H
-#define LSST_M2CELLCPP_SYSTEM_TELEMETRYSERVER_H
+#ifndef LSST_M2CELLCPP_SYSTEM_TELEMETRYCOM_H
+#define LSST_M2CELLCPP_SYSTEM_TELEMETRYCOM_H
 
 // System headers
 #include <arpa/inet.h>
 #include <atomic>
+#include <map>
 #include <memory>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -62,7 +63,7 @@ public:
     int shutdownCom();
 
     /// &&& doc
-    int client();
+    int client(int j);
 
     /// Wait upto `seconds` time for `_serverRunning` to be true.
     /// @return true if the server is running.
@@ -71,10 +72,17 @@ public:
     static bool test();  // &&& move code to test_TelemetryCom.cpp
 
 private:
-    TelemetryCom() = default;
+    TelemetryCom();
+
+    static std::atomic<uint32_t> _seqIdSource;
+
+    /// &&& doc
+    int _seqId = _seqIdSource++;
 
     /// &&& doc
     void _serverConnectionHandler(int sock);
+
+    void _serverConnectionHandlerOld(int sock);  //&&&
 
     /// Return a socket file descriptor to the server.
     int _clientConnect();
@@ -90,4 +98,4 @@ private:
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_SYSTEM_TELEMETRYSERVER_H
+#endif  // LSST_M2CELLCPP_SYSTEM_TELEMETRYCOM_H
