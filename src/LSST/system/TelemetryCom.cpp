@@ -86,15 +86,26 @@ TelemetryCom::TelemetryCom() { LDEBUG("TelemetryCom::TelemetryCom() _seqId=", _s
 TelemetryCom::~TelemetryCom() {
     LDEBUG("TelemetryCom::~TelemetryCom() _seqId=", _seqId);
     shutdownCom();
-    // &&& join threads, if needed.
+
+    // Shutdown and join client threads
+    lock_guard<mutex> htLock();
+    for (auto&& ht : _handlerThreads) {
+        ht->servConnHShutdown();
+        ht->join();
+    }
 }
 
 int TelemetryCom::shutdownCom() {
     LDEBUG("TelemetryCom::shutdownCom()");
-    _loop = false;
+    _acceptLoop = false;
     if (_shutdownComCalled.exchange(true)) {
         return 0;
     }
+
+    for (auto&& hThrd : _handlerThreads) {
+        hThrd->servConnHShutdown();
+    }
+
     if (_serverRunning) {  // &&& need mutex
         LINFO("TelemetryCom::shutdownCom() connecting to serversocket");
         int clientFd = _clientConnect();
@@ -171,20 +182,42 @@ void TelemetryCom::server() {
     }
     _serverRunning = true;  // &&& needs unique_lock to be thread safe
     LINFO("&&& server e");
-    while (_loop) {
+    while (_acceptLoop) {
         LINFO("&&& server f");
         int sock = accept(_serverFd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
         LINFO("&&& server f1");
-        if (!_loop) {
+        if (!_acceptLoop) {
             continue;
         }
         if (sock < 0) {
             LERROR("TelemetryCom::server() failed to accept on ", _port, " sock=", sock);
-            _loop = false;
+            _acceptLoop = false;
             continue;
         }
-        // &&& move to separate thread.
-        _serverConnectionHandler(sock);
+        // Create an object to handle the new connection.
+        {
+            bool detach = false;  // &&& set elsewhere
+            auto handlerThrd = ServerConnectionHandler::Ptr(new ServerConnectionHandler(sock, detach));
+            lock_guard<mutex> htLock();
+            _handlerThreads.push_back(handlerThrd);
+            // &&& check if any of the threads should be joined and removed.
+            auto iter = _handlerThreads.begin();
+            LINFO("&&& serv join a");
+            while (iter != _handlerThreads.end()) {
+                LINFO("&&& serv join b");
+                auto needToErase = (*iter)->checkJoin();
+                LINFO("&&& serv join c");
+                if (needToErase || (*iter)->getJoined()) {
+                    LINFO("&&& serv join da");
+                    auto old = iter++;
+                    _handlerThreads.erase(old);
+                } else {
+                    LINFO("&&& serv join db");
+                    ++iter;
+                }
+                LINFO("&&& serv join e");
+            }
+        }
     }
 
     LINFO("&&& server shutdown");
@@ -193,15 +226,14 @@ void TelemetryCom::server() {
     LINFO("&&& server shutdown done");
 }
 
-void TelemetryCom::_serverConnectionHandler(int sock) {
-    // int valread = read(sock, buffer, 1024); // &&& make separate read thread for inclination
-    LDEBUG("&&& TelemetryCom::_serverConnectionHandler sock=", sock, " starting");
+void TelemetryCom::ServerConnectionHandler::_servConnHandler() {
+    LDEBUG("&&& TelemetryCom::ServerConnectionHandler::_servConnHandler starting sock=", _servConnHSock);
 
     int j = 0;
-    while (_loop) {
+    while (_connLoop) {
         string msg = "server says hi j=" + to_string(j) + TERMINATOR();
         LINFO("&&& server sending msg=", msg);
-        ssize_t status = send(sock, msg.c_str(), msg.length(), 0);
+        ssize_t status = send(_servConnHSock, msg.c_str(), msg.length(), 0);
         if (status < 0) {
             LWARN("TelemetryCom::_serverConnectionHandler failure status=", status);
             // &&& call shutdown???
@@ -211,11 +243,51 @@ void TelemetryCom::_serverConnectionHandler(int sock) {
         ++j;
         sleep(1);
     }
-    LDEBUG("&&& TelemetryCom::_serverConnectionHandler sock=", sock, " closing");
-    close(sock);
-    LDEBUG("&&& TelemetryCom::_serverConnectionHandler sock=", sock, " done");
+    LDEBUG("TelemetryCom::ServerConnectionHandler::_servConnHandler close sock=", _servConnHSock);
+    close(_servConnHSock);
+    {
+        lock_guard<mutex> lck(_joinMtx);
+        _readyToJoin = true;
+        if (_detach) {
+            _joined = true;
+        }
+    }
+    LDEBUG("TelemetryCom::ServerConnectionHandler::_servConnHandler done sock=", _servConnHSock);
 }
 
+bool TelemetryCom::ServerConnectionHandler::checkJoin() {
+    lock_guard<mutex> lck(_joinMtx);
+    LINFO("&&& checkJoin a");
+    if (_joined) {
+        LINFO("&&& checkJoin a1");
+        return true;
+    }
+    LINFO("&&& checkJoin b");
+    if (_detach || !_servConnHThrd.joinable() || !_readyToJoin) {
+        LINFO("&&& checkJoin b1");
+        return false;
+    }
+    LINFO("&&& checkJoin c");
+    // The join should happen quickly as the thread should be finished, or very nearly so.
+    _join();
+    LINFO("&&& checkJoin d");
+    return true;
+}
+
+void TelemetryCom::ServerConnectionHandler::join() {
+    lock_guard<mutex> lck(_joinMtx);
+    _join();
+}
+
+void TelemetryCom::ServerConnectionHandler::_join() {
+    if (_detach || _joined) {
+        return;
+    }
+    _servConnHThrd.join();
+    _joined = true;
+}
+
+/* &&&
 void TelemetryCom::_serverConnectionHandlerOld(int sock) {
     char buffer[1024] = {0};
     const char* hello = "Hello from server";
@@ -228,13 +300,14 @@ void TelemetryCom::_serverConnectionHandlerOld(int sock) {
     close(sock);
     LINFO("&&& server f4");
 }
+*/
 
 int TelemetryCom::client(int j) {
     int clientFd = _clientConnect();
     LINFO("&&& client() clientFd=", clientFd, " j=", j, "_seqId=", _seqId);
     bool serverOk = true;
     string inMsg;
-    while (_loop && serverOk) {
+    while (_acceptLoop && serverOk) {
         char buffer[3];
         // LINFO("&&& client() reading clientFd=", clientFd, " j=",j);
         ssize_t status = read(clientFd, buffer, 1);  // &&& replace read with recv()

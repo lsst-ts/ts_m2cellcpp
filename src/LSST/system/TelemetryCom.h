@@ -26,6 +26,7 @@
 #include <atomic>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -72,6 +73,61 @@ public:
 
     //&&& static bool test();  // &&& move code to test_TelemetryCom.cpp
 
+    /// &&& doc
+    class ServerConnectionHandler {
+    public:
+        using Ptr = std::shared_ptr<ServerConnectionHandler>;
+
+        ServerConnectionHandler() = delete;
+        ServerConnectionHandler(ServerConnectionHandler const&) = delete;
+
+        /// &&& doc
+        ServerConnectionHandler(int sock, bool detach) : _servConnHSock(sock), _detach(detach) {
+            std::thread thrd(&ServerConnectionHandler::_servConnHandler, this);
+            _servConnHThrd = std::move(thrd);
+            if (_detach) {
+                _servConnHThrd.detach();
+            }
+        }
+
+        /// &&& doc
+        ~ServerConnectionHandler() {
+            if (!_detach) {
+                std::lock_guard<std::mutex> lck(_joinMtx);
+                _join();
+            }
+        }
+
+        /// &&& doc
+        void servConnHShutdown() { _connLoop = false; };
+
+        /// If the thread has completed, try to join it
+        bool checkJoin();
+
+        /// Returns true if the thread has been joined.
+        bool getJoined() { return _joined; }
+
+        /// Lock `_joinMtx` and call _`join()`.
+        void join();
+
+    private:
+        /// &&& doc
+        void _servConnHandler();
+
+        /// Join `_servConnHThrd`. `_joinMtx` shopuld be locked before calling
+        void _join();
+
+        const int _servConnHSock;    ///< &&& doc
+        const bool _detach;          ///< &&& doc
+        std::thread _servConnHThrd;  ///< &&& doc
+
+        std::atomic<bool> _connLoop{true};  ///< &&& doc
+
+        std::atomic<bool> _readyToJoin{false};  ///< &&& doc
+        std::atomic<bool> _joined{false};       ///< &&& doc
+        std::mutex _joinMtx;                    ///< protects `_readyToJoin` and `_joined`;
+    };
+
 private:
     TelemetryCom();
 
@@ -83,18 +139,19 @@ private:
     /// &&& doc
     void _serverConnectionHandler(int sock);
 
-    void _serverConnectionHandlerOld(int sock);  //&&&
-
     /// Return a socket file descriptor to the server.
     int _clientConnect();
 
     int _serverFd;
     int _port = 8080;                             // Port number //&&& set elsewhere
-    std::atomic<bool> _loop{true};                ///< &&& doc
+    std::atomic<bool> _acceptLoop{true};          ///< &&& doc
     std::atomic<bool> _shutdownComCalled{false};  ///< &&& doc
     std::atomic<bool> _serverRunning{false};      ///< &&& doc replace with bool and mtx.
 
     TelemetryMap::Ptr _telemMap;  ///< &&& doc
+
+    std::vector<ServerConnectionHandler::Ptr> _handlerThreads;  ///< &&& doc
+    std::mutex _handlerThreadsMtx;                              ///< protects _handlerThreads
 };
 
 }  // namespace system
