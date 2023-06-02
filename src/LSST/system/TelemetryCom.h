@@ -38,47 +38,62 @@
 // Third party headers
 
 // project headers
-#include "system/TelemetryItem.h"
+#include "system/TelemetryMap.h"
 
 namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
-///  &&& doc
-/// wait between messages is 0.05 seconds.
+/// This class is used to manage telemetry communication socket connections.
+/// It sends out json descriptions of all items in the `_telemetryMap` on
+/// each client connection, sleeps for 0.05 seconds, and then repeats.
+/// There is no set limit on the number of client connections.
+/// The class listens on a separate thread, and creates a
+/// `TelemetryCom::ServerConnectionHandler` for each client connection,
+/// which also starts it's own thread.
+/// The `TelemetryMap` is expected to be immutable except for element
+/// values (element `id` cannot change). The values of the elements
+/// must be variable and thread safe. They must be set elsewhere whenever
+/// their values change so that the telemetry information is up to date.
 class TelemetryCom : public std::enable_shared_from_this<TelemetryCom> {
 public:
     using Ptr = std::shared_ptr<TelemetryCom>;
 
     static const char* TERMINATOR() { return "\r\n"; }
 
-    /// &&& doc
-    static Ptr create(TelemetryMap::Ptr const& telemMap) {
-        return TelemetryCom::Ptr(new TelemetryCom(telemMap));
+    /// Return a new `TelemetryCom` object using `telemMap` for its data and `port` for its port.
+    static Ptr create(TelemetryMap::Ptr const& telemMap, int port) {
+        return TelemetryCom::Ptr(new TelemetryCom(telemMap, port));
     }
 
     TelemetryCom() = delete;
 
-    /// &&& doc - shutting down threads can be odd.
+    /// Ensure shutdown is called and thread are joined.
     ~TelemetryCom();
 
-    /// &&& doc
-    void server();
+    /// Start the thread to listen for client connections. See `_server`.
+    void startServer();
 
-    ///  &&& doc
+    /// Shutdown the server socket and join all server related threads.
+    /// Clients are primarily used for testing and not expected to have
+    /// threads that need stopping on the server.
     int shutdownCom();
 
-    /// &&& doc
+    /// Start a client connection in this thread. This is primarily meant
+    /// for testing.
     int client(int j);
 
-    /// Wait upto `seconds` time for `_serverRunning` to be true.
+    /// Wait up to `seconds` time for `_serverRunning` to be true.
     /// @return true if the server is running.
     bool waitForServerRunning(int seconds);
 
-    /// &&& doc
+    /// Get a pointer to the `TelemetryMap` in use by this instance.
     TelemetryMap::Ptr getTMap() const { return _telemetryMap; }
 
-    /// &&& doc
+    /// This class is used to handle a unique client connection made to this
+    /// `TelemetryCom` server. This handler will send out messages
+    /// for all items in the `_telemetryMap`, briefly sleep and then
+    /// repeat until `servConnHShutdown` is called.
     class ServerConnectionHandler {
     public:
         using Ptr = std::shared_ptr<ServerConnectionHandler>;
@@ -86,28 +101,24 @@ public:
         ServerConnectionHandler() = delete;
         ServerConnectionHandler(ServerConnectionHandler const&) = delete;
 
-        /// &&& doc
-        ServerConnectionHandler(int sock, TelemetryItemMap tItemMap, bool detach)
-                : _servConnHSock(sock), _tItemMap(tItemMap), _detach(detach) {
+        /// Create a new `ServerConnectionHandler` and start its thread to handle `sock`.
+        /// Future: add a thread to read inclination updates ticket/DM-39538
+        ServerConnectionHandler(int sock, TelemetryItemMap tItemMap)
+                : _servConnHSock(sock), _tItemMap(tItemMap) {
             std::thread thrd(&ServerConnectionHandler::_servConnHandler, this);
             _servConnHThrd = std::move(thrd);
-            if (_detach) {
-                _servConnHThrd.detach();
-            }
         }
 
-        /// &&& doc
+        /// Join associated threads.
         ~ServerConnectionHandler() {
-            if (!_detach) {
-                std::lock_guard<std::mutex> lck(_joinMtx);
-                _join();
-            }
+            std::lock_guard<std::mutex> lck(_joinMtx);
+            _join();
         }
 
-        /// &&& doc
+        /// Stop this instance's threads.
         void servConnHShutdown() { _connLoop = false; };
 
-        /// If the thread has completed, try to join it
+        /// If the thread has completed, try to join it.
         bool checkJoin();
 
         /// Returns true if the thread has been joined.
@@ -117,51 +128,55 @@ public:
         void join();
 
     private:
-        /// &&& doc
+        /// Private constructor to force creation as shared pointer object.
         void _servConnHandler();
 
         /// Join `_servConnHThrd`. `_joinMtx` shopuld be locked before calling
         void _join();
 
-        const int _servConnHSock;  ///< &&& doc
+        const int _servConnHSock;  ///< Socket used by this class.
 
-        /// &&& doc
-        TelemetryItemMap _tItemMap;  /// &&& change to TelemetryItemMap::Ptr
-        const bool _detach;          ///< &&& doc
-        std::thread _servConnHThrd;  ///< &&& doc
+        /// A map of all the telemry values that need to be sent to the client.
+        TelemetryItemMap _tItemMap;
+        std::thread _servConnHThrd;  ///< The thread running the handler.
 
-        std::atomic<bool> _connLoop{true};  ///< &&& doc
+        std::atomic<bool> _connLoop{true};  ///< Setting this to false stops the threads.
 
-        std::atomic<bool> _readyToJoin{false};  ///< &&& doc
-        std::atomic<bool> _joined{false};       ///< &&& doc
+        std::atomic<bool> _readyToJoin{false};  ///< True when the handler thread has reached its end.
+        std::atomic<bool> _joined{false};       ///< True when the handler thread has joined.
         std::mutex _joinMtx;                    ///< protects `_readyToJoin` and `_joined`;
     };
 
 private:
-    /// &&& doc
-    TelemetryCom(TelemetryMap::Ptr const& telemMap);
+    /// Private constructor to force creation as shared pointer object.
+    TelemetryCom(TelemetryMap::Ptr const& telemMap, int port);
+
+    /// Bind a socket listen to `_port`, creating new `ServerConnectionHandler` objects
+    /// to handle clients until `shutdownCom` is called.
+    void _server();
 
     static std::atomic<uint32_t> _seqIdSource;
 
-    /// &&& doc
-    int _seqId = _seqIdSource++;
-
-    /// &&& doc
-    void _serverConnectionHandler(int sock);
+    /// A unique identifier for each `TelemetryCom` instance.
+    unsigned int _seqId = _seqIdSource++;
 
     /// Return a socket file descriptor to the server.
     int _clientConnect();
 
-    int _serverFd;
-    int _port = 8080;                             // Port number //&&& set elsewhere
-    std::atomic<bool> _acceptLoop{true};          ///< &&& doc
-    std::atomic<bool> _shutdownComCalled{false};  ///< &&& doc
-    std::atomic<bool> _serverRunning{false};      ///< &&& doc replace with bool and mtx.
+    /// A pointer to the `TelemetryMap` instance that is used as the source of
+    /// telemetry data to transmit.
+    TelemetryMap::Ptr _telemetryMap;
 
-    TelemetryMap::Ptr _telemetryMap;  ///< &&& doc
+    int _serverFd;                                ///< File descriptor for server socket.
+    int _port;                                    ///< Port number
+    std::atomic<bool> _acceptLoop{true};          ///< Set to false to stop the accept loop.
+    std::atomic<bool> _shutdownComCalled{false};  ///< Set to true when `shutdownCom` has been called.
+    std::atomic<bool> _serverRunning{false};      ///< Set to true once the server has started.
 
-    std::vector<ServerConnectionHandler::Ptr> _handlerThreads;  ///< &&& doc
-    std::mutex _handlerThreadsMtx;                              ///< protects _handlerThreads
+    std::vector<ServerConnectionHandler::Ptr> _handlerThreads;  ///< List of all heandler threads.
+    std::mutex _handlerThreadsMtx;                              ///< Protects `_handlerThreads`
+
+    std::thread _serverThread;  ///< Thread for accepting socket connections.
 };
 
 }  // namespace system

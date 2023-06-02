@@ -52,7 +52,10 @@ class TelemetryItem;
 typedef std::map<std::string, std::shared_ptr<TelemetryItem>> TelemetryItemMap;
 typedef std::shared_ptr<TelemetryItemMap> TelemetryItemMapPtr;
 
-/// &&& doc
+/// One item that can be sent by the server in `TelemetryCom`. This class
+/// can be used to build items with several elements.
+/// @see `TItemPowerStatusBase` and `TItemDouble` as examples.
+/// as an example.
 class TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TelemetryItem>;
@@ -64,10 +67,11 @@ public:
         return insertSuccess;
     }
 
-    TelemetryItem() = delete;
+    /// Create a `TelemetryItem` with immutable id of `id`.
     TelemetryItem(std::string const& id) : _id(id) {}
     virtual ~TelemetryItem() = default;
 
+    TelemetryItem() = delete;
     TelemetryItem(TelemetryItem const&) = delete;
     TelemetryItem& operator=(TelemetryItem const&) = delete;
 
@@ -84,17 +88,19 @@ public:
     /// @return true if item parsed correctly and had appropriate data.
     bool parse(std::string const& jStr);
 
-    /// doc&&&
+    /// Set the value of this `TelemetryItem` from `js`.
+    /// @param idExpected - If set to true, `js` must contain a valid entry for `id`.
+    /// @return true if the value of all relate items could be set from `js`
     virtual bool setFromJson(nlohmann::json const& js, bool idExpected = false) = 0;
 
-    /// doc &&&
+    /// Return a string reasonable for logging.
     std::string dump() const {
         std::stringstream os;
         os << getJson();
         return os.str();
     }
 
-    /// doc &&&
+    /// Add a reasonable string representation of `item` for logging to `os`
     friend std::ostream& operator<<(std::ostream& os, TelemetryItem const& item);
 
 protected:
@@ -111,29 +117,31 @@ private:
     std::string const _id;
 };
 
-/// &&& doc
+/// This class is used to store a specific telemetry item with a double value.
 class TItemDouble : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemDouble>;
 
-    /// &&& doc
+    /// Create a shared pointer instance of TItemDouble using `id`, and `defaultVal`, and
+    /// insert it into the map `itMap`.
+    /// @see `TItemDouble`
     /// @throws util::Bug if the new object cannot be inserted into the list
     static Ptr create(std::string const& id, TelemetryItemMap* itMap, double defaultVal = 0.0);
     TItemDouble() = delete;
 
-    /// &&& doc
+    /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal`.
     TItemDouble(std::string const& id, double defaultVal = 0.0) : TelemetryItem(id), _val(defaultVal) {}
 
-    //// &&& doc
+    //// Set the value of the object to `val`.
     void setVal(double val) { _val = val; }
 
-    //// &&& doc
+    //// Return the value of this object.
     double getVal() const { return _val; }
 
-    /// Local override of getJson
+    /// Return the json representation of this object.
     nlohmann::json getJson() const override;
 
-    /// doc&&&
+    /// Set the value of this object from json.
     bool setFromJson(nlohmann::json const& js, bool idExpected) override;
 
     /// Return true if this item and `other` have the same id and values.
@@ -177,7 +185,7 @@ public:
     /// Local override of getJson
     nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
 
-    /// doc&&&
+    /// Set the value of this object from json.
     bool setFromJson(nlohmann::json const& js, bool idExpected) override {
         return setMapFromJson(_map, js, idExpected);
     }
@@ -194,7 +202,7 @@ private:
     TItemDouble::Ptr _commCurrent = TItemDouble::create("commCurrent", &_map);
 };
 
-/// &&& doc
+/// This class is used to store data for the "powerStatus" entry.
 class TItemPowerStatus : public TItemPowerStatusBase {
 public:
     using Ptr = std::shared_ptr<TItemPowerStatus>;
@@ -203,64 +211,13 @@ public:
     virtual ~TItemPowerStatus() = default;
 };
 
-/// &&& doc
+/// /// This class is used to store data for the "powerStatusRaw" entry.
 class TItemPowerStatusRaw : public TItemPowerStatusBase {
 public:
     using Ptr = std::shared_ptr<TItemPowerStatusRaw>;
 
     TItemPowerStatusRaw() : TItemPowerStatusBase("powerStatusRaw") {}
     virtual ~TItemPowerStatusRaw() = default;
-};
-
-/// &&& doc
-class TelemetryMap {
-public:
-    using Ptr = std::shared_ptr<TelemetryMap>;
-    TelemetryMap() = default;
-    TelemetryMap(TelemetryMap const& other) { _map = other.copyMap(); }
-    TelemetryMap& operator=(TelemetryMap const&) = delete;
-    ~TelemetryMap() = default;
-
-    /// &&& doc
-    TelemetryItemMap copyMap() const {
-        std::lock_guard<std::mutex> lg(_mapMtx);
-        TelemetryItemMap newMap = _map;
-        return newMap;
-    }
-
-    /// &&& doc
-    bool setItemFromJsonStr(std::string const& jsStr);
-
-    /// &&& doc
-    bool setItemFromJson(nlohmann::json const& js);
-
-    /// &&& doc
-    bool compareMaps(TelemetryMap const& other);
-
-    /// &&& doc
-    TItemPowerStatus::Ptr getPowerStatus() const { return _powerStatus; }
-
-    /// &&& doc
-    TItemPowerStatusRaw::Ptr getPowerStatusRaw() const { return _powerStatusRaw; }
-
-private:
-    /// Map of all telemetry items to be sent to clients.
-    /// Once created, the items contained in the map will
-    /// not change, but their values will.
-    TelemetryItemMap _map;
-    mutable std::mutex _mapMtx;  ///< Protects `_map` &&& this is probably not needed as _map doesn't change
-                                 ///< once created.
-
-    /// &&& doc
-    template <typename T>
-    std::shared_ptr<T> _addItem() {
-        std::shared_ptr<T> item = std::shared_ptr<T>(new T());
-        _map.insert(make_pair(item->getId(), item));
-        return item;
-    }
-
-    TItemPowerStatus::Ptr _powerStatus = TelemetryMap::_addItem<TItemPowerStatus>();
-    TItemPowerStatusRaw::Ptr _powerStatusRaw = TelemetryMap::_addItem<TItemPowerStatusRaw>();
 };
 
 }  // namespace system

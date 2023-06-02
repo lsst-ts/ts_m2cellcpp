@@ -32,6 +32,7 @@
 // Project headers
 #include "system/TelemetryCom.h"
 #include "system/TelemetryItem.h"
+#include "system/TelemetryMap.h"
 #include "util/Log.h"
 
 using namespace std;
@@ -67,14 +68,14 @@ TEST_CASE("Test TelemetryItem", "[TelemetryItem]") {
     REQUIRE(powerStatus1->getCommVoltage() == cv);
     REQUIRE(powerStatus1->getCommCurrent() == cc);
     auto ps1Js = powerStatus1->getJson();
-    LDEBUG("&&& powerStatus1=", ps1Js);
+    LDEBUG("powerStatus1=", ps1Js);
 
     REQUIRE(powerStatusRaw1->getMotorVoltage() == rmv);
     REQUIRE(powerStatusRaw1->getMotorCurrent() == rmc);
     REQUIRE(powerStatusRaw1->getCommVoltage() == rcv);
     REQUIRE(powerStatusRaw1->getCommCurrent() == rcc);
     auto psRaw1Js = powerStatusRaw1->getJson();
-    LDEBUG("&&& powerStatusRaw1=", psRaw1Js);
+    LDEBUG("powerStatusRaw1=", psRaw1Js);
 
     // Set values of powerStatus2 from powerStatus1 and test that they match.
     auto powerStatus2 = TItemPowerStatus::Ptr(new TItemPowerStatus());
@@ -102,21 +103,14 @@ TEST_CASE("Test TelemetryItem", "[TelemetryItem]") {
 }
 
 TEST_CASE("Test TelemetryCom", "[TelemetryCom]") {
-    // &&& TelemetryCom::test();
     {
         LINFO("Creating serv");
+        int const port = 10081;
         auto servTelemetryMap = TelemetryMap::Ptr(new TelemetryMap());
-        auto serv = TelemetryCom::create(servTelemetryMap);
+        auto serv = TelemetryCom::create(servTelemetryMap, port);
 
-        auto servFunc = [serv]() {
-            LINFO("&&& servFunc start");
-            serv->server();
-            LINFO("&&& servFunc end");
-        };
-        LINFO("&&& Running serv");
-        thread servThrd(servFunc);
-        serv->waitForServerRunning(1);
-        // &&& wait and verify server started.
+        serv->startServer();
+        REQUIRE(serv->waitForServerRunning(5) == true);
 
         servTelemetryMap->getPowerStatus()->setMotorVoltage(-3.0);
         servTelemetryMap->getPowerStatus()->setMotorCurrent(4.0);
@@ -128,22 +122,20 @@ TEST_CASE("Test TelemetryCom", "[TelemetryCom]") {
         servTelemetryMap->getPowerStatusRaw()->setCommVoltage(30.0);
         servTelemetryMap->getPowerStatusRaw()->setCommCurrent(25.0);
 
-        LINFO("&&& Running clients");
+        LDEBUG("Running clients");
         std::vector<TelemetryCom::Ptr> clients;
         std::vector<thread> clientThreads;
 
         for (int j = 0; j < 10; ++j) {
             auto clientTelemetryMap = TelemetryMap::Ptr(new TelemetryMap());
             REQUIRE(clientTelemetryMap->compareMaps(*servTelemetryMap) == false);
-            TelemetryCom::Ptr client = TelemetryCom::create(clientTelemetryMap);
+            TelemetryCom::Ptr client = TelemetryCom::create(clientTelemetryMap, port);
             clients.push_back(client);
             clientThreads.emplace_back(&TelemetryCom::client, client, j);
         }
-        sleep(3);
+        sleep(2);
         LDEBUG("Stopping server");
         serv->shutdownCom();
-        LDEBUG("waiting for joins");
-        servThrd.join();
         LDEBUG("serv joined");
         for (auto& thrd : clientThreads) {
             LDEBUG("client joining");

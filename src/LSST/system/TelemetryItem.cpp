@@ -29,6 +29,7 @@
 // Project headers
 #include "util/Bug.h"
 #include "util/Log.h"
+#include "system/TelemetryMap.h"
 
 using namespace std;
 using json = nlohmann::json;
@@ -72,8 +73,6 @@ json TelemetryItem::buildJsonFromMap(TelemetryItemMap const& tMap) const {
 }
 
 bool TelemetryItem::setMapFromJson(TelemetryItemMap& tMap, json const& js, bool idExpected) {
-    // &&& this can be done in the same manner as buildJsonFromMap
-    // &&& _map can probably be made a member of TelemetryItem
     if (!checkIdCorrect(js, idExpected)) {
         return false;
     }
@@ -92,39 +91,6 @@ bool TelemetryItem::setMapFromJson(TelemetryItemMap& tMap, json const& js, bool 
 std::ostream& operator<<(std::ostream& os, TelemetryItem const& item) {
     os << item.dump();
     return os;
-}
-
-bool compareTelemetryItemMaps(TelemetryItemMap const& mapA, TelemetryItemMap const& mapB,
-                              string const& note = "") {
-    if (mapA.size() != mapB.size()) {
-        LWARN(note, "::compare sizes different mapA=", mapA.size(), " mapB=", mapB.size());
-        return false;
-    }
-    for (auto const& elem : mapA) {
-        TelemetryItem::Ptr ptrA = elem.second;
-        string itemId = ptrA->getId();
-        LDEBUG("&&& comparing ", itemId);
-
-        auto iterB = mapB.find(itemId);
-        if (iterB == mapB.end()) {
-            LWARN(note, "::compare mapB did not contain key=", itemId);
-            return false;
-        }
-        TelemetryItem::Ptr ptrB = iterB->second;
-        bool match = ptrA->compareItem(*ptrB);
-        if (!match) {
-            LWARN(note, "::compare no match for ptrA=", ptrA->dump(), " ptrB=", ptrB->dump());
-            return false;
-        }
-    }
-    return true;
-}
-
-bool TelemetryMap::compareMaps(TelemetryMap const& other) {
-    lock_guard<std::mutex> lgThis(_mapMtx);
-    lock_guard<std::mutex> lgOther(other._mapMtx);
-
-    return compareTelemetryItemMaps(_map, other._map);
 }
 
 TItemDouble::Ptr TItemDouble::create(string const& id, TelemetryItemMap* tiMap, double defaultVal) {
@@ -167,7 +133,7 @@ bool TItemDouble::compareItem(TelemetryItem const& other) const {
 
 bool TItemPowerStatusBase::compareItem(TelemetryItem const& other) const {
     TItemPowerStatusBase const& otherIpsb = dynamic_cast<TItemPowerStatusBase const&>(other);
-    return compareTelemetryItemMaps(_map, otherIpsb._map);
+    return TelemetryMap::compareTelemetryItemMaps(_map, otherIpsb._map);
     ;
 }
 

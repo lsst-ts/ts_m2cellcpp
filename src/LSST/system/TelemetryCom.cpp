@@ -39,7 +39,8 @@ namespace system {
 
 atomic<uint32_t> TelemetryCom::_seqIdSource{0};
 
-TelemetryCom::TelemetryCom(TelemetryMap::Ptr const& telemMap) : _telemetryMap(telemMap) {
+TelemetryCom::TelemetryCom(TelemetryMap::Ptr const& telemMap, int port)
+        : _telemetryMap(telemMap), _port(port) {
     LDEBUG("TelemetryCom::TelemetryCom() _seqId=", _seqId);
 }
 
@@ -61,24 +62,24 @@ int TelemetryCom::shutdownCom() {
     if (_shutdownComCalled.exchange(true)) {
         return 0;
     }
-
-    for (auto&& hThrd : _handlerThreads) {
-        hThrd->servConnHShutdown();
-    }
-
-    if (_serverRunning) {  // &&& need mutex
+    if (_serverRunning) {
         LINFO("TelemetryCom::shutdownCom() connecting to serversocket");
         int clientFd = _clientConnect();
 
         // closing the connected socket
-        close(clientFd);
+        if (clientFd >= 0) {
+            close(clientFd);
+        }
+        LINFO("TelemetryCom::shutdownCom() joining serverThread");
+        _serverThread.join();
     }
-    LINFO("TelemetryCom::shutdownCom() end &&&");
+    for (auto& hThrd : _handlerThreads) {
+        hThrd->servConnHShutdown();
+    }
     return 0;
 }
 
 int TelemetryCom::_clientConnect() {
-    LINFO("&&& client a");
     int clientFd = socket(AF_INET, SOCK_STREAM, 0);
     if (clientFd < 0) {
         LERROR("TelemetryCom::_clientConnect() socket failed clientFd=", clientFd);
@@ -89,7 +90,7 @@ int TelemetryCom::_clientConnect() {
     servAddr.sin_family = AF_INET;
     servAddr.sin_port = htons(_port);
 
-    string hostId = "127.0.0.1";  //&&& need to replace "127.0.0.1"
+    string hostId = "127.0.0.1";  // at this time, only ever need to connect to the local host.
     int inetRes = inet_pton(AF_INET, hostId.c_str(), &servAddr.sin_addr);
     if (inetRes <= 0) {
         return -1;
@@ -105,23 +106,30 @@ int TelemetryCom::_clientConnect() {
 }
 
 bool TelemetryCom::waitForServerRunning(int seconds) {
-    sleep(seconds);  // actually wait &&&;
-    return true;
+    for (int j = 0; j < seconds && !_serverRunning; ++j) {
+        sleep(1);
+    }
+    return _serverRunning;
 }
 
-void TelemetryCom::server() {
-    // Listen for new connections to accept
-    LINFO("&&& server a");
-    if ((_serverFd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        LINFO("&&& server a1");
-        throw util::Bug(ERR_LOC,
-                        "TelemetryCom::server() failed to create listening socket");  //&&& change type
+void TelemetryCom::startServer() {
+    thread servThrd(&TelemetryCom::_server, this);
+    _serverThread = std::move(servThrd);
+}
+
+void TelemetryCom::_server() {
+    if (_shutdownComCalled) {
+        LERROR("TelemetryCom::_server() attempt to start after shutdown has been called");
+        return;
     }
-    LINFO("&&& server b");
+
+    // Listen for new connections to accept
+    if ((_serverFd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        throw util::Bug(ERR_LOC, "TelemetryCom::server() failed to create listening socket");
+    }
     int opt = 1;
     if (setsockopt(_serverFd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
-        LINFO("&&& server b1");
-        throw util::Bug(ERR_LOC, "TelemetryCom::server() failed to setsockopt");  //&&& change type
+        throw util::Bug(ERR_LOC, "TelemetryCom::server() failed to setsockopt");
     }
 
     struct sockaddr_in address;
@@ -130,22 +138,17 @@ void TelemetryCom::server() {
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(_port);
 
-    LINFO("&&& server c");
     if (bind(_serverFd, (struct sockaddr*)&address, sizeof(address)) < 0) {
-        throw util::Bug(ERR_LOC,
-                        "TelemetryCom::server() failed to bind " + to_string(_port));  //&&& change type
+        throw util::Bug(ERR_LOC, "TelemetryCom::server() failed to bind " + to_string(_port));
     }
-    LINFO("&&& server d");
     if (listen(_serverFd, 3) < 0) {
-        LINFO("&&& server d1");
         throw util::Bug(ERR_LOC, "TelemetryCom::server() failed to listen " + to_string(_port));
     }
-    _serverRunning = true;  // &&& needs unique_lock to be thread safe
-    LINFO("&&& server e");
+    LINFO("TelemetryCom::server() listening");
+
+    _serverRunning = true;
     while (_acceptLoop) {
-        LINFO("&&& server f");
         int sock = accept(_serverFd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
-        LINFO("&&& server f1");
         if (!_acceptLoop) {
             continue;
         }
@@ -155,85 +158,71 @@ void TelemetryCom::server() {
             continue;
         }
         // Create an object to handle the new connection.
+        LINFO("TelemetryCom::server() accepting new client");
         {
-            bool detach = false;  // &&& set elsewhere
-            auto handlerThrd = ServerConnectionHandler::Ptr(
-                    new ServerConnectionHandler(sock, _telemetryMap->copyMap(), detach));
+            auto handlerThrd =
+                    ServerConnectionHandler::Ptr(new ServerConnectionHandler(sock, _telemetryMap->copyMap()));
             lock_guard<mutex> htLock();
             _handlerThreads.push_back(handlerThrd);
-            // &&& check if any of the threads should be joined and removed.
+            // Check if any of the threads should be joined and removed.
             auto iter = _handlerThreads.begin();
-            LINFO("&&& serv join a");
             while (iter != _handlerThreads.end()) {
-                LINFO("&&& serv join b");
                 auto needToErase = (*iter)->checkJoin();
-                LINFO("&&& serv join c");
                 if (needToErase || (*iter)->getJoined()) {
-                    LINFO("&&& serv join da");
+                    LINFO("TelemetryCom::server() removing old client");
                     auto old = iter++;
                     _handlerThreads.erase(old);
                 } else {
-                    LINFO("&&& serv join db");
                     ++iter;
                 }
-                LINFO("&&& serv join e");
             }
         }
     }
 
-    LINFO("&&& server shutdown");
+    LINFO("TelemetryCom::server() shuting down");
     // closing the listening socket
     shutdown(_serverFd, SHUT_RDWR);
-    LINFO("&&& server shutdown done");
+    LINFO("TelemetryCom::server() done");
 }
 
 void TelemetryCom::ServerConnectionHandler::_servConnHandler() {
-    LDEBUG("&&& TelemetryCom::ServerConnectionHandler::_servConnHandler starting sock=", _servConnHSock);
-
+    LDEBUG("TelemetryCom::ServerConnectionHandler::_servConnHandler starting sock=", _servConnHSock);
     while (_connLoop) {
-        //&&&       string msg = "server says hi j=" + to_string(j) + TERMINATOR();
         for (auto const& elem : _tItemMap) {
             auto js = elem.second->getJson();
             string msg = to_string(js) + TelemetryCom::TERMINATOR();
-            LINFO("&&& server sending msg=", msg);
+            LTRACE("server sending msg=", msg);
             ssize_t status = send(_servConnHSock, msg.c_str(), msg.length(), 0);
             if (status < 0) {
-                LWARN("TelemetryCom::_serverConnectionHandler failure status=", status);
-                // &&& call shutdown???
+                LWARN("TelemetryCom::ServerConnectionHandler::_servConnHandler failure status=", status);
                 break;
             }
-            LINFO("&&& server msg sent");
         }
-        sleep(1);  /// &&& change to sleep(0.05)
+        this_thread::sleep_for(50ms);
     }
     LDEBUG("TelemetryCom::ServerConnectionHandler::_servConnHandler close sock=", _servConnHSock);
     close(_servConnHSock);
     {
         lock_guard<mutex> lck(_joinMtx);
         _readyToJoin = true;
-        if (_detach) {
-            _joined = true;
-        }
     }
-    LDEBUG("TelemetryCom::ServerConnectionHandler::_servConnHandler done sock=", _servConnHSock);
+    LINFO("TelemetryCom::ServerConnectionHandler::_servConnHandler done sock=", _servConnHSock);
 }
 
 bool TelemetryCom::ServerConnectionHandler::checkJoin() {
     lock_guard<mutex> lck(_joinMtx);
-    LINFO("&&& checkJoin a");
     if (_joined) {
-        LINFO("&&& checkJoin a1");
+        LDEBUG("TelemetryCom::ServerConnectionHandler::checkJoin already joined");
         return true;
     }
-    LINFO("&&& checkJoin b");
-    if (_detach || !_servConnHThrd.joinable() || !_readyToJoin) {
-        LINFO("&&& checkJoin b1");
+    if (!_servConnHThrd.joinable() || !_readyToJoin) {
+        LDEBUG("TelemetryCom::ServerConnectionHandler::checkJoin not ready to join");
         return false;
     }
-    LINFO("&&& checkJoin c");
+    LINFO("TelemetryCom::ServerConnectionHandler::checkJoin joining");
     // The join should happen quickly as the thread should be finished, or very nearly so.
     _join();
-    LINFO("&&& checkJoin d");
+    LINFO("TelemetryCom::ServerConnectionHandler::checkJoin joined");
     return true;
 }
 
@@ -243,7 +232,7 @@ void TelemetryCom::ServerConnectionHandler::join() {
 }
 
 void TelemetryCom::ServerConnectionHandler::_join() {
-    if (_detach || _joined) {
+    if (_joined) {
         return;
     }
     _servConnHThrd.join();
@@ -252,12 +241,12 @@ void TelemetryCom::ServerConnectionHandler::_join() {
 
 int TelemetryCom::client(int j) {
     int clientFd = _clientConnect();
-    LINFO("&&& client() clientFd=", clientFd, " j=", j, "_seqId=", _seqId);
+    LINFO("TelemetryCom::client() start clientFd=", clientFd, " j=", j, "_seqId=", _seqId);
     bool serverOk = true;
     string inMsg;
     while (_acceptLoop && serverOk) {
         char buffer[3];
-        ssize_t status = read(clientFd, buffer, 1);  // &&& replace read with recv()
+        ssize_t status = read(clientFd, buffer, 1);
         if (status <= 0) {
             LINFO("TelemetryCom::client() j=", j, " recv failed with status=", status);
             serverOk = false;
@@ -266,38 +255,16 @@ int TelemetryCom::client(int j) {
         char inChar = buffer[0];
         if (inChar == '\n' && inMsg.back() == '\r') {
             inMsg.pop_back();
-            LINFO("client j=", j, " seq=", _seqId, " fd=", clientFd, " got message ", inMsg);
+            LDEBUG("client j=", j, " seq=", _seqId, " fd=", clientFd, " got message ", inMsg);
             _telemetryMap->setItemFromJsonStr(inMsg);
             inMsg.clear();
         } else {
             inMsg += inChar;
         }
     }
-    LDEBUG("TelemetryCom::client() closing j=", j, " seq=", _seqId, " inMsg=", inMsg);
+    LINFO("TelemetryCom::client() closing j=", j, " seq=", _seqId, " inMsg=", inMsg);
     close(clientFd);
     return 0;
-}
-
-bool TelemetryMap::setItemFromJsonStr(string const& jsStr) {
-    try {
-        json js = json::parse(jsStr);
-        return setItemFromJson(js);
-    } catch (json::parse_error const& ex) {
-        LERROR("TelemetryMap::setItemFromJsonStr json parse error msg=", ex.what());
-        return false;
-    }
-}
-
-bool TelemetryMap::setItemFromJson(nlohmann::json const& js) {
-    lock_guard<mutex> mapLock(_mapMtx);
-    string id = js["id"];
-    auto iter = _map.find(id);
-    if (iter == _map.end()) {
-        LERROR("TelemetryMap::setItemFromJson did not find ", js);
-        return false;
-    }
-    bool idExpected = true;
-    return iter->second->setFromJson(js, idExpected);
 }
 
 }  // namespace system
