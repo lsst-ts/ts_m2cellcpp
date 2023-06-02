@@ -26,7 +26,9 @@
 #include <atomic>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <netinet/in.h>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -45,7 +47,10 @@ namespace system {
 
 class TelemetryItem;
 
+/// Type the `TelemetryItemMap`. Objects of this will be copied, so the
+/// map must store pointers.
 typedef std::map<std::string, std::shared_ptr<TelemetryItem>> TelemetryItemMap;
+typedef std::shared_ptr<TelemetryItemMap> TelemetryItemMapPtr;
 
 /// &&& doc
 class TelemetryItem {
@@ -72,22 +77,35 @@ public:
     /// Return a json object containing the id.
     virtual nlohmann::json getJson() const = 0;
 
+    /// Return true if this item and `other` have the same id and values.
+    virtual bool compareItem(TelemetryItem const& other) const = 0;
+
     /// Parse the json string `jStr` and load the appropriate values into this object.
     /// @return true if item parsed correctly and had appropriate data.
     bool parse(std::string const& jStr);
 
     /// doc&&&
-    virtual bool setFromJson(nlohmann::json& js, bool idExpected = false) = 0;
+    virtual bool setFromJson(nlohmann::json const& js, bool idExpected = false) = 0;
+
+    /// doc &&&
+    std::string dump() const {
+        std::stringstream os;
+        os << getJson();
+        return os.str();
+    }
+
+    /// doc &&&
+    friend std::ostream& operator<<(std::ostream& os, TelemetryItem const& item);
 
 protected:
     /// Build a json object using this object and the provided `tMap`.
     nlohmann::json buildJsonFromMap(TelemetryItemMap const& tMap) const;
 
     /// Return false if values in `tMap` cannot be set from `js` and `idExpected`.
-    bool setMapFromJson(TelemetryItemMap& tMap, nlohmann::json& js, bool idExpected);
+    bool setMapFromJson(TelemetryItemMap& tMap, nlohmann::json const& js, bool idExpected);
 
     /// Return false if `idExpected` and the `js` "id" entry is wrong.
-    bool checkIdCorrect(nlohmann::json& js, bool idExpected) const;
+    bool checkIdCorrect(nlohmann::json const& js, bool idExpected) const;
 
 private:
     std::string const _id;
@@ -116,7 +134,10 @@ public:
     nlohmann::json getJson() const override;
 
     /// doc&&&
-    bool setFromJson(nlohmann::json& js, bool idExpected) override;
+    bool setFromJson(nlohmann::json const& js, bool idExpected) override;
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override;
 
 private:
     std::atomic<double> _val;
@@ -157,9 +178,12 @@ public:
     nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
 
     /// doc&&&
-    bool setFromJson(nlohmann::json& js, bool idExpected) override {
+    bool setFromJson(nlohmann::json const& js, bool idExpected) override {
         return setMapFromJson(_map, js, idExpected);
     }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override;
 
 private:
     /// Map of items for this TelemetryItem. Does not change after constructor.
@@ -189,16 +213,43 @@ public:
 };
 
 /// &&& doc
-class TelemetryMap {  ///&&& not in use yet
+class TelemetryMap {
 public:
     using Ptr = std::shared_ptr<TelemetryMap>;
     TelemetryMap() = default;
-    TelemetryMap(TelemetryMap const&) = delete;
+    TelemetryMap(TelemetryMap const& other) { _map = other.copyMap(); }
     TelemetryMap& operator=(TelemetryMap const&) = delete;
     ~TelemetryMap() = default;
 
+    /// &&& doc
+    TelemetryItemMap copyMap() const {
+        std::lock_guard<std::mutex> lg(_mapMtx);
+        TelemetryItemMap newMap = _map;
+        return newMap;
+    }
+
+    /// &&& doc
+    bool setItemFromJsonStr(std::string const& jsStr);
+
+    /// &&& doc
+    bool setItemFromJson(nlohmann::json const& js);
+
+    /// &&& doc
+    bool compareMaps(TelemetryMap const& other);
+
+    /// &&& doc
+    TItemPowerStatus::Ptr getPowerStatus() const { return _powerStatus; }
+
+    /// &&& doc
+    TItemPowerStatusRaw::Ptr getPowerStatusRaw() const { return _powerStatusRaw; }
+
 private:
-    TelemetryItemMap _map;  ///< &&& doc
+    /// Map of all telemetry items to be sent to clients.
+    /// Once created, the items contained in the map will
+    /// not change, but their values will.
+    TelemetryItemMap _map;
+    mutable std::mutex _mapMtx;  ///< Protects `_map` &&& this is probably not needed as _map doesn't change
+                                 ///< once created.
 
     /// &&& doc
     template <typename T>
@@ -210,8 +261,6 @@ private:
 
     TItemPowerStatus::Ptr _powerStatus = TelemetryMap::_addItem<TItemPowerStatus>();
     TItemPowerStatusRaw::Ptr _powerStatusRaw = TelemetryMap::_addItem<TItemPowerStatusRaw>();
-    //&&& here -> in TelemetryCom have the server write these, and the client read them. Then verify
-    //&&& the values match.
 };
 
 }  // namespace system

@@ -53,7 +53,11 @@ public:
     static const char* TERMINATOR() { return "\r\n"; }
 
     /// &&& doc
-    static Ptr create() { return TelemetryCom::Ptr(new TelemetryCom()); }
+    static Ptr create(TelemetryMap::Ptr const& telemMap) {
+        return TelemetryCom::Ptr(new TelemetryCom(telemMap));
+    }
+
+    TelemetryCom() = delete;
 
     /// &&& doc - shutting down threads can be odd.
     ~TelemetryCom();
@@ -71,7 +75,8 @@ public:
     /// @return true if the server is running.
     bool waitForServerRunning(int seconds);
 
-    //&&& static bool test();  // &&& move code to test_TelemetryCom.cpp
+    /// &&& doc
+    TelemetryMap::Ptr getTMap() const { return _telemetryMap; }
 
     /// &&& doc
     class ServerConnectionHandler {
@@ -82,7 +87,8 @@ public:
         ServerConnectionHandler(ServerConnectionHandler const&) = delete;
 
         /// &&& doc
-        ServerConnectionHandler(int sock, bool detach) : _servConnHSock(sock), _detach(detach) {
+        ServerConnectionHandler(int sock, TelemetryItemMap tItemMap, bool detach)
+                : _servConnHSock(sock), _tItemMap(tItemMap), _detach(detach) {
             std::thread thrd(&ServerConnectionHandler::_servConnHandler, this);
             _servConnHThrd = std::move(thrd);
             if (_detach) {
@@ -117,7 +123,10 @@ public:
         /// Join `_servConnHThrd`. `_joinMtx` shopuld be locked before calling
         void _join();
 
-        const int _servConnHSock;    ///< &&& doc
+        const int _servConnHSock;  ///< &&& doc
+
+        /// &&& doc
+        TelemetryItemMap _tItemMap;  /// &&& change to TelemetryItemMap::Ptr
         const bool _detach;          ///< &&& doc
         std::thread _servConnHThrd;  ///< &&& doc
 
@@ -129,7 +138,8 @@ public:
     };
 
 private:
-    TelemetryCom();
+    /// &&& doc
+    TelemetryCom(TelemetryMap::Ptr const& telemMap);
 
     static std::atomic<uint32_t> _seqIdSource;
 
@@ -148,7 +158,7 @@ private:
     std::atomic<bool> _shutdownComCalled{false};  ///< &&& doc
     std::atomic<bool> _serverRunning{false};      ///< &&& doc replace with bool and mtx.
 
-    TelemetryMap::Ptr _telemMap;  ///< &&& doc
+    TelemetryMap::Ptr _telemetryMap;  ///< &&& doc
 
     std::vector<ServerConnectionHandler::Ptr> _handlerThreads;  ///< &&& doc
     std::mutex _handlerThreadsMtx;                              ///< protects _handlerThreads

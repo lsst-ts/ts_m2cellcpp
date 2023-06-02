@@ -46,11 +46,11 @@ bool TelemetryItem::parse(std::string const& jStr) {
         return setFromJson(js, true);
     } catch (json::parse_error const& ex) {
         LERROR("json parse error msg=", ex.what());
-        throw;
+        return false;
     }
 }
 
-bool TelemetryItem::checkIdCorrect(json& js, bool idExpected) const {
+bool TelemetryItem::checkIdCorrect(json const& js, bool idExpected) const {
     if (!idExpected) {
         return true;
     }
@@ -71,7 +71,7 @@ json TelemetryItem::buildJsonFromMap(TelemetryItemMap const& tMap) const {
     return js;
 }
 
-bool TelemetryItem::setMapFromJson(TelemetryItemMap& tMap, json& js, bool idExpected) {
+bool TelemetryItem::setMapFromJson(TelemetryItemMap& tMap, json const& js, bool idExpected) {
     // &&& this can be done in the same manner as buildJsonFromMap
     // &&& _map can probably be made a member of TelemetryItem
     if (!checkIdCorrect(js, idExpected)) {
@@ -83,10 +83,48 @@ bool TelemetryItem::setMapFromJson(TelemetryItemMap& tMap, json& js, bool idExpe
         bool status = item->setFromJson(js);
         if (!status) {
             success = false;
-            LERROR("TItemPowerStatus::setFromJson failed to set ", item->getId(), " from=", js);
+            LERROR("TelemetryItem::setMapFromJson failed to set ", item->getId(), " from=", js);
         }
     }
     return success;
+}
+
+std::ostream& operator<<(std::ostream& os, TelemetryItem const& item) {
+    os << item.dump();
+    return os;
+}
+
+bool compareTelemetryItemMaps(TelemetryItemMap const& mapA, TelemetryItemMap const& mapB,
+                              string const& note = "") {
+    if (mapA.size() != mapB.size()) {
+        LWARN(note, "::compare sizes different mapA=", mapA.size(), " mapB=", mapB.size());
+        return false;
+    }
+    for (auto const& elem : mapA) {
+        TelemetryItem::Ptr ptrA = elem.second;
+        string itemId = ptrA->getId();
+        LDEBUG("&&& comparing ", itemId);
+
+        auto iterB = mapB.find(itemId);
+        if (iterB == mapB.end()) {
+            LWARN(note, "::compare mapB did not contain key=", itemId);
+            return false;
+        }
+        TelemetryItem::Ptr ptrB = iterB->second;
+        bool match = ptrA->compareItem(*ptrB);
+        if (!match) {
+            LWARN(note, "::compare no match for ptrA=", ptrA->dump(), " ptrB=", ptrB->dump());
+            return false;
+        }
+    }
+    return true;
+}
+
+bool TelemetryMap::compareMaps(TelemetryMap const& other) {
+    lock_guard<std::mutex> lgThis(_mapMtx);
+    lock_guard<std::mutex> lgOther(other._mapMtx);
+
+    return compareTelemetryItemMaps(_map, other._map);
 }
 
 TItemDouble::Ptr TItemDouble::create(string const& id, TelemetryItemMap* tiMap, double defaultVal) {
@@ -106,7 +144,7 @@ json TItemDouble::getJson() const {
     return js;
 }
 
-bool TItemDouble::setFromJson(nlohmann::json& js, bool idExpected) {
+bool TItemDouble::setFromJson(nlohmann::json const& js, bool idExpected) {
     if (idExpected) {
         // This type can only have a floating point value for `_val`.
         LERROR("TItemDouble::setFromJson cannot have a json 'id' entry");
@@ -120,6 +158,17 @@ bool TItemDouble::setFromJson(nlohmann::json& js, bool idExpected) {
         LERROR("TItemDouble::setFromJson out of range for ", getId(), " js=", js);
     }
     return false;
+}
+
+bool TItemDouble::compareItem(TelemetryItem const& other) const {
+    TItemDouble const& otherTItemDouble = dynamic_cast<TItemDouble const&>(other);
+    return (getId() == other.getId() && _val == otherTItemDouble._val);
+}
+
+bool TItemPowerStatusBase::compareItem(TelemetryItem const& other) const {
+    TItemPowerStatusBase const& otherIpsb = dynamic_cast<TItemPowerStatusBase const&>(other);
+    return compareTelemetryItemMaps(_map, otherIpsb._map);
+    ;
 }
 
 }  // namespace system

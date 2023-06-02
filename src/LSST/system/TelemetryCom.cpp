@@ -31,7 +31,7 @@
 #include "util/Log.h"
 
 using namespace std;
-//&&& using json = nlohmann::json;
+using json = nlohmann::json;
 
 namespace LSST {
 namespace m2cellcpp {
@@ -39,49 +39,9 @@ namespace system {
 
 atomic<uint32_t> TelemetryCom::_seqIdSource{0};
 
-/* &&&
-bool TelemetryCom::test() {
-    {
-        LINFO("Creating serv");
-        auto serv = TelemetryCom::create();
-
-        auto servFunc = [serv]() {
-            LINFO("&&& servFunc start");
-            serv->server();
-            LINFO("&&& servFunc end");
-        };
-        LINFO("&&& Running serv");
-        thread servThrd(servFunc);
-        serv->waitForServerRunning(1);
-        // &&& wait and verify server started.
-
-        LINFO("&&& Running clients");
-        std::vector<TelemetryCom::Ptr> clients;
-        std::vector<thread> clientThreads;
-
-        for (int j = 0; j < 10; ++j) {
-            //&&&clientThreads.emplace_back(clientFunc, client, j);
-            TelemetryCom::Ptr client = TelemetryCom::create();
-            clients.push_back(client);
-            clientThreads.emplace_back(&TelemetryCom::client, client, j);
-        }
-        sleep(5);  //&&& replace with wait for client complete flag
-        LINFO("&&& Stopping server");
-        serv->shutdownCom();
-        LINFO("&&& waiting for joins");
-        servThrd.join();
-        LINFO("&&& serv joined");
-        for (auto& thrd : clientThreads) {
-            LINFO("&&& client joining");
-            thrd.join();
-        }
-        LINFO("&&& clients joined");
-    }
-    return true;
+TelemetryCom::TelemetryCom(TelemetryMap::Ptr const& telemMap) : _telemetryMap(telemMap) {
+    LDEBUG("TelemetryCom::TelemetryCom() _seqId=", _seqId);
 }
-*/
-
-TelemetryCom::TelemetryCom() { LDEBUG("TelemetryCom::TelemetryCom() _seqId=", _seqId); }
 
 TelemetryCom::~TelemetryCom() {
     LDEBUG("TelemetryCom::~TelemetryCom() _seqId=", _seqId);
@@ -197,7 +157,8 @@ void TelemetryCom::server() {
         // Create an object to handle the new connection.
         {
             bool detach = false;  // &&& set elsewhere
-            auto handlerThrd = ServerConnectionHandler::Ptr(new ServerConnectionHandler(sock, detach));
+            auto handlerThrd = ServerConnectionHandler::Ptr(
+                    new ServerConnectionHandler(sock, _telemetryMap->copyMap(), detach));
             lock_guard<mutex> htLock();
             _handlerThreads.push_back(handlerThrd);
             // &&& check if any of the threads should be joined and removed.
@@ -229,19 +190,21 @@ void TelemetryCom::server() {
 void TelemetryCom::ServerConnectionHandler::_servConnHandler() {
     LDEBUG("&&& TelemetryCom::ServerConnectionHandler::_servConnHandler starting sock=", _servConnHSock);
 
-    int j = 0;
     while (_connLoop) {
-        string msg = "server says hi j=" + to_string(j) + TERMINATOR();
-        LINFO("&&& server sending msg=", msg);
-        ssize_t status = send(_servConnHSock, msg.c_str(), msg.length(), 0);
-        if (status < 0) {
-            LWARN("TelemetryCom::_serverConnectionHandler failure status=", status);
-            // &&& call shutdown???
-            break;
+        //&&&       string msg = "server says hi j=" + to_string(j) + TERMINATOR();
+        for (auto const& elem : _tItemMap) {
+            auto js = elem.second->getJson();
+            string msg = to_string(js) + TelemetryCom::TERMINATOR();
+            LINFO("&&& server sending msg=", msg);
+            ssize_t status = send(_servConnHSock, msg.c_str(), msg.length(), 0);
+            if (status < 0) {
+                LWARN("TelemetryCom::_serverConnectionHandler failure status=", status);
+                // &&& call shutdown???
+                break;
+            }
+            LINFO("&&& server msg sent");
         }
-        LINFO("&&& server msg sent");
-        ++j;
-        sleep(1);
+        sleep(1);  /// &&& change to sleep(0.05)
     }
     LDEBUG("TelemetryCom::ServerConnectionHandler::_servConnHandler close sock=", _servConnHSock);
     close(_servConnHSock);
@@ -287,21 +250,6 @@ void TelemetryCom::ServerConnectionHandler::_join() {
     _joined = true;
 }
 
-/* &&&
-void TelemetryCom::_serverConnectionHandlerOld(int sock) {
-    char buffer[1024] = {0};
-    const char* hello = "Hello from server";
-    int valread = read(sock, buffer, 1024);
-    LINFO("&&& server f2");
-    printf("%s\n  %d\n", buffer, valread);
-    send(sock, hello, strlen(hello), 0);
-    LINFO("&&& server f3");
-    printf("server sent message\n");  //&&&
-    close(sock);
-    LINFO("&&& server f4");
-}
-*/
-
 int TelemetryCom::client(int j) {
     int clientFd = _clientConnect();
     LINFO("&&& client() clientFd=", clientFd, " j=", j, "_seqId=", _seqId);
@@ -309,9 +257,7 @@ int TelemetryCom::client(int j) {
     string inMsg;
     while (_acceptLoop && serverOk) {
         char buffer[3];
-        // LINFO("&&& client() reading clientFd=", clientFd, " j=",j);
         ssize_t status = read(clientFd, buffer, 1);  // &&& replace read with recv()
-        // LINFO("&&& client() read buffer[0]=", (int)(buffer[0]), "=", buffer[0], " msg=", inMsg);
         if (status <= 0) {
             LINFO("TelemetryCom::client() j=", j, " recv failed with status=", status);
             serverOk = false;
@@ -320,37 +266,39 @@ int TelemetryCom::client(int j) {
         char inChar = buffer[0];
         if (inChar == '\n' && inMsg.back() == '\r') {
             inMsg.pop_back();
-            LINFO("&&& client j=", j, " seq=", _seqId, " fd=", clientFd, " got message ", inMsg);
+            LINFO("client j=", j, " seq=", _seqId, " fd=", clientFd, " got message ", inMsg);
+            _telemetryMap->setItemFromJsonStr(inMsg);
             inMsg.clear();
         } else {
             inMsg += inChar;
         }
     }
-    LDEBUG("TelemetryCom::client() closing j=", j, " seq=", _seqId);
     LDEBUG("TelemetryCom::client() closing j=", j, " seq=", _seqId, " inMsg=", inMsg);
     close(clientFd);
-    LINFO("&&& TelemetryCom::client() done j=", j, " seq=", _seqId);
     return 0;
 }
 
-/* &&&
-int TelemetryCom::clientOld() {
-    const char* hello = "Hello from client";
-    char buffer[1024] = {0};
-    int client_fd = _clientConnect();
-    LINFO("&&& client d");
-    send(client_fd, hello, strlen(hello), 0);
-    printf("Hello message sent\n");
-    int valread = read(client_fd, buffer, 1024);
-    printf("%s\n", buffer);
-
-    // closing the connected socket
-    LINFO("&&& client e");
-    close(client_fd);
-    LINFO("&&& client end");
-    return 0;
+bool TelemetryMap::setItemFromJsonStr(string const& jsStr) {
+    try {
+        json js = json::parse(jsStr);
+        return setItemFromJson(js);
+    } catch (json::parse_error const& ex) {
+        LERROR("TelemetryMap::setItemFromJsonStr json parse error msg=", ex.what());
+        return false;
+    }
 }
-*/
+
+bool TelemetryMap::setItemFromJson(nlohmann::json const& js) {
+    lock_guard<mutex> mapLock(_mapMtx);
+    string id = js["id"];
+    auto iter = _map.find(id);
+    if (iter == _map.end()) {
+        LERROR("TelemetryMap::setItemFromJson did not find ", js);
+        return false;
+    }
+    bool idExpected = true;
+    return iter->second->setFromJson(js, idExpected);
+}
 
 }  // namespace system
 }  // namespace m2cellcpp

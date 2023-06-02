@@ -76,34 +76,37 @@ TEST_CASE("Test TelemetryItem", "[TelemetryItem]") {
     auto psRaw1Js = powerStatusRaw1->getJson();
     LDEBUG("&&& powerStatusRaw1=", psRaw1Js);
 
+    // Set values of powerStatus2 from powerStatus1 and test that they match.
     auto powerStatus2 = TItemPowerStatus::Ptr(new TItemPowerStatus());
     string ps1Str = to_string(ps1Js);
     bool result = powerStatus2->parse(ps1Str);
-    LDEBUG("&&& powerStatus2=", powerStatus2->getJson());
+    LDEBUG("powerStatus2=", powerStatus2->getJson());
     REQUIRE(result == true);
     REQUIRE(powerStatus2->getMotorVoltage() == mv);
     REQUIRE(powerStatus2->getMotorCurrent() == mc);
     REQUIRE(powerStatus2->getCommVoltage() == cv);
     REQUIRE(powerStatus2->getCommCurrent() == cc);
 
+    // Set values of powerStatusRaw2 from powerStatusRaw1 and test that they match.
     auto powerStatusRaw2 = TItemPowerStatusRaw::Ptr(new TItemPowerStatusRaw());
     string psRaw1Str = to_string(psRaw1Js);
     bool rresult = powerStatusRaw2->parse(psRaw1Str);
-    LDEBUG("&&& powerStatusRaw2=", powerStatusRaw2->getJson());
+    LDEBUG("powerStatusRaw2=", powerStatusRaw2->getJson());
     REQUIRE(rresult == true);
     REQUIRE(powerStatusRaw2->getMotorVoltage() == rmv);
     REQUIRE(powerStatusRaw2->getMotorCurrent() == rmc);
     REQUIRE(powerStatusRaw2->getCommVoltage() == rcv);
     REQUIRE(powerStatusRaw2->getCommCurrent() == rcc);
 
-    LDEBUG("&&& TelemetryItem::test() end");
+    LDEBUG("TelemetryItem::test() end");
 }
 
 TEST_CASE("Test TelemetryCom", "[TelemetryCom]") {
     // &&& TelemetryCom::test();
     {
         LINFO("Creating serv");
-        auto serv = TelemetryCom::create();
+        auto servTelemetryMap = TelemetryMap::Ptr(new TelemetryMap());
+        auto serv = TelemetryCom::create(servTelemetryMap);
 
         auto servFunc = [serv]() {
             LINFO("&&& servFunc start");
@@ -115,26 +118,44 @@ TEST_CASE("Test TelemetryCom", "[TelemetryCom]") {
         serv->waitForServerRunning(1);
         // &&& wait and verify server started.
 
+        servTelemetryMap->getPowerStatus()->setMotorVoltage(-3.0);
+        servTelemetryMap->getPowerStatus()->setMotorCurrent(4.0);
+        servTelemetryMap->getPowerStatus()->setCommVoltage(-5.0);
+        servTelemetryMap->getPowerStatus()->setCommCurrent(6.0);
+
+        servTelemetryMap->getPowerStatusRaw()->setMotorVoltage(17.0);
+        servTelemetryMap->getPowerStatusRaw()->setMotorCurrent(27.0);
+        servTelemetryMap->getPowerStatusRaw()->setCommVoltage(30.0);
+        servTelemetryMap->getPowerStatusRaw()->setCommCurrent(25.0);
+
         LINFO("&&& Running clients");
         std::vector<TelemetryCom::Ptr> clients;
         std::vector<thread> clientThreads;
 
         for (int j = 0; j < 10; ++j) {
-            //&&&clientThreads.emplace_back(clientFunc, client, j);
-            TelemetryCom::Ptr client = TelemetryCom::create();
+            auto clientTelemetryMap = TelemetryMap::Ptr(new TelemetryMap());
+            REQUIRE(clientTelemetryMap->compareMaps(*servTelemetryMap) == false);
+            TelemetryCom::Ptr client = TelemetryCom::create(clientTelemetryMap);
             clients.push_back(client);
             clientThreads.emplace_back(&TelemetryCom::client, client, j);
         }
-        sleep(5);  //&&& replace with wait for client complete flag
-        LINFO("&&& Stopping server");
+        sleep(3);
+        LDEBUG("Stopping server");
         serv->shutdownCom();
-        LINFO("&&& waiting for joins");
+        LDEBUG("waiting for joins");
         servThrd.join();
-        LINFO("&&& serv joined");
+        LDEBUG("serv joined");
         for (auto& thrd : clientThreads) {
-            LINFO("&&& client joining");
+            LDEBUG("client joining");
             thrd.join();
         }
-        LINFO("&&& clients joined");
+        LDEBUG("clients joined");
+
+        // Test that client data matches the server data.
+        for (auto const& client : clients) {
+            TelemetryMap::Ptr clientMap = client->getTMap();
+            LDEBUG("comparing client map");
+            REQUIRE(clientMap->compareMaps(*servTelemetryMap) == true);
+        }
     }
 }
