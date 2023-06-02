@@ -33,6 +33,7 @@ namespace m2cellcpp {
 namespace system {
 
 /// This class stores all the items that need to be sent through `TelemetryCom`.
+/// Unit tests in tests/test_TelemetryCom
 class TelemetryMap {
 public:
     using Ptr = std::shared_ptr<TelemetryMap>;

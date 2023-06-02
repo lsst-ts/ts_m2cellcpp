@@ -56,6 +56,7 @@ typedef std::shared_ptr<TelemetryItemMap> TelemetryItemMapPtr;
 /// can be used to build items with several elements.
 /// @see `TItemPowerStatusBase` and `TItemDouble` as examples.
 /// as an example.
+/// Unit tests in tests/test_TelemetryCom
 class TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TelemetryItem>;
@@ -118,6 +119,7 @@ private:
 };
 
 /// This class is used to store a specific telemetry item with a double value.
+/// Unit tests in tests/test_TelemetryCom
 class TItemDouble : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemDouble>;
@@ -152,6 +154,7 @@ private:
 };
 
 /// common elements between powerStatus and powerStatusRaw
+/// Unit tests in tests/test_TelemetryCom
 class TItemPowerStatusBase : public TelemetryItem {
 public:
     TItemPowerStatusBase(std::string const& id) : TelemetryItem(id) {}
@@ -203,6 +206,7 @@ private:
 };
 
 /// This class is used to store data for the "powerStatus" entry.
+/// Unit tests in tests/test_TelemetryCom
 class TItemPowerStatus : public TItemPowerStatusBase {
 public:
     using Ptr = std::shared_ptr<TItemPowerStatus>;
@@ -211,7 +215,8 @@ public:
     virtual ~TItemPowerStatus() = default;
 };
 
-/// /// This class is used to store data for the "powerStatusRaw" entry.
+/// This class is used to store data for the "powerStatusRaw" entry.
+/// Unit tests in tests/test_TelemetryCom
 class TItemPowerStatusRaw : public TItemPowerStatusBase {
 public:
     using Ptr = std::shared_ptr<TItemPowerStatusRaw>;

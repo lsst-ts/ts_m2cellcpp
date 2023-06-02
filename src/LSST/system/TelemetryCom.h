@@ -55,6 +55,7 @@ namespace system {
 /// values (element `id` cannot change). The values of the elements
 /// must be variable and thread safe. They must be set elsewhere whenever
 /// their values change so that the telemetry information is up to date.
+/// Unit tests in tests/test_TelemetryCom
 class TelemetryCom : public std::enable_shared_from_this<TelemetryCom> {
 public:
     using Ptr = std::shared_ptr<TelemetryCom>;

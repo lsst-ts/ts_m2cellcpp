@@ -5,17 +5,13 @@ class Config
 class ComServer
 class ComConnection
 class ComControl
-class ComTelemetry
 class ComControl
-ComTelemetry : theoretical, unimplemented
 
 Config ..> ComServer : Configuration data
 Config ..> ConfigException : throws
 ComServer *-- ComConnection
 ComConnection <|-- ComControl
-ComConnection <|-- ComTelemetry
 ComControl *-- NetCommandFactory
-ComTelemetry *-- NetCommandFactory
 ComConnection <.. util::Command : uses
 
 class NetCommandException
@@ -39,5 +35,23 @@ NetCommandException <.. NetCommandFactory : throws
 NetCommandFactory *-- _cmdMap
 _cmdMap *-- NetCommand : factoryVersion for generating
 NetCommandFactory o-- NetCommand : created by factory
+
+class TelemetryCom
+class TelemetryItem
+class TelemetryMap
+class TItemDouble
+class TItemPowerStatusBase
+class TItemPowerStatus
+class TItemPowerStatusRaw
+
+Config ..> TelemetryCom : Configuration data
+TelemetryItem <|-- TItemDouble
+TelemetryItem <|-- TItemPowerStatusBase
+TItemPowerStatusBase <|-- TItemPowerStatus
+TItemPowerStatusBase <|-- TItemPowerStatusRaw
+TItemPowerStatusBase *-- TItemDouble
+TelemetryMap *-- TelemetryItem
+TelemetryCom *-- TelemetryMap
+
 
 @enduml
