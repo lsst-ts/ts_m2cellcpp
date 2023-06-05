@@ -82,4 +82,15 @@ node {
             }
         }
     }
+<<<<<<< HEAD
+=======
+
+    post {
+
+        cleanup {
+            // clean up the workspace
+            deleteDir()
+        }
+    }
+>>>>>>> Removed spdlog include files.
 }

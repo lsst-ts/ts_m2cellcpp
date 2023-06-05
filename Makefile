@@ -45,7 +45,7 @@ clean:
 tests: $(LIB_DIR)/libm2cellcpp.a tests/Makefile tests/*.cpp
 	@${MAKE} -C tests
 
-run_tests: tests
+run_tests: $(LIB_DIR)/libm2cellcpp.a tests/Makefile tests/*.cpp
 	@${MAKE} -C tests run
 
 junit: tests
