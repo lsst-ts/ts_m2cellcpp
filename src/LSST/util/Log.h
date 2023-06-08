@@ -35,7 +35,7 @@
 
 // Third party headers
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
-#include "spdlog/spdlog.h"
+#include <spdlog/spdlog.h>
 
 // evil macros
 #define LTRACE(...) LSST::m2cellcpp::util::Log::logW(spdlog::level::trace, __FILE__, __LINE__, __VA_ARGS__)
