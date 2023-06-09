@@ -44,7 +44,7 @@ endif
 
 
 BOOST_CPPFLAGS := -I$(CONDA_PREFIX)/include/
-#FUTUREL apply silence to CPP_FLAGS := $(shell pkg-config yaml-cpp --cflags $(silence)) $(shell pkg-config spdlog --cflags $(silence))
+#FUTURE: apply silence to CPP_FLAGS := $(shell pkg-config yaml-cpp --cflags $(silence)) $(shell pkg-config spdlog --cflags $(silence))
 CPP_FLAGS += $(shell pkg-config yaml-cpp --cflags)  $(shell pkg-config spdlog --cflags)
 
 
