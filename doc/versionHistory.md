@@ -1,4 +1,7 @@
 # Version History
+0.2.8
+
+ - Added telemetry server.
 
 0.2.7
 
