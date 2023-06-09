@@ -36,7 +36,7 @@ namespace control {
 bool FpgaBooleans::getBit(byte byt, int pos) {
     if (pos < BIT_MIN || pos > BIT_MAX) {
         // throw range_error("getBit out of range pos=" + to_string(pos));
-        throw range_error("getBit out of range pos=");
+        throw range_error("getBit out of range pos=" + to_string(pos));
     }
     byte bit{1};
     bit <<= pos;

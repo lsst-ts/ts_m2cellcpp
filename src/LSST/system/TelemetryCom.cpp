@@ -167,15 +167,14 @@ void TelemetryCom::_server() {
             // Check if any of the threads should be joined and removed.
             auto iter = _handlerThreads.begin();
             while (iter != _handlerThreads.end()) {
-                auto needToErase = (*iter)->checkJoin();
-                if (needToErase || (*iter)->getJoined()) {
+                auto oldIter = iter++;
+                auto needToErase = (*oldIter)->checkJoin();
+                if (needToErase || (*oldIter)->getJoined()) {
                     LINFO("TelemetryCom::server() removing old client");
-                    auto old = iter++;
-                    _handlerThreads.erase(old);
-                } else {
-                    ++iter;
+                    _handlerThreads.erase(oldIter);
                 }
             }
+
         }
     }
 
@@ -239,30 +238,31 @@ void TelemetryCom::ServerConnectionHandler::_join() {
     _joined = true;
 }
 
-int TelemetryCom::client(int j) {
+int TelemetryCom::client(int idNum) {
     int clientFd = _clientConnect();
-    LINFO("TelemetryCom::client() start clientFd=", clientFd, " j=", j, "_seqId=", _seqId);
+    LINFO("TelemetryCom::client() start clientFd=", clientFd, " idNum=", idNum, "_seqId=", _seqId);
     bool serverOk = true;
     string inMsg;
     while (_acceptLoop && serverOk) {
         char buffer[3];
+        // Read one byte at a time to check every byte for terminator.
         ssize_t status = read(clientFd, buffer, 1);
         if (status <= 0) {
-            LINFO("TelemetryCom::client() j=", j, " recv failed with status=", status);
+            LINFO("TelemetryCom::client() idNum=", idNum, " recv failed with status=", status);
             serverOk = false;
             break;
         }
         char inChar = buffer[0];
         if (inChar == '\n' && inMsg.back() == '\r') {
             inMsg.pop_back();
-            LDEBUG("client j=", j, " seq=", _seqId, " fd=", clientFd, " got message ", inMsg);
+            LDEBUG("client idNUm=", idNum, " seq=", _seqId, " fd=", clientFd, " got message ", inMsg);
             _telemetryMap->setItemFromJsonStr(inMsg);
             inMsg.clear();
         } else {
             inMsg += inChar;
         }
     }
-    LINFO("TelemetryCom::client() closing j=", j, " seq=", _seqId, " inMsg=", inMsg);
+    LINFO("TelemetryCom::client() closing jidNum=", idNum, " seq=", _seqId, " inMsg=", inMsg);
     close(clientFd);
     return 0;
 }

@@ -42,7 +42,8 @@ public:
     TelemetryMap& operator=(TelemetryMap const&) = delete;
     ~TelemetryMap() = default;
 
-    /// Helper function to compare maps.
+    /// Return true if all elements of `mapA` have a match in `mapB`, where `note` is
+    /// used to help identify what is being compared in the log.
     static bool compareTelemetryItemMaps(TelemetryItemMap const& mapA, TelemetryItemMap const& mapB,
                                          std::string const& note = "");
 

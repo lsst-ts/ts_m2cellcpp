@@ -80,9 +80,9 @@ public:
     /// threads that need stopping on the server.
     int shutdownCom();
 
-    /// Start a client connection in this thread. This is primarily meant
+    /// Start a client connection in this thread with `idNum`. This is primarily meant
     /// for testing.
-    int client(int j);
+    int client(int idNum);
 
     /// Wait up to `seconds` time for `_serverRunning` to be true.
     /// @return true if the server is running.
