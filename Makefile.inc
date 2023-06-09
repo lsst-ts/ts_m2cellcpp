@@ -1,11 +1,11 @@
 # define to "" to produce verbose output
 ifndef VERBOSE
   co := @
+  silence := --silence-errors
 endif
 
 BUILD_DIR ?= $(RELATIVE_DIR)build
 SRC_DIRS ?= $(RELATIVE_DIR)src
-#&&& SPDLOG_DIR ?= $(RELATIVE_DIR)spdlog
 LIB_DIR ?= $(RELATIVE_DIR)lib
 BIN_DIR ?= $(RELATIVE_DIR)bin
 
@@ -13,7 +13,6 @@ SRCS := $(shell find $(SRC_DIRS) -name *.cpp -or -name *.c -or -name *.s)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
-#&&& INC_DIRS := $(shell find $(SRC_DIRS) -type d) $(SPDLOG_DIR)/include
 INC_DIRS := $(shell find $(SRC_DIRS) -type d)
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
@@ -32,7 +31,6 @@ endif
 
 # g++ flags used in all g++ calls.
 CPP_COMMON := -std=c++17 -fPIE -pthread -Wall ${c_opts} $(GCOVR_FLAGS)
-#&&&CPP_LIBS := -L/usr/local/lib -lyaml-cpp
 CPP_LIBS += -L/usr/local/lib $(shell pkg-config yaml-cpp --libs) $(shell pkg-config spdlog --libs) -ldl
 
 # compile x86 simulator or real cRIO stuff
@@ -47,6 +45,7 @@ endif
 
 
 BOOST_CPPFLAGS := -I$(CONDA_PREFIX)/include/
+#FUTUREL apply silence to CPP_FLAGS := $(shell pkg-config yaml-cpp --cflags $(silence)) $(shell pkg-config spdlog --cflags $(silence))
 CPP_FLAGS += $(shell pkg-config yaml-cpp --cflags)  $(shell pkg-config spdlog --cflags)
 
 VERSION := $(shell git describe --tags --dirty)
