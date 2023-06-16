@@ -68,7 +68,9 @@ bool TelemetryMap::compareMaps(TelemetryMap const& other) {
 
 bool TelemetryMap::setItemFromJsonStr(string const& jsStr) {
     try {
+        LDEBUG("&&& TelemetryMap::setItemFromJsonStr parse str=", jsStr);
         json js = json::parse(jsStr);
+        LDEBUG("&&& TelemetryMap::setItemFromJsonStr parse js=", js);
         return setItemFromJson(js);
     } catch (json::parse_error const& ex) {
         LERROR("TelemetryMap::setItemFromJsonStr json parse error msg=", ex.what());
@@ -84,6 +86,7 @@ bool TelemetryMap::setItemFromJson(nlohmann::json const& js) {
         return false;
     }
     bool idExpected = true;
+    LDEBUG("&&& TelemetryMap::setItemFromJson idExpected=", idExpected, " js=", js);
     return iter->second->setFromJson(js, idExpected);
 }
 

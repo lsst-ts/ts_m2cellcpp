@@ -40,10 +40,20 @@
 #include "nlohmann/json.hpp"
 
 // project headers
+#include "util/Issue.h"
 
 namespace LSST {
 namespace m2cellcpp {
 namespace system {
+
+/// Exception specific to Telemetry.
+///
+/// unit test: test_TelemetryCom.cpp
+class TelemetryException : public util::Issue {
+public:
+    TelemetryException(Context const& ctx, std::string const& msg) : util::Issue(ctx, msg) {}
+};
+
 
 class TelemetryItem;
 
@@ -87,7 +97,7 @@ public:
 
     /// Parse the json string `jStr` and load the appropriate values into this object.
     /// @return true if item parsed correctly and had appropriate data.
-    bool parse(std::string const& jStr);
+    bool parse(std::string const& jStr); // &&& use TelemetryException ???
 
     /// Set the value of this `TelemetryItem` from `js`.
     /// @param idExpected - If set to true, `js` must contain a valid entry for `id`.
@@ -127,7 +137,7 @@ public:
     /// Create a shared pointer instance of TItemDouble using `id`, and `defaultVal`, and
     /// insert it into the map `itMap`.
     /// @see `TItemDouble`
-    /// @throws util::Bug if the new object cannot be inserted into the list
+    /// @throws util::Bug if the new object cannot be inserted into the list  // &&& use TelemetryException ???
     static Ptr create(std::string const& id, TelemetryItemMap* itMap, double defaultVal = 0.0);
     TItemDouble() = delete;
 
@@ -152,6 +162,59 @@ public:
 private:
     std::atomic<double> _val;
 };
+
+/// &&& doc
+class TItemDoubleVector : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemDoubleVector>;
+
+    /// Create a shared pointer instance of TItemDoubleVector using `id`, number of elements `size, and `defaultVal` for
+    /// all entries, then insert it into the map `itMap`.
+    /// @throws util::Bug if the new object cannot be inserted into the list
+    static Ptr create(std::string const& id, size_t size, TelemetryItemMap* itMap, double defaultVal = 0.0);
+    TItemDoubleVector() = delete;
+
+    /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal` for all entries.
+    TItemDoubleVector(std::string const& id, int size, double defaultVal = 0.0) : TelemetryItem(id), _size(size) {
+        for(size_t j=0; j<_size; ++j) {
+            _vals.push_back(defaultVal);
+        }
+    }
+
+    /// &&&
+    ~TItemDoubleVector() override {}
+
+    //// Return a copy of the values in this object.
+    std::vector<double> getVals() const;
+
+    /// Set the value of the object to `vals`, which must have the same size as `_vals`.
+    /// @return false if the size of `vals` is different from `_size`.
+    bool setVals(std::vector<double> const& vals);
+
+    /// Set the value at `index` in `_vals` to val.
+    /// @return false if index is out of range.
+    bool setVal(size_t index, double val);
+
+    //// Return the value at `index` in `_vals`.
+    /// @throw TelemetryException if index is out of range.
+    double getVal(size_t index) const;
+
+    /// Return the json representation of this object.
+    nlohmann::json getJson() const override;
+
+    /// Set the value of this object from json.
+    bool setFromJson(nlohmann::json const& js, bool idExpected) override;
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override;
+
+private:
+    size_t const _size; ///< Number of elements in `_vals`.
+    std::vector<double> _vals; ///< Vector containing the double values with length _size.
+    mutable std::mutex _mtx; ///< Protects `_vals`.
+};
+
+
 
 /// common elements between powerStatus and powerStatusRaw
 /// Unit tests in tests/test_TelemetryCom
@@ -224,6 +287,57 @@ public:
     TItemPowerStatusRaw() : TItemPowerStatusBase("powerStatusRaw") {}
     virtual ~TItemPowerStatusRaw() = default;
 };
+
+
+
+/// &&& doc
+class TItemTangentForce : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemTangentForce>;
+
+    TItemTangentForce() : TelemetryItem("tangentForce") {}
+
+    ~TItemTangentForce() override {};
+
+    //&&&/// Set `_motorVoltage` to `val`.
+    //&&&void setMotorVoltage(double val) { _motorVoltage->setVal(val); }
+
+    /// &&& doc
+    TItemDoubleVector& getLutGravity() const { return *_lutGravity; }
+
+    /// &&& doc
+    TItemDoubleVector& getLutTemperature() const { return *_lutTemperature; }
+
+    /// &&& doc
+    TItemDoubleVector& getApplied() const { return *_applied; }
+
+    /// &&& doc
+    TItemDoubleVector& getMeasured() const { return *_measured; }
+
+    /// &&& doc
+    TItemDoubleVector& getHardpointCorrection() const { return *_hardpointCorrection; }
+
+    /// Local override of getJson
+    nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
+
+    /// Set the value of this object from json.
+    bool setFromJson(nlohmann::json const& js, bool idExpected) override {
+        return setMapFromJson(_map, js, idExpected);
+    }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override;
+
+private:
+    /// Map of items for this TelemetryItem. Does not change after constructor.
+    TelemetryItemMap _map;
+    TItemDoubleVector::Ptr _lutGravity = TItemDoubleVector::create("lutGravity", 6, &_map);
+    TItemDoubleVector::Ptr _lutTemperature = TItemDoubleVector::create("lutTemperature", 0, &_map);
+    TItemDoubleVector::Ptr _applied = TItemDoubleVector::create("applied", 6, &_map);
+    TItemDoubleVector::Ptr _measured = TItemDoubleVector::create("measured", 6, &_map);
+    TItemDoubleVector::Ptr _hardpointCorrection = TItemDoubleVector::create("hardpointCorrection", 6, &_map);
+};
+
 
 }  // namespace system
 }  // namespace m2cellcpp

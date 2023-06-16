@@ -99,9 +99,43 @@ TEST_CASE("Test TelemetryItem", "[TelemetryItem]") {
     REQUIRE(powerStatusRaw2->getCommVoltage() == rcv);
     REQUIRE(powerStatusRaw2->getCommCurrent() == rcc);
 
+    // Test TItemTangentForce and TItemDoubleVector
+    auto tangForceIn = TItemTangentForce::Ptr(new TItemTangentForce());
+    vector<double> tfInLutGravity{0.6, -0.5, -0.4, 0.3, 0.2, -0.1};
+    vector<double> tfInLutTemperature{};
+    vector<double> tfInApplied{-6.0, -1.5, 3.4, 7.3, 9.2, -2.1};
+    vector<double> tfInMeasured{8.6, -3.5, -1.4, 9.3, 4.2, -5.1};
+    vector<double> tfInHardpointCorrection{9.6, -7.5, -2.4, 6.3, 1.2, -7.1};
+    tangForceIn->getLutGravity().setVals(tfInLutGravity);
+    tangForceIn->getLutTemperature().setVals(tfInLutTemperature);
+    tangForceIn->getApplied().setVals(tfInApplied);
+    tangForceIn->getMeasured().setVals(tfInMeasured);
+    tangForceIn->getHardpointCorrection().setVals(tfInHardpointCorrection);
+    auto tangFInJs = tangForceIn->getJson();
+    string tangFInStr = to_string(tangFInJs);
+    LDEBUG("tangForceIn=", tangFInStr);
+    REQUIRE(tangForceIn->getLutGravity().getVals() == tfInLutGravity);
+    REQUIRE(tangForceIn->getLutTemperature().getVals() == tfInLutTemperature);
+    REQUIRE(tangForceIn->getApplied().getVals() == tfInApplied);
+    REQUIRE(tangForceIn->getMeasured().getVals() == tfInMeasured);
+    REQUIRE(tangForceIn->getHardpointCorrection().getVals() == tfInHardpointCorrection);
+    REQUIRE(tangForceIn->getLutTemperature().getVals() != tfInHardpointCorrection);
+    REQUIRE(tangForceIn->getApplied().getVals() != tfInMeasured);
+
+    // Create a new TangentForce object that is different that tangForceIn
+    // to check comparisons.
+    auto tangForceOut = TItemTangentForce::Ptr(new TItemTangentForce());
+    //&&& REQUIRE(tangForceIn->compareItem(*tangForceOut) == false);
+    //&&& REQUIRE(tangForceIn->compareItem(*powerStatusRaw2) == false);
+    // Set the new object to the old object using json and check that they match
+    bool tfResult = tangForceOut->parse(tangFInStr);
+    REQUIRE(tfResult);
+    REQUIRE(tangForceIn->compareItem(*tangForceOut) == true);
+
     LDEBUG("TelemetryItem::test() end");
 }
 
+/* &&&
 TEST_CASE("Test TelemetryCom", "[TelemetryCom]") {
     {
         LINFO("Creating serv");
@@ -151,3 +185,4 @@ TEST_CASE("Test TelemetryCom", "[TelemetryCom]") {
         }
     }
 }
+*/

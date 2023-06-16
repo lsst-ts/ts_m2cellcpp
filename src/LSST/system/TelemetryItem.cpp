@@ -27,7 +27,6 @@
 // Third party headers
 
 // Project headers
-#include "util/Bug.h"
 #include "util/Log.h"
 #include "system/TelemetryMap.h"
 
@@ -79,6 +78,7 @@ bool TelemetryItem::setMapFromJson(TelemetryItemMap& tMap, json const& js, bool 
     bool success = true;
     for (auto&& elem : tMap) {
         TelemetryItem::Ptr item = elem.second;
+        LDEBUG("&&& TelemetryItem::setMapFromJson js=", js);
         bool status = item->setFromJson(js);
         if (!status) {
             success = false;
@@ -97,7 +97,7 @@ TItemDouble::Ptr TItemDouble::create(string const& id, TelemetryItemMap* tiMap, 
     Ptr newItem = Ptr(new TItemDouble(id, defaultVal));
     if (tiMap != nullptr) {
         if (!insert(*tiMap, newItem)) {
-            throw util::Bug(ERR_LOC, "Failed to insert " + id);
+            throw TelemetryException(ERR_LOC, "Failed to insert " + id);
         }
     }
     return newItem;
@@ -126,16 +126,166 @@ bool TItemDouble::setFromJson(nlohmann::json const& js, bool idExpected) {
     return false;
 }
 
-bool TItemDouble::compareItem(TelemetryItem const& other) const {
-    TItemDouble const& otherTItemDouble = dynamic_cast<TItemDouble const&>(other);
-    return (getId() == other.getId() && _val == otherTItemDouble._val);
+bool TItemDouble::compareItem(TelemetryItem const& other) const { //&&& looks like all compare items functions can use the same template
+    try {
+        TItemDouble const& otherItem = dynamic_cast<TItemDouble const&>(other);
+        return (getId() == other.getId() && _val == otherItem._val);
+    } catch (std::bad_cast const& ex) {
+        return false;
+    }
 }
 
 bool TItemPowerStatusBase::compareItem(TelemetryItem const& other) const {
-    TItemPowerStatusBase const& otherIpsb = dynamic_cast<TItemPowerStatusBase const&>(other);
-    return TelemetryMap::compareTelemetryItemMaps(_map, otherIpsb._map);
-    ;
+    try {
+        TItemPowerStatusBase const& otherItem = dynamic_cast<TItemPowerStatusBase const&>(other);
+        return TelemetryMap::compareTelemetryItemMaps(_map, otherItem._map);
+    } catch (std::bad_cast const& ex) {
+        return false;
+    }
 }
+
+TItemDoubleVector::Ptr TItemDoubleVector::create(string const& id, size_t size, TelemetryItemMap* tiMap, double defaultVal) {
+    Ptr newItem = Ptr(new TItemDoubleVector(id, size, defaultVal));
+    if (tiMap != nullptr) {
+        if (!insert(*tiMap, newItem)) {
+            throw TelemetryException(ERR_LOC, "Failed to insert " + id);
+        }
+    }
+    return newItem;
+}
+
+#if 0 // &&& delete
+nlohmann::json SchedulerBase::statusToJson() {
+    nlohmann::json status;
+    status["name"] = getName();
+    status["priority"] = getPriority();
+
+    status["num_tasks_in_queue"] = getSize();
+    status["num_tasks_in_flight"] = getInFlight();
+
+    nlohmann::json queryIdToCount = nlohmann::json::array();
+    nlohmann::json chunkToNumTasks = nlohmann::json::array();
+    {
+        std::lock_guard<std::mutex> lock(_countsMutex);
+        for (auto&& entry : _userQueryCounts) {
+            queryIdToCount.push_back({entry.first, entry.second});
+        }
+        for (auto&& entry : _chunkTasks) {
+            chunkToNumTasks.push_back({entry.first, entry.second});
+        }
+    }
+    status["query_id_to_count"] = queryIdToCount;
+    status["chunk_to_num_tasks"] = chunkToNumTasks;
+    status["histograms"] =
+            nlohmann::json::object({{"timeOfTransmittingTasks", histTimeOfTransmittingTasks->getJson()},
+                                    {"timeOfRunningTasks", histTimeOfRunningTasks->getJson()},
+                                    {"queuedTasks", _histQueuedTasks->getJson()},
+                                    {"runningTasks", _histRunningTasks->getJson()},
+                                    {"transmittingTasks", _histTransmittingTasks->getJson()},
+                                    {"recentlyCompletedTasks", _histRecentlyCompletedTasks->getJson()}});
+    return status;
+}
+#endif //&&& delete
+
+json TItemDoubleVector::getJson() const {
+    json js;
+    json jArray = json::array();
+
+    lock_guard<mutex> lg(_mtx);
+    for (size_t j = 0; j < _size; ++j) {
+        jArray.push_back(_vals[j]);
+    }
+    js[getId()] = jArray;
+    return js;
+}
+
+bool TItemDoubleVector::setVals(vector<double> const& vals) {
+    if (vals.size() != _size) {
+        LERROR("TItemDoubleVector::setVals wrong size vals.size()=", vals.size(), " for ", dump());
+        return false;
+    }
+    lock_guard<mutex> lg(_mtx);
+    for(size_t j=0; j<_size; ++j) {
+        _vals[j] = vals[j];
+    }
+    return true;
+}
+
+vector<double> TItemDoubleVector::getVals() const {
+    std::vector<double> outVals;
+    lock_guard<mutex> lg(_mtx);
+    for(auto const& v:_vals) {
+        outVals.push_back(v);
+    }
+    return outVals;
+}
+
+bool TItemDoubleVector::setVal(size_t index, double val) {
+    if (index > _size) {
+        return false;
+    }
+    lock_guard<mutex> lg(_mtx);
+    _vals[index] = val;
+    return true;
+}
+
+double TItemDoubleVector::getVal(size_t index) const {
+    if (index > _size) {
+        throw TelemetryException(ERR_LOC, "TItemDoubleVector::getVal out of range for index=" + to_string(index) + " for " + dump());
+    }
+    lock_guard<mutex> lg(_mtx);
+    return _vals[index];
+}
+
+bool TItemDoubleVector::setFromJson(nlohmann::json const& js, bool idExpected) {
+    if (idExpected) {
+        // This type can only have a floating point value array for `_val`.
+        LERROR("TItemDoubleVector::setFromJson cannot have a json 'id' entry");
+        return false;
+    }
+    try {
+        std::vector<double> vals = js.at(getId());
+        string valsStr; // &&& delete
+        for(auto const& v:vals) { // &&& delete
+            valsStr += to_string(v) + ", "; // &&& delete
+        } // &&& delete
+        LDEBUG("&&& TItemDoubleVector::setFromJson vals=", valsStr, " js.at=", js.at(getId()));
+        return setVals(vals);
+    } catch (json::out_of_range const& ex) {
+        LERROR("TItemDouble::setFromJson out of range for ", getId(), " js=", js);
+    }
+    return false;
+}
+
+bool TItemDoubleVector::compareItem(TelemetryItem const& other) const {
+    try {
+        TItemDoubleVector const& otherT = dynamic_cast<TItemDoubleVector const&>(other);
+        if (getId() != other.getId() || _size != otherT._size) {
+            return false;
+        }
+        // There's no way to reliably control which gets locked first
+        // (both A.compareItem(B) or B.compareItem(A) are possible),
+        // so this is needed to lock both without risk of deadlock.
+        unique_lock lockThis(_mtx, std::defer_lock);
+        unique_lock lockOther(otherT._mtx, std::defer_lock);
+        lock(lockThis, lockOther);
+        return (_vals == otherT._vals);
+    } catch (std::bad_cast const& ex) {
+        return false;
+    }
+}
+
+
+bool TItemTangentForce::compareItem(TelemetryItem const& other) const {
+    try {
+        LDEBUG("&&& TItemTangentForce::compareItem this=", dump(), " other=", other.dump());
+        TItemTangentForce const& otherItem = dynamic_cast<TItemTangentForce const&>(other);
+        return TelemetryMap::compareTelemetryItemMaps(_map, otherItem._map);
+    } catch (std::bad_cast const& ex) {
+        return false;
+    }
+}
+
 
 }  // namespace system
 }  // namespace m2cellcpp

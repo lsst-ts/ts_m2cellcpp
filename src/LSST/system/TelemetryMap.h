@@ -89,6 +89,7 @@ private:
     TItemPowerStatus::Ptr _powerStatus = TelemetryMap::_addItem<TItemPowerStatus>();  ///< "powerStatus"
     TItemPowerStatusRaw::Ptr _powerStatusRaw =
             TelemetryMap::_addItem<TItemPowerStatusRaw>();  ///< "powerStatusRaw"
+    TItemTangentForce::Ptr _tangentForce = _addItem<TItemTangentForce>(); ///< "tangentForce"
 };
 
 }  // namespace system
