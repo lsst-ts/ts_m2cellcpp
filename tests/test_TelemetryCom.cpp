@@ -99,7 +99,7 @@ TEST_CASE("Test TelemetryItem", "[TelemetryItem]") {
     REQUIRE(powerStatusRaw2->getCommVoltage() == rcv);
     REQUIRE(powerStatusRaw2->getCommCurrent() == rcc);
 
-    // Test TItemTangentForce and TItemDoubleVector
+    // Test TItemTangentForce and TItemVectorDouble
     auto tangForceIn = TItemTangentForce::Ptr(new TItemTangentForce());
     vector<double> tfInLutGravity{0.6, -0.5, -0.4, 0.3, 0.2, -0.1};
     vector<double> tfInLutTemperature{};

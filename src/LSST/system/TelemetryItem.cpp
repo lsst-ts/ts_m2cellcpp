@@ -144,8 +144,8 @@ bool TItemPowerStatusBase::compareItem(TelemetryItem const& other) const {
     }
 }
 
-TItemDoubleVector::Ptr TItemDoubleVector::create(string const& id, size_t size, TelemetryItemMap* tiMap, double defaultVal) {
-    Ptr newItem = Ptr(new TItemDoubleVector(id, size, defaultVal));
+TItemDoubleVectorOld::Ptr TItemDoubleVectorOld::create(string const& id, size_t size, TelemetryItemMap* tiMap, double defaultVal) {
+    Ptr newItem = Ptr(new TItemDoubleVectorOld(id, size, defaultVal));
     if (tiMap != nullptr) {
         if (!insert(*tiMap, newItem)) {
             throw TelemetryException(ERR_LOC, "Failed to insert " + id);
@@ -154,40 +154,8 @@ TItemDoubleVector::Ptr TItemDoubleVector::create(string const& id, size_t size, 
     return newItem;
 }
 
-#if 0 // &&& delete
-nlohmann::json SchedulerBase::statusToJson() {
-    nlohmann::json status;
-    status["name"] = getName();
-    status["priority"] = getPriority();
 
-    status["num_tasks_in_queue"] = getSize();
-    status["num_tasks_in_flight"] = getInFlight();
-
-    nlohmann::json queryIdToCount = nlohmann::json::array();
-    nlohmann::json chunkToNumTasks = nlohmann::json::array();
-    {
-        std::lock_guard<std::mutex> lock(_countsMutex);
-        for (auto&& entry : _userQueryCounts) {
-            queryIdToCount.push_back({entry.first, entry.second});
-        }
-        for (auto&& entry : _chunkTasks) {
-            chunkToNumTasks.push_back({entry.first, entry.second});
-        }
-    }
-    status["query_id_to_count"] = queryIdToCount;
-    status["chunk_to_num_tasks"] = chunkToNumTasks;
-    status["histograms"] =
-            nlohmann::json::object({{"timeOfTransmittingTasks", histTimeOfTransmittingTasks->getJson()},
-                                    {"timeOfRunningTasks", histTimeOfRunningTasks->getJson()},
-                                    {"queuedTasks", _histQueuedTasks->getJson()},
-                                    {"runningTasks", _histRunningTasks->getJson()},
-                                    {"transmittingTasks", _histTransmittingTasks->getJson()},
-                                    {"recentlyCompletedTasks", _histRecentlyCompletedTasks->getJson()}});
-    return status;
-}
-#endif //&&& delete
-
-json TItemDoubleVector::getJson() const {
+json TItemDoubleVectorOld::getJson() const {
     json js;
     json jArray = json::array();
 
@@ -199,9 +167,9 @@ json TItemDoubleVector::getJson() const {
     return js;
 }
 
-bool TItemDoubleVector::setVals(vector<double> const& vals) {
+bool TItemDoubleVectorOld::setVals(vector<double> const& vals) {
     if (vals.size() != _size) {
-        LERROR("TItemDoubleVector::setVals wrong size vals.size()=", vals.size(), " for ", dump());
+        LERROR("TItemDoubleVectorOld::setVals wrong size vals.size()=", vals.size(), " for ", dump());
         return false;
     }
     lock_guard<mutex> lg(_mtx);
@@ -211,7 +179,7 @@ bool TItemDoubleVector::setVals(vector<double> const& vals) {
     return true;
 }
 
-vector<double> TItemDoubleVector::getVals() const {
+vector<double> TItemDoubleVectorOld::getVals() const {
     std::vector<double> outVals;
     lock_guard<mutex> lg(_mtx);
     for(auto const& v:_vals) {
@@ -220,7 +188,7 @@ vector<double> TItemDoubleVector::getVals() const {
     return outVals;
 }
 
-bool TItemDoubleVector::setVal(size_t index, double val) {
+bool TItemDoubleVectorOld::setVal(size_t index, double val) {
     if (index > _size) {
         return false;
     }
@@ -229,18 +197,18 @@ bool TItemDoubleVector::setVal(size_t index, double val) {
     return true;
 }
 
-double TItemDoubleVector::getVal(size_t index) const {
+double TItemDoubleVectorOld::getVal(size_t index) const {
     if (index > _size) {
-        throw TelemetryException(ERR_LOC, "TItemDoubleVector::getVal out of range for index=" + to_string(index) + " for " + dump());
+        throw TelemetryException(ERR_LOC, "TItemDoubleVectorOld::getVal out of range for index=" + to_string(index) + " for " + dump());
     }
     lock_guard<mutex> lg(_mtx);
     return _vals[index];
 }
 
-bool TItemDoubleVector::setFromJson(nlohmann::json const& js, bool idExpected) {
+bool TItemDoubleVectorOld::setFromJson(nlohmann::json const& js, bool idExpected) {
     if (idExpected) {
         // This type can only have a floating point value array for `_val`.
-        LERROR("TItemDoubleVector::setFromJson cannot have a json 'id' entry");
+        LERROR("TItemDoubleVectorOld::setFromJson cannot have a json 'id' entry");
         return false;
     }
     try {
@@ -249,7 +217,7 @@ bool TItemDoubleVector::setFromJson(nlohmann::json const& js, bool idExpected) {
         for(auto const& v:vals) { // &&& delete
             valsStr += to_string(v) + ", "; // &&& delete
         } // &&& delete
-        LDEBUG("&&& TItemDoubleVector::setFromJson vals=", valsStr, " js.at=", js.at(getId()));
+        LDEBUG("&&& TItemDoubleVectorOld::setFromJson vals=", valsStr, " js.at=", js.at(getId()));
         return setVals(vals);
     } catch (json::out_of_range const& ex) {
         LERROR("TItemDouble::setFromJson out of range for ", getId(), " js=", js);
@@ -257,9 +225,9 @@ bool TItemDoubleVector::setFromJson(nlohmann::json const& js, bool idExpected) {
     return false;
 }
 
-bool TItemDoubleVector::compareItem(TelemetryItem const& other) const {
+bool TItemDoubleVectorOld::compareItem(TelemetryItem const& other) const {
     try {
-        TItemDoubleVector const& otherT = dynamic_cast<TItemDoubleVector const&>(other);
+        TItemDoubleVectorOld const& otherT = dynamic_cast<TItemDoubleVectorOld const&>(other);
         if (getId() != other.getId() || _size != otherT._size) {
             return false;
         }
