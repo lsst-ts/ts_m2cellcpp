@@ -72,12 +72,10 @@ class TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TelemetryItem>;
 
-    /// Return true if `item` was successfully inserted into `tiMap`.
-    static bool insert(TelemetryItemMap& tiMap, Ptr const& item) {
-        auto ret = tiMap.insert(std::make_pair(item->getId(), item));
-        bool insertSuccess = ret.second;
-        return insertSuccess;
-    }
+    /// Return false if `tiMap` is not null and item` was not successfully inserted into `tiMap`.
+    /// Insert `item` into `tiMap`.
+    /// @throw Telemetry
+    static void insert(TelemetryItemMap* tiMap, Ptr const& item);
 
     /// Create a `TelemetryItem` with immutable id of `id`.
     TelemetryItem(std::string const& id) : _id(id) {}
@@ -138,7 +136,7 @@ public:
     /// Create a shared pointer instance of TItemDouble using `id`, and `defaultVal`, and
     /// insert it into the map `itMap`.
     /// @see `TItemDouble`
-    /// @throws util::Bug if the new object cannot be inserted into the list  // &&& use TelemetryException ???
+    /// @throws TelemetryException if the new object cannot be inserted into the list.
     static Ptr create(std::string const& id, TelemetryItemMap* itMap, double defaultVal = 0.0);
     TItemDouble() = delete;
 
@@ -170,10 +168,16 @@ class TItemVector : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemVector>;
 
+    /* &&&
     /// Create a shared pointer instance of TItemDVector using `id`, number of elements `size, and `defaultVal` for
     /// all entries, then insert it into the map `itMap`.
     /// @throws util::Bug if the new object cannot be inserted into the list
-    static Ptr create(std::string const& id, size_t size, TelemetryItemMap* itMap, VT defaultVal = 0);
+    static Ptr create(std::string const& id, size_t size, TelemetryItemMap* tiMap, VT defaultVal = 0) {
+        Ptr newItem = Ptr(new TItemVector<VT>(id, size, tiMap, defaultVal));
+        insert(tiMap, newItem);
+        return newItem;
+    }
+    */
     TItemVector() = delete;
 
     /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal` for all entries.
@@ -187,19 +191,49 @@ public:
     ~TItemVector() override {}
 
     //// Return a copy of the values in this object.
-    std::vector<VT> getVals() const;
+    std::vector<VT> getVals() const {
+        std::vector<VT> outVals;
+        std::lock_guard<std::mutex> lg(_mtx);
+        for (auto const& v : _vals) {
+            outVals.push_back(v);
+        }
+        return outVals;
+    }
 
     /// Set the value of the object to `vals`, which must have the same size as `_vals`.
     /// @return false if the size of `vals` is different from `_size`.
-    bool setVals(std::vector<VT> const& vals);
+    bool setVals(std::vector<VT> const& vals) {
+        if (vals.size() != _size) {
+            LERROR("TItemVector::setVals wrong size vals.size()=", vals.size(), " for ", dump());
+            return false;
+        }
+        std::lock_guard<std::mutex> lg(_mtx);
+        for (size_t j = 0; j < _size; ++j) {
+            _vals[j] = vals[j];
+        }
+        return true;
+    }
 
     /// Set the value at `index` in `_vals` to val.
     /// @return false if index is out of range.
-    bool setVal(size_t index, VT val);
+    bool setVal(size_t index, VT val) {
+        if (index > _size) {
+            return false;
+        }
+        std::lock_guard<std::mutex> lg(_mtx);
+        _vals[index] = val;
+        return true;
+    }
 
     //// Return the value at `index` in `_vals`.
     /// @throw TelemetryException if index is out of range.
-    VT getVal(size_t index) const;
+    VT getVal(size_t index) const {
+    if (index > _size) {
+        throw TelemetryException(ERR_LOC, "TItemVector::getVal out of range for index=" + std::to_string(index) + " for " + dump());
+    }
+    std::lock_guard<std::mutex> lg(_mtx);
+    return _vals[index];
+}
 
     /// Return the json representation of this object.
     nlohmann::json getJson() const override {
@@ -269,7 +303,12 @@ public:
     /// Create a shared pointer instance of TItemVectorDouble using `id`, number of elements `size, and `defaultVal` for
     /// all entries, then insert it into the map `itMap`.
     /// @throws TelemetryException if the new object cannot be inserted into the list
-    static Ptr create(std::string const& id, size_t size, TelemetryItemMap* itMap, double defaultVal = 0.0);
+    static Ptr create(std::string const& id, size_t size, TelemetryItemMap* tiMap, double defaultVal = 0.0) {
+        Ptr newItem = Ptr(new TItemVectorDouble(id, size, defaultVal));
+        insert(tiMap, newItem);
+        return newItem;
+    }
+
     TItemVectorDouble() = delete;
 
     /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal` for all entries.
@@ -279,58 +318,27 @@ public:
     ~TItemVectorDouble() override {}
 };
 
-
 /// &&& doc
-class TItemDoubleVectorOld : public TelemetryItem {
+class TItemVectorInt : public TItemVector<int> {
 public:
-    using Ptr = std::shared_ptr<TItemDoubleVectorOld>;
+    using Ptr = std::shared_ptr<TItemVectorInt>;
 
-    /// Create a shared pointer instance of TItemDoubleVectorOld using `id`, number of elements `size, and `defaultVal` for
+    /// Create a shared pointer instance of TItemVectorInt using `id`, number of elements `size, and `defaultVal` for
     /// all entries, then insert it into the map `itMap`.
-    /// @throws util::Bug if the new object cannot be inserted into the list
-    static Ptr create(std::string const& id, size_t size, TelemetryItemMap* itMap, double defaultVal = 0.0);
-    TItemDoubleVectorOld() = delete;
+    /// @throws TelemetryException if the new object cannot be inserted into the list
+    static Ptr create(std::string const& id, size_t size, TelemetryItemMap* tiMap, int defaultVal = 0) { // &&& this can probably be done with a template function.
+        Ptr newItem = Ptr(new TItemVectorInt(id, size, defaultVal));
+        insert(tiMap, newItem);
+        return newItem;
+    }
+    TItemVectorInt() = delete;
 
     /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal` for all entries.
-    TItemDoubleVectorOld(std::string const& id, int size, double defaultVal = 0.0) : TelemetryItem(id), _size(size) {
-        for(size_t j=0; j<_size; ++j) {
-            _vals.push_back(defaultVal);
-        }
-    }
+    TItemVectorInt(std::string const& id, int size, int defaultVal = 0) : TItemVector(id, size, defaultVal) {}
 
     /// &&&
-    ~TItemDoubleVectorOld() override {}
-
-    //// Return a copy of the values in this object.
-    std::vector<double> getVals() const;
-
-    /// Set the value of the object to `vals`, which must have the same size as `_vals`.
-    /// @return false if the size of `vals` is different from `_size`.
-    bool setVals(std::vector<double> const& vals);
-
-    /// Set the value at `index` in `_vals` to val.
-    /// @return false if index is out of range.
-    bool setVal(size_t index, double val);
-
-    //// Return the value at `index` in `_vals`.
-    /// @throw TelemetryException if index is out of range.
-    double getVal(size_t index) const;
-
-    /// Return the json representation of this object.
-    nlohmann::json getJson() const override;
-
-    /// Set the value of this object from json.
-    bool setFromJson(nlohmann::json const& js, bool idExpected) override;
-
-    /// Return true if this item and `other` have the same id and values.
-    bool compareItem(TelemetryItem const& other) const override;
-
-private:
-    size_t const _size; ///< Number of elements in `_vals`.
-    std::vector<double> _vals; ///< Vector containing the double values with length _size.
-    mutable std::mutex _mtx; ///< Protects `_vals`.
+    ~TItemVectorInt() override {}
 };
-
 
 
 /// common elements between powerStatus and powerStatusRaw
@@ -341,6 +349,7 @@ public:
 
     virtual ~TItemPowerStatusBase() = default;
 
+    /* &&&
     /// Set `_motorVoltage` to `val`.
     void setMotorVoltage(double val) { _motorVoltage->setVal(val); }
 
@@ -364,6 +373,20 @@ public:
 
     /// Return the value of `_commCurrent`.
     double getCommCurrent() { return _commCurrent->getVal(); }
+    */
+
+    /// Return reference to `_motorVoltage`.
+    TItemDouble& getMotorVoltage() { return *_motorVoltage; }
+
+    /// Return reference to `_motorCurrent`.
+    TItemDouble& getMotorCurrent() { return *_motorCurrent; }
+
+    /// Return reference to `_commVoltage`.
+    TItemDouble& getCommVoltage() { return *_commVoltage; }
+
+    /// Return reference to `_commCurrent`.
+    TItemDouble& getCommCurrent() { return *_commCurrent; }
+
 
     /// Local override of getJson
     nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
@@ -420,19 +443,19 @@ public:
     //&&&void setMotorVoltage(double val) { _motorVoltage->setVal(val); }
 
     /// &&& doc
-    TItemDoubleVectorOld& getLutGravity() const { return *_lutGravity; }
+    TItemVectorDouble& getLutGravity() const { return *_lutGravity; }
 
     /// &&& doc
-    TItemDoubleVectorOld& getLutTemperature() const { return *_lutTemperature; }
+    TItemVectorDouble& getLutTemperature() const { return *_lutTemperature; }
 
     /// &&& doc
-    TItemDoubleVectorOld& getApplied() const { return *_applied; }
+    TItemVectorDouble& getApplied() const { return *_applied; }
 
     /// &&& doc
-    TItemDoubleVectorOld& getMeasured() const { return *_measured; }
+    TItemVectorDouble& getMeasured() const { return *_measured; }
 
     /// &&& doc
-    TItemDoubleVectorOld& getHardpointCorrection() const { return *_hardpointCorrection; }
+    TItemVectorDouble& getHardpointCorrection() const { return *_hardpointCorrection; }
 
     /// Local override of getJson
     nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
@@ -448,11 +471,60 @@ public:
 private:
     /// Map of items for this TelemetryItem. Does not change after constructor.
     TelemetryItemMap _map;
-    TItemDoubleVectorOld::Ptr _lutGravity = TItemDoubleVectorOld::create("lutGravity", 6, &_map);
-    TItemDoubleVectorOld::Ptr _lutTemperature = TItemDoubleVectorOld::create("lutTemperature", 0, &_map);
-    TItemDoubleVectorOld::Ptr _applied = TItemDoubleVectorOld::create("applied", 6, &_map);
-    TItemDoubleVectorOld::Ptr _measured = TItemDoubleVectorOld::create("measured", 6, &_map);
-    TItemDoubleVectorOld::Ptr _hardpointCorrection = TItemDoubleVectorOld::create("hardpointCorrection", 6, &_map);
+    TItemVectorDouble::Ptr _lutGravity = TItemVectorDouble::create("lutGravity", 6, &_map);
+    TItemVectorDouble::Ptr _lutTemperature = TItemVectorDouble::create("lutTemperature", 0, &_map);
+    TItemVectorDouble::Ptr _applied = TItemVectorDouble::create("applied", 6, &_map);
+    TItemVectorDouble::Ptr _measured = TItemVectorDouble::create("measured", 6, &_map);
+    TItemVectorDouble::Ptr _hardpointCorrection = TItemVectorDouble::create("hardpointCorrection", 6, &_map);
+};
+
+/// &&& doc
+class TItemForceBalance : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemForceBalance>;
+
+    TItemForceBalance() : TelemetryItem("forceBalance") {}
+
+    virtual ~TItemForceBalance() = default;
+
+    /// Return pointer to `_fx`.
+    TItemDouble& getFx() { return *_fx; }
+
+    /// Return pointer to `_fy`.
+    TItemDouble& getFy() { return *_fy; }
+
+    /// Return pointer to `_fz`.
+    TItemDouble& getFz() { return *_fz; }
+
+    /// Return pointer to `_mx`.
+    TItemDouble& getMx() { return *_mx; }
+
+    /// Return pointer to `_my`.
+    TItemDouble& getMy() { return *_my; }
+
+    /// Return pointer to `_`.
+    TItemDouble& getMz() { return *_mz; }
+
+    /// Local override of getJson
+    nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
+
+    /// Set the value of this object from json.
+    bool setFromJson(nlohmann::json const& js, bool idExpected) override {
+        return setMapFromJson(_map, js, idExpected);
+    }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override;
+
+private:
+    /// Map of items for this TelemetryItem. Does not change after constructor.
+    TelemetryItemMap _map;
+    TItemDouble::Ptr _fx = TItemDouble::create("fx", &_map);
+    TItemDouble::Ptr _fy = TItemDouble::create("fy", &_map);
+    TItemDouble::Ptr _fz = TItemDouble::create("fz", &_map);
+    TItemDouble::Ptr _mx = TItemDouble::create("mx", &_map);
+    TItemDouble::Ptr _my = TItemDouble::create("my", &_map);
+    TItemDouble::Ptr _mz = TItemDouble::create("mz", &_map);
 };
 
 

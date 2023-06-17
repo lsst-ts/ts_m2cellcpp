@@ -71,6 +71,12 @@ public:
     /// Return a pointer to `_powerStatusRaw`.
     TItemPowerStatusRaw::Ptr getPowerStatusRaw() const { return _powerStatusRaw; }
 
+    /// Return a pointer to `_tangentForce`.
+    TItemTangentForce::Ptr getTangentForce() const { return _tangentForce; }
+
+    /// Return a pointer to `_forceBalance`.
+    TItemForceBalance::Ptr getForceBalance() const {return _forceBalance; }
+
 private:
     /// Map of all telemetry items to be sent to clients.
     /// Once created, the items contained in the map will not change, but their values will.
@@ -90,6 +96,7 @@ private:
     TItemPowerStatusRaw::Ptr _powerStatusRaw =
             TelemetryMap::_addItem<TItemPowerStatusRaw>();  ///< "powerStatusRaw"
     TItemTangentForce::Ptr _tangentForce = _addItem<TItemTangentForce>(); ///< "tangentForce"
+    TItemForceBalance::Ptr _forceBalance = _addItem<TItemForceBalance>(); ///< "forceBalance"
 };
 
 }  // namespace system
