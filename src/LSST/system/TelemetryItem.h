@@ -77,6 +77,10 @@ public:
     /// @throw Telemetry
     static void insert(TelemetryItemMap* tiMap, Ptr const& item);
 
+    /// Return true if all elements of `mapA` have a match in `mapB`, where `note` is
+    /// used to help identify what is being compared in the log.
+    static bool compareTelemetryItemMaps(TelemetryItemMap const& mapA, TelemetryItemMap const& mapB, std::string const& note ="");
+
     /// Create a `TelemetryItem` with immutable id of `id`.
     TelemetryItem(std::string const& id) : _id(id) {}
     virtual ~TelemetryItem() = default;
@@ -122,6 +126,20 @@ protected:
 
     /// Return false if `idExpected` and the `js` "id" entry is wrong.
     bool checkIdCorrect(nlohmann::json const& js, bool idExpected) const;
+
+    template <class TIC>
+    static bool compareItemsTemplate(TelemetryItem const& a, TelemetryItem const& b) {
+        try {
+            TIC const& aItem = dynamic_cast<TIC const&>(a);
+            TIC const& bItem = dynamic_cast<TIC const&>(b);
+            return compareTelemetryItemMaps(aItem._map, bItem._map);
+        } catch (std::bad_cast const& ex) {
+            return false;
+        }
+    }
+
+    /// Map of items for this TelemetryItem. Does not change after constructor.
+    TelemetryItemMap _map; // &&& name change needed, maybe make pointer so classes that don't use it can leave it nullptr and the then check the pointer???
 
 private:
     std::string const _id;
@@ -349,32 +367,6 @@ public:
 
     virtual ~TItemPowerStatusBase() = default;
 
-    /* &&&
-    /// Set `_motorVoltage` to `val`.
-    void setMotorVoltage(double val) { _motorVoltage->setVal(val); }
-
-    /// Set `_motorCurrent` to `val`.
-    void setMotorCurrent(double val) { _motorCurrent->setVal(val); }
-
-    /// Set `_commVoltage` to `val`.
-    void setCommVoltage(double val) { _commVoltage->setVal(val); }
-
-    /// Set `_commCurrent` to `val`.
-    void setCommCurrent(double val) { _commCurrent->setVal(val); }
-
-    /// Return the value of `_motorVoltage`.
-    double getMotorVoltage() { return _motorVoltage->getVal(); }
-
-    /// Return the value of `_motorCurrent`.
-    double getMotorCurrent() { return _motorCurrent->getVal(); }
-
-    /// Return the value of `_commVoltage`.
-    double getCommVoltage() { return _commVoltage->getVal(); }
-
-    /// Return the value of `_commCurrent`.
-    double getCommCurrent() { return _commCurrent->getVal(); }
-    */
-
     /// Return reference to `_motorVoltage`.
     TItemDouble& getMotorVoltage() { return *_motorVoltage; }
 
@@ -397,11 +389,11 @@ public:
     }
 
     /// Return true if this item and `other` have the same id and values.
-    bool compareItem(TelemetryItem const& other) const override;
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemPowerStatusBase>(*this, other);
+    }
 
 private:
-    /// Map of items for this TelemetryItem. Does not change after constructor.
-    TelemetryItemMap _map;
     TItemDouble::Ptr _motorVoltage = TItemDouble::create("motorVoltage", &_map);
     TItemDouble::Ptr _motorCurrent = TItemDouble::create("motorCurrent", &_map);
     TItemDouble::Ptr _commVoltage = TItemDouble::create("commVoltage", &_map);
@@ -439,22 +431,19 @@ public:
 
     ~TItemTangentForce() override {};
 
-    //&&&/// Set `_motorVoltage` to `val`.
-    //&&&void setMotorVoltage(double val) { _motorVoltage->setVal(val); }
-
-    /// &&& doc
+    /// Return reference to `_lutGravity`.
     TItemVectorDouble& getLutGravity() const { return *_lutGravity; }
 
-    /// &&& doc
+    /// Return reference to `_lutTemperature`.
     TItemVectorDouble& getLutTemperature() const { return *_lutTemperature; }
 
-    /// &&& doc
+    /// Return reference to `_applied`.
     TItemVectorDouble& getApplied() const { return *_applied; }
 
-    /// &&& doc
+    /// Return reference to `_measured`.
     TItemVectorDouble& getMeasured() const { return *_measured; }
 
-    /// &&& doc
+    /// Return reference to `_hardpointCorrection`.
     TItemVectorDouble& getHardpointCorrection() const { return *_hardpointCorrection; }
 
     /// Local override of getJson
@@ -466,11 +455,11 @@ public:
     }
 
     /// Return true if this item and `other` have the same id and values.
-    bool compareItem(TelemetryItem const& other) const override;
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemTangentForce>(*this, other);
+    }
 
 private:
-    /// Map of items for this TelemetryItem. Does not change after constructor.
-    TelemetryItemMap _map;
     TItemVectorDouble::Ptr _lutGravity = TItemVectorDouble::create("lutGravity", 6, &_map);
     TItemVectorDouble::Ptr _lutTemperature = TItemVectorDouble::create("lutTemperature", 0, &_map);
     TItemVectorDouble::Ptr _applied = TItemVectorDouble::create("applied", 6, &_map);
@@ -487,22 +476,22 @@ public:
 
     virtual ~TItemForceBalance() = default;
 
-    /// Return pointer to `_fx`.
+    /// Return reference to `_fx`.
     TItemDouble& getFx() { return *_fx; }
 
-    /// Return pointer to `_fy`.
+    /// Return reference to `_fy`.
     TItemDouble& getFy() { return *_fy; }
 
-    /// Return pointer to `_fz`.
+    /// Return reference to `_fz`.
     TItemDouble& getFz() { return *_fz; }
 
-    /// Return pointer to `_mx`.
+    /// Return reference to `_mx`.
     TItemDouble& getMx() { return *_mx; }
 
-    /// Return pointer to `_my`.
+    /// Return reference to `_my`.
     TItemDouble& getMy() { return *_my; }
 
-    /// Return pointer to `_`.
+    /// Return reference to `_mz`.
     TItemDouble& getMz() { return *_mz; }
 
     /// Local override of getJson
@@ -514,11 +503,11 @@ public:
     }
 
     /// Return true if this item and `other` have the same id and values.
-    bool compareItem(TelemetryItem const& other) const override;
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemForceBalance>(*this, other);
+    }
 
 private:
-    /// Map of items for this TelemetryItem. Does not change after constructor.
-    TelemetryItemMap _map;
     TItemDouble::Ptr _fx = TItemDouble::create("fx", &_map);
     TItemDouble::Ptr _fy = TItemDouble::create("fy", &_map);
     TItemDouble::Ptr _fz = TItemDouble::create("fz", &_map);
@@ -526,6 +515,151 @@ private:
     TItemDouble::Ptr _my = TItemDouble::create("my", &_map);
     TItemDouble::Ptr _mz = TItemDouble::create("mz", &_map);
 };
+
+
+/// Common elements between position message ids.
+/// Unit tests in tests/test_TelemetryCom
+class TItemPositionBase : public TelemetryItem {
+public:
+    TItemPositionBase(std::string const& id) : TelemetryItem(id) {}
+
+    virtual ~TItemPositionBase() = default;
+
+    /// Return reference to `_x`.
+    TItemDouble& getX() { return *_x; }
+
+    /// Return reference to `_y`.
+    TItemDouble& getY() { return *_y; }
+
+    /// Return reference to `_z`.
+    TItemDouble& getZ() { return *_z; }
+
+    /// Return reference to `_xRot`.
+    TItemDouble& getXRot() { return *_xRot; }
+
+    /// Return reference to `_y`.
+    TItemDouble& getYRot() { return *_yRot; }
+
+    /// Return reference to `_z`.
+    TItemDouble& getZRot() { return *_zRot; }
+
+    /// Local override of getJson
+    nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
+
+    /// Set the value of this object from json.
+    bool setFromJson(nlohmann::json const& js, bool idExpected) override {
+        return setMapFromJson(_map, js, idExpected);
+    }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemPositionBase>(*this, other);
+    }
+
+private:
+    TItemDouble::Ptr _x = TItemDouble::create("x", &_map);
+    TItemDouble::Ptr _y = TItemDouble::create("y", &_map);
+    TItemDouble::Ptr _z = TItemDouble::create("z", &_map);
+    TItemDouble::Ptr _xRot = TItemDouble::create("xRot", &_map);
+    TItemDouble::Ptr _yRot = TItemDouble::create("yRot", &_map);
+    TItemDouble::Ptr _zRot = TItemDouble::create("zRot", &_map);
+};
+
+/// This class is used to store data for the "position" entry.
+/// Unit tests in tests/test_TelemetryCom
+class TItemPosition : public TItemPositionBase {
+public:
+    using Ptr = std::shared_ptr<TItemPosition>;
+
+    TItemPosition() : TItemPositionBase("position") {}
+    virtual ~TItemPosition() = default;
+};
+
+/// This class is used to store data for the "positionIMS" entry.
+/// Unit tests in tests/test_TelemetryCom
+class TItemPositionIMS : public TItemPositionBase {
+public:
+    using Ptr = std::shared_ptr<TItemPositionIMS>;
+
+    TItemPositionIMS() : TItemPositionBase("positionIMS") {}
+    virtual ~TItemPositionIMS() = default;
+};
+
+/// &&& doc
+class TItemTemperature : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemTemperature>;
+
+    TItemTemperature() : TelemetryItem("Temperature") {}
+
+    virtual ~TItemTemperature() = default;
+
+    /// Return pointer to `_ring`.
+    TItemVectorDouble& getRing() { return *_ring; }
+
+    /// Return pointer to `_intake`.
+    TItemVectorDouble& getIntake() { return *_intake; }
+
+    /// Return pointer to `_exhaust`.
+    TItemVectorDouble& getExhaust() { return *_exhaust; }
+
+    // &&& it looks like getJson(), setFromJson(...), and compareItem(...) can be put in a base class.
+    /// Local override of getJson
+    nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
+
+    /// Set the value of this object from json.
+    bool setFromJson(nlohmann::json const& js, bool idExpected) override {
+        return setMapFromJson(_map, js, idExpected);
+    }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemTemperature>(*this, other);
+    }
+
+private:
+    TItemVectorDouble::Ptr _ring = TItemVectorDouble::create("ring", 12, &_map);
+    TItemVectorDouble::Ptr _intake = TItemVectorDouble::create("intake", 2, &_map);
+    TItemVectorDouble::Ptr _exhaust = TItemVectorDouble::create("exhaust", 2, &_map);
+};
+
+/// &&& doc
+class TItemZenithAngle : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemZenithAngle>;
+
+    TItemZenithAngle() : TelemetryItem("zenithAngle") {}
+
+    virtual ~TItemZenithAngle() = default;
+
+    /// Return pointer to `_measured`.
+    TItemDouble& getMeasured() { return *_measured; }
+
+    /// Return pointer to `_inclinometerRaw`.
+    TItemDouble& getInclinometerRaw() { return *_inclinometerRaw; }
+
+    /// Return pointer to `_inclinometerProcessed`.
+    TItemDouble& getInclinometerProcessed() { return *_inclinometerProcessed; }
+
+    /// Local override of getJson
+    nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
+
+    /// Set the value of this object from json.
+    bool setFromJson(nlohmann::json const& js, bool idExpected) override {
+        return setMapFromJson(_map, js, idExpected);
+    }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemZenithAngle>(*this, other);
+    }
+
+private:
+    TItemDouble::Ptr _measured = TItemDouble::create("measured", &_map);
+    TItemDouble::Ptr _inclinometerRaw = TItemDouble::create("inclinometerRaw", &_map);
+    TItemDouble::Ptr _inclinometerProcessed = TItemDouble::create("inclinometerProcessed", &_map);
+};
+
 
 
 }  // namespace system

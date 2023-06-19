@@ -172,6 +172,28 @@ TEST_CASE("Test TelemetryCom", "[TelemetryCom]") {
     servTelemetryMap->getForceBalance()->getMy().setVal(9.0);
     servTelemetryMap->getForceBalance()->getMz().setVal(4.0);
 
+    servTelemetryMap->getPosition()->getX().setVal(6.0);
+    servTelemetryMap->getPosition()->getY().setVal(5.0);
+    servTelemetryMap->getPosition()->getZ().setVal(3.0);
+    servTelemetryMap->getPosition()->getXRot().setVal(1.0);
+    servTelemetryMap->getPosition()->getYRot().setVal(7.0);
+    servTelemetryMap->getPosition()->getZRot().setVal(9.0);
+
+    servTelemetryMap->getPositionIMS()->getX().setVal(2.0);
+    servTelemetryMap->getPositionIMS()->getY().setVal(5.0);
+    servTelemetryMap->getPositionIMS()->getZ().setVal(8.0);
+    servTelemetryMap->getPositionIMS()->getXRot().setVal(1.0);
+    servTelemetryMap->getPositionIMS()->getYRot().setVal(7.0);
+    servTelemetryMap->getPositionIMS()->getZRot().setVal(4.0);
+
+    servTelemetryMap->getTemperature()->getRing().setVals({12.0, 11.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0});
+    servTelemetryMap->getTemperature()->getIntake().setVals({6.0, 2.0});
+    servTelemetryMap->getTemperature()->getExhaust().setVals({27.0, 9.0});
+
+    servTelemetryMap->getZenithAngle()->getMeasured().setVal(13.0);
+    servTelemetryMap->getZenithAngle()->getInclinometerRaw().setVal(19.0);
+    servTelemetryMap->getZenithAngle()->getInclinometerProcessed().setVal(5.0);
+
     LDEBUG("Running clients");
     std::vector<TelemetryCom::Ptr> clients;
     std::vector<thread> clientThreads;

@@ -42,11 +42,6 @@ public:
     TelemetryMap& operator=(TelemetryMap const&) = delete;
     ~TelemetryMap() = default;
 
-    /// Return true if all elements of `mapA` have a match in `mapB`, where `note` is
-    /// used to help identify what is being compared in the log.
-    static bool compareTelemetryItemMaps(TelemetryItemMap const& mapA, TelemetryItemMap const& mapB,
-                                         std::string const& note = "");
-
     /// Return a copy of the internal `_map` object.
     /// It's a map of pointers, so both maps represent the same items.
     TelemetryItemMap copyMap() const {
@@ -77,6 +72,22 @@ public:
     /// Return a pointer to `_forceBalance`.
     TItemForceBalance::Ptr getForceBalance() const {return _forceBalance; }
 
+    /// Return a pointer to `_position`.
+    TItemPosition::Ptr getPosition() const {return _position; }
+
+    /// Return a pointer to `_positionIMS`.
+    TItemPositionIMS::Ptr getPositionIMS() const {return _positionIMS; }
+
+    /// Return a pointer to `_temperature`.
+    TItemTemperature::Ptr getTemperature() const {return _temperature; }
+
+    /// Return a pointer to `_zenithAngle`.
+    TItemZenithAngle::Ptr getZenithAngle() const {return _zenithAngle; }
+
+/* &&&
+    /// Return a pointer to `_`.
+    TItem::Ptr get() const {return _; }
+*/
 private:
     /// Map of all telemetry items to be sent to clients.
     /// Once created, the items contained in the map will not change, but their values will.
@@ -97,6 +108,10 @@ private:
             TelemetryMap::_addItem<TItemPowerStatusRaw>();  ///< "powerStatusRaw"
     TItemTangentForce::Ptr _tangentForce = _addItem<TItemTangentForce>(); ///< "tangentForce"
     TItemForceBalance::Ptr _forceBalance = _addItem<TItemForceBalance>(); ///< "forceBalance"
+    TItemPosition::Ptr _position = _addItem<TItemPosition>(); ///< "position"
+    TItemPositionIMS::Ptr _positionIMS = _addItem<TItemPositionIMS>(); ///< "positionIMS"
+    TItemTemperature::Ptr _temperature = _addItem<TItemTemperature>(); ///< "temperature"
+    TItemZenithAngle::Ptr _zenithAngle = _addItem<TItemZenithAngle>(); ///< "zenithAngle"
 };
 
 }  // namespace system

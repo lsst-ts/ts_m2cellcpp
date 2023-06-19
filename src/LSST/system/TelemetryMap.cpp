@@ -27,6 +27,7 @@
 // Third party headers
 
 // Project headers
+//&&& #include "system/TelemetryItem.h"
 #include "util/Bug.h"
 #include "util/Log.h"
 
@@ -37,33 +38,8 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
-bool TelemetryMap::compareTelemetryItemMaps(TelemetryItemMap const& mapA, TelemetryItemMap const& mapB,
-                                            string const& note) {
-    if (mapA.size() != mapB.size()) {
-        LWARN(note, "::compare sizes different mapA=", mapA.size(), " mapB=", mapB.size());
-        return false;
-    }
-    for (auto const& elem : mapA) {
-        TelemetryItem::Ptr ptrA = elem.second;
-        string itemId = ptrA->getId();
-
-        auto iterB = mapB.find(itemId);
-        if (iterB == mapB.end()) {
-            LWARN(note, "::compare mapB did not contain key=", itemId);
-            return false;
-        }
-        TelemetryItem::Ptr ptrB = iterB->second;
-        bool match = ptrA->compareItem(*ptrB);
-        if (!match) {
-            LWARN(note, "::compare no match for ptrA=", ptrA->dump(), " ptrB=", ptrB->dump());
-            return false;
-        }
-    }
-    return true;
-}
-
 bool TelemetryMap::compareMaps(TelemetryMap const& other) {
-    return compareTelemetryItemMaps(_map, other._map);
+    return TelemetryItem::compareTelemetryItemMaps(_map, other._map);
 }
 
 bool TelemetryMap::setItemFromJsonStr(string const& jsStr) {

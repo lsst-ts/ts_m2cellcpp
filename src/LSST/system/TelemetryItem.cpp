@@ -37,6 +37,31 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
+bool TelemetryItem::compareTelemetryItemMaps(TelemetryItemMap const& mapA, TelemetryItemMap const& mapB,
+                                            string const& note) {
+    if (mapA.size() != mapB.size()) {
+        LWARN(note, "::compare sizes different mapA=", mapA.size(), " mapB=", mapB.size());
+        return false;
+    }
+    for (auto const& elem : mapA) {
+        TelemetryItem::Ptr ptrA = elem.second;
+        string itemId = ptrA->getId();
+
+        auto iterB = mapB.find(itemId);
+        if (iterB == mapB.end()) {
+            LWARN(note, "::compare mapB did not contain key=", itemId);
+            return false;
+        }
+        TelemetryItem::Ptr ptrB = iterB->second;
+        bool match = ptrA->compareItem(*ptrB);
+        if (!match) {
+            LWARN(note, "::compare no match for ptrA=", ptrA->dump(), " ptrB=", ptrB->dump());
+            return false;
+        }
+    }
+    return true;
+}
+
 void TelemetryItem::insert(TelemetryItemMap* tiMap, Ptr const& item) {
     if (tiMap == nullptr) {
         throw TelemetryException(ERR_LOC, "insert failure, tiMap was null " + item->dump());
@@ -141,36 +166,6 @@ bool TItemDouble::compareItem(TelemetryItem const& other) const { //&&& looks li
         return false;
     }
 }
-
-bool TItemPowerStatusBase::compareItem(TelemetryItem const& other) const {
-    try {
-        TItemPowerStatusBase const& otherItem = dynamic_cast<TItemPowerStatusBase const&>(other);
-        return TelemetryMap::compareTelemetryItemMaps(_map, otherItem._map);
-    } catch (std::bad_cast const& ex) {
-        return false;
-    }
-}
-
-bool TItemTangentForce::compareItem(TelemetryItem const& other) const {
-    try {
-        LDEBUG("&&& TItemTangentForce::compareItem this=", dump(), " other=", other.dump());
-        TItemTangentForce const& otherItem = dynamic_cast<TItemTangentForce const&>(other);
-        return TelemetryMap::compareTelemetryItemMaps(_map, otherItem._map);
-    } catch (std::bad_cast const& ex) {
-        return false;
-    }
-}
-
-bool TItemForceBalance::compareItem(TelemetryItem const& other) const { // &&& looking like a template candidate
-    try {
-        LDEBUG("&&& TItemForceBalance::compareItem this=", dump(), " other=", other.dump());
-        auto const& otherItem = dynamic_cast<TItemForceBalance const&>(other);
-        return TelemetryMap::compareTelemetryItemMaps(_map, otherItem._map);
-    } catch (std::bad_cast const& ex) {
-        return false;
-    }
-}
-
 
 }  // namespace system
 }  // namespace m2cellcpp
