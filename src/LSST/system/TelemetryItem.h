@@ -83,6 +83,7 @@ public:
 
     /// Create a `TelemetryItem` with immutable id of `id`.
     TelemetryItem(std::string const& id) : _id(id) {}
+
     virtual ~TelemetryItem() = default;
 
     TelemetryItem() = delete;
@@ -93,7 +94,9 @@ public:
     std::string getId() const { return _id; };
 
     /// Return a json object containing the id.
-    virtual nlohmann::json getJson() const = 0;
+    virtual nlohmann::json getJson() const {
+        return buildJsonFromMap(_map);
+    }
 
     /// Return true if this item and `other` have the same id and values.
     virtual bool compareItem(TelemetryItem const& other) const = 0;
@@ -105,7 +108,9 @@ public:
     /// Set the value of this `TelemetryItem` from `js`.
     /// @param idExpected - If set to true, `js` must contain a valid entry for `id`.
     /// @return true if the value of all relate items could be set from `js`
-    virtual bool setFromJson(nlohmann::json const& js, bool idExpected = false) = 0;
+    virtual bool setFromJson(nlohmann::json const& js, bool idExpected = false) {
+        return setMapFromJson(_map, js, idExpected);
+    }
 
     /// Return a string reasonable for logging.
     std::string dump() const {
@@ -186,16 +191,6 @@ class TItemVector : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemVector>;
 
-    /* &&&
-    /// Create a shared pointer instance of TItemDVector using `id`, number of elements `size, and `defaultVal` for
-    /// all entries, then insert it into the map `itMap`.
-    /// @throws util::Bug if the new object cannot be inserted into the list
-    static Ptr create(std::string const& id, size_t size, TelemetryItemMap* tiMap, VT defaultVal = 0) {
-        Ptr newItem = Ptr(new TItemVector<VT>(id, size, tiMap, defaultVal));
-        insert(tiMap, newItem);
-        return newItem;
-    }
-    */
     TItemVector() = delete;
 
     /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal` for all entries.
@@ -205,7 +200,6 @@ public:
         }
     }
 
-    /// &&&
     ~TItemVector() override {}
 
     //// Return a copy of the values in this object.
@@ -332,7 +326,6 @@ public:
     /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal` for all entries.
     TItemVectorDouble(std::string const& id, int size, double defaultVal = 0.0) : TItemVector(id, size, defaultVal) {}
 
-    /// &&&
     ~TItemVectorDouble() override {}
 };
 
@@ -354,7 +347,6 @@ public:
     /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal` for all entries.
     TItemVectorInt(std::string const& id, int size, int defaultVal = 0) : TItemVector(id, size, defaultVal) {}
 
-    /// &&&
     ~TItemVectorInt() override {}
 };
 
@@ -378,15 +370,6 @@ public:
 
     /// Return reference to `_commCurrent`.
     TItemDouble& getCommCurrent() { return *_commCurrent; }
-
-
-    /// Local override of getJson
-    nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
-
-    /// Set the value of this object from json.
-    bool setFromJson(nlohmann::json const& js, bool idExpected) override {
-        return setMapFromJson(_map, js, idExpected);
-    }
 
     /// Return true if this item and `other` have the same id and values.
     bool compareItem(TelemetryItem const& other) const override {
@@ -446,14 +429,6 @@ public:
     /// Return reference to `_hardpointCorrection`.
     TItemVectorDouble& getHardpointCorrection() const { return *_hardpointCorrection; }
 
-    /// Local override of getJson
-    nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
-
-    /// Set the value of this object from json.
-    bool setFromJson(nlohmann::json const& js, bool idExpected) override {
-        return setMapFromJson(_map, js, idExpected);
-    }
-
     /// Return true if this item and `other` have the same id and values.
     bool compareItem(TelemetryItem const& other) const override {
         return compareItemsTemplate<TItemTangentForce>(*this, other);
@@ -493,14 +468,6 @@ public:
 
     /// Return reference to `_mz`.
     TItemDouble& getMz() { return *_mz; }
-
-    /// Local override of getJson
-    nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
-
-    /// Set the value of this object from json.
-    bool setFromJson(nlohmann::json const& js, bool idExpected) override {
-        return setMapFromJson(_map, js, idExpected);
-    }
 
     /// Return true if this item and `other` have the same id and values.
     bool compareItem(TelemetryItem const& other) const override {
@@ -542,14 +509,6 @@ public:
 
     /// Return reference to `_z`.
     TItemDouble& getZRot() { return *_zRot; }
-
-    /// Local override of getJson
-    nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
-
-    /// Set the value of this object from json.
-    bool setFromJson(nlohmann::json const& js, bool idExpected) override {
-        return setMapFromJson(_map, js, idExpected);
-    }
 
     /// Return true if this item and `other` have the same id and values.
     bool compareItem(TelemetryItem const& other) const override {
@@ -603,15 +562,6 @@ public:
     /// Return pointer to `_exhaust`.
     TItemVectorDouble& getExhaust() { return *_exhaust; }
 
-    // &&& it looks like getJson(), setFromJson(...), and compareItem(...) can be put in a base class.
-    /// Local override of getJson
-    nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
-
-    /// Set the value of this object from json.
-    bool setFromJson(nlohmann::json const& js, bool idExpected) override {
-        return setMapFromJson(_map, js, idExpected);
-    }
-
     /// Return true if this item and `other` have the same id and values.
     bool compareItem(TelemetryItem const& other) const override {
         return compareItemsTemplate<TItemTemperature>(*this, other);
@@ -641,14 +591,6 @@ public:
     /// Return pointer to `_inclinometerProcessed`.
     TItemDouble& getInclinometerProcessed() { return *_inclinometerProcessed; }
 
-    /// Local override of getJson
-    nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
-
-    /// Set the value of this object from json.
-    bool setFromJson(nlohmann::json const& js, bool idExpected) override {
-        return setMapFromJson(_map, js, idExpected);
-    }
-
     /// Return true if this item and `other` have the same id and values.
     bool compareItem(TelemetryItem const& other) const override {
         return compareItemsTemplate<TItemZenithAngle>(*this, other);
@@ -660,7 +602,121 @@ private:
     TItemDouble::Ptr _inclinometerProcessed = TItemDouble::create("inclinometerProcessed", &_map);
 };
 
+/// &&& doc
+class TItemAxialEncoderPositions : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemAxialEncoderPositions>;
 
+    TItemAxialEncoderPositions() : TelemetryItem("axialEncoderPositions") {}
+
+    virtual ~TItemAxialEncoderPositions() = default;
+
+    /// Return pointer to `_position`.
+    TItemVectorDouble& getPosition() { return *_position; }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemAxialEncoderPositions>(*this, other);
+    }
+
+private:
+    TItemVectorDouble::Ptr _position = TItemVectorDouble::create("position", 72, &_map);
+};
+
+/// &&& doc
+class TItemTangentEncoderPositions : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemTangentEncoderPositions>;
+
+    TItemTangentEncoderPositions() : TelemetryItem("tangentEncoderPositions") {}
+
+    virtual ~TItemTangentEncoderPositions() = default;
+
+    /// Return pointer to `_position`.
+    TItemVectorDouble& getPosition() { return *_position; }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemTangentEncoderPositions>(*this, other);
+    }
+
+private:
+    TItemVectorDouble::Ptr _position = TItemVectorDouble::create("position", 6, &_map);
+};
+
+/// &&& doc
+class TItemAxialActuatorSteps : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemAxialActuatorSteps>;
+
+    TItemAxialActuatorSteps() : TelemetryItem("axialActuatorSteps") {}
+
+    virtual ~TItemAxialActuatorSteps() = default;
+
+    /// Return pointer to `_steps`.
+    TItemVectorInt& getSteps() { return *_steps; }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemAxialActuatorSteps>(*this, other);
+    }
+
+private:
+    TItemVectorInt::Ptr _steps = TItemVectorInt::create("steps", 72, &_map);
+};
+
+/// &&& doc
+class TItemTangentActuatorSteps : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemTangentActuatorSteps>;
+
+    TItemTangentActuatorSteps() : TelemetryItem("tangentActuatorSteps") {}
+
+    virtual ~TItemTangentActuatorSteps() = default;
+
+    /// Return pointer to `_steps`.
+    TItemVectorInt& getSteps() { return *_steps; }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemTangentActuatorSteps>(*this, other);
+    }
+
+private:
+    TItemVectorInt::Ptr _steps = TItemVectorInt::create("steps", 6, &_map);
+};
+
+/// &&& doc
+class TItemForceErrorTangent : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemForceErrorTangent>;
+
+    TItemForceErrorTangent() : TelemetryItem("forceErrorTangent") {}
+
+    virtual ~TItemForceErrorTangent() = default;
+
+    /// Return pointer to `_force`.
+    TItemVectorDouble& getForce() { return *_force; }
+
+    /// Return pointer to `_weight`.
+    TItemDouble& getWeight() { return *_weight; }
+
+    /// Return pointer to `_sum`.
+    TItemDouble& getSum() { return *_sum; }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemForceErrorTangent>(*this, other);
+    }
+
+private:
+    TItemVectorDouble::Ptr _force = TItemVectorDouble::create("force", 6, &_map);
+    TItemDouble::Ptr _weight = TItemDouble::create("weight", &_map);
+    TItemDouble::Ptr _sum = TItemDouble::create("sum", &_map);
+};
+
+
+/// &&& still need forceErrorTangent inclinometerAngleTma m2AssemblyInPosition displacementSensors ilcData netForcesTotal netMomentsTotal axialForce
 
 }  // namespace system
 }  // namespace m2cellcpp

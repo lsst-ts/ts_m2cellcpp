@@ -132,6 +132,25 @@ TEST_CASE("Test TelemetryItem", "[TelemetryItem]") {
     REQUIRE(tfResult);
     REQUIRE(tangForceIn->compareItem(*tangForceOut) == true);
 
+    // Test TItemAxialActuatorSteps as it contains a TItemVectorInt item
+    auto axialActuatorStepsIn = TItemAxialActuatorSteps::Ptr(new TItemAxialActuatorSteps());
+    vector<int> aaSteps;
+    for(int j=0; j<72; ++j) {
+        aaSteps.push_back(j);
+    }
+    axialActuatorStepsIn->getSteps().setVals(aaSteps);
+    auto axialActInJs = axialActuatorStepsIn->getJson();
+    string axialActInStr = to_string(axialActInJs);
+    LDEBUG("axialActInStr=", axialActInStr);
+    // Make a new  object and verify that they are different
+    auto axialActuatorStepsOut = TItemAxialActuatorSteps::Ptr(new TItemAxialActuatorSteps());
+    REQUIRE(axialActuatorStepsOut->compareItem(*axialActuatorStepsIn) == false);
+    // Set the new object to the old object using json and check that they match
+    bool aaResult = axialActuatorStepsOut->parse(axialActInStr);
+    REQUIRE(aaResult);
+    REQUIRE(axialActuatorStepsIn->compareItem(*axialActuatorStepsOut) == true);
+
+
     LDEBUG("TelemetryItem::test() end");
 }
 
@@ -193,6 +212,26 @@ TEST_CASE("Test TelemetryCom", "[TelemetryCom]") {
     servTelemetryMap->getZenithAngle()->getMeasured().setVal(13.0);
     servTelemetryMap->getZenithAngle()->getInclinometerRaw().setVal(19.0);
     servTelemetryMap->getZenithAngle()->getInclinometerProcessed().setVal(5.0);
+
+    vector<double> posVectIn;
+    vector<int> stepVectIn;
+    for(int j=1; j<=72; ++j) {
+        posVectIn.push_back(j);
+        stepVectIn.push_back(j - 4);
+    }
+    servTelemetryMap->getAxialEncoderPositions()->getPosition().setVals(posVectIn);
+
+    servTelemetryMap->getTangentEncoderPositions()->getPosition().setVals({11.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 12.0});
+
+    servTelemetryMap->getAxialActuatorSteps()->getSteps().setVals(stepVectIn);
+
+    servTelemetryMap->getTangentActuatorSteps()->getSteps().setVals({5, 2, 3, 1, 6, 4});
+
+    servTelemetryMap->getForceErrorTangent()->getForce().setVals({21.0, 22.0, -23.0, 24.0, 25.0, 26.0});
+    servTelemetryMap->getForceErrorTangent()->getWeight().setVal(8.0);
+    servTelemetryMap->getForceErrorTangent()->getSum().setVal(99.0);
+
+    ///&&& at some point, get list of all telemetry text id's and verify they are each found in the map and have the correct type.
 
     LDEBUG("Running clients");
     std::vector<TelemetryCom::Ptr> clients;

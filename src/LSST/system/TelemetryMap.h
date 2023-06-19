@@ -84,6 +84,21 @@ public:
     /// Return a pointer to `_zenithAngle`.
     TItemZenithAngle::Ptr getZenithAngle() const {return _zenithAngle; }
 
+    /// Return a pointer to `_axialEncoderPositions`.
+    TItemAxialEncoderPositions::Ptr getAxialEncoderPositions() const {return _axialEncoderPositions; }
+
+    /// Return a pointer to `_tangentEncoderPositions`.
+    TItemTangentEncoderPositions::Ptr getTangentEncoderPositions() const {return _tangentEncoderPositions; }
+
+    /// Return a pointer to `_axialActuatorSteps`.
+    TItemAxialActuatorSteps::Ptr getAxialActuatorSteps() const {return _axialActuatorSteps; }
+
+    /// Return a pointer to `_tangentActuatorSteps`.
+    TItemTangentActuatorSteps::Ptr getTangentActuatorSteps() const {return _tangentActuatorSteps; }
+
+    /// Return a pointer to `_forceErrorTangent`.
+    TItemForceErrorTangent::Ptr getForceErrorTangent() const {return _forceErrorTangent; }
+
 /* &&&
     /// Return a pointer to `_`.
     TItem::Ptr get() const {return _; }
@@ -112,6 +127,16 @@ private:
     TItemPositionIMS::Ptr _positionIMS = _addItem<TItemPositionIMS>(); ///< "positionIMS"
     TItemTemperature::Ptr _temperature = _addItem<TItemTemperature>(); ///< "temperature"
     TItemZenithAngle::Ptr _zenithAngle = _addItem<TItemZenithAngle>(); ///< "zenithAngle"
+    /// "axialEncoderPositions"
+    TItemAxialEncoderPositions::Ptr _axialEncoderPositions = _addItem<TItemAxialEncoderPositions>();
+     /// "tangentEncoderPositions"
+    TItemTangentEncoderPositions::Ptr _tangentEncoderPositions = _addItem<TItemTangentEncoderPositions>();
+    TItemAxialActuatorSteps::Ptr _axialActuatorSteps = _addItem<TItemAxialActuatorSteps>(); ///< "axialActuatorSteps"
+    /// "tangentActuatorSteps"
+    TItemTangentActuatorSteps::Ptr _tangentActuatorSteps = _addItem<TItemTangentActuatorSteps>();
+    TItemForceErrorTangent::Ptr _forceErrorTangent = _addItem<TItemForceErrorTangent>(); ///< "forceErrorTangent"
+
+    //&&&    TItem::Ptr _ = _addItem<TItem>(); ///< ""
 };
 
 }  // namespace system
