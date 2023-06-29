@@ -105,10 +105,21 @@ public:
     /// Return a pointer to `_m2AssemblyInPosition`.
     TItemM2AssemblyInPosition::Ptr getM2AssemblyInPosition() const {return _m2AssemblyInPosition; }
 
-/* &&&
-    /// Return a pointer to `_`.
-    TItem::Ptr get() const {return _; }
-*/
+    /// Return a pointer to `_displacementSensors`.
+    TItemDisplacementSensors::Ptr getDisplacementSensors() const {return _displacementSensors; }
+
+    /// Return a pointer to `_ilcData`.
+    TItemIlcData::Ptr getIlcData() const {return _ilcData; }
+
+    /// Return a pointer to `_netForcesTotal`.
+    TItemNetForcesTotal::Ptr getNetForcesTotal() const {return _netForcesTotal; }
+
+    /// Return a pointer to `_netMomentsTotal`.
+    TItemNetMomentsTotal::Ptr getNetMomentsTotal() const {return _netMomentsTotal; }
+
+    /// Return a pointer to `_axialForce`.
+    TItemAxialForce::Ptr getAxialForce() const {return _axialForce; }
+
 private:
     /// Map of all telemetry items to be sent to clients.
     /// Once created, the items contained in the map will not change, but their values will.
@@ -143,10 +154,11 @@ private:
     TItemForceErrorTangent::Ptr _forceErrorTangent = _addItem<TItemForceErrorTangent>(); ///< "forceErrorTangent"
     TItemInclinometerAngleTma::Ptr _inclinometerAngleTma = _addItem<TItemInclinometerAngleTma>(); ///< "inclinometerAngleTma"
     TItemM2AssemblyInPosition::Ptr _m2AssemblyInPosition = _addItem<TItemM2AssemblyInPosition>(); ///< "m2AssemblyInPosition"
-
-
-
-    //&&&    TItem::Ptr _ = _addItem<TItem>(); ///< ""
+    TItemDisplacementSensors::Ptr _displacementSensors = _addItem<TItemDisplacementSensors>(); ///< "displacementSensors"
+    TItemIlcData::Ptr _ilcData = _addItem<TItemIlcData>(); ///< "ilcData"
+    TItemNetForcesTotal::Ptr _netForcesTotal = _addItem<TItemNetForcesTotal>(); ///< "netForcesTotal"
+    TItemNetMomentsTotal::Ptr _netMomentsTotal = _addItem<TItemNetMomentsTotal>(); ///< "netMomentsTotal"
+    TItemAxialForce::Ptr _axialForce = _addItem<TItemAxialForce>(); ///< "axialForce"
 };
 
 }  // namespace system

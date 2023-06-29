@@ -256,6 +256,77 @@ TEST_CASE("Test TelemetryCom", "[TelemetryCom]") {
 
     servTelemetryMap->getM2AssemblyInPosition()->getInPosition().setVal(true);
 
+    servTelemetryMap->getDisplacementSensors()->getThetaZ().setVals({6.1, 5.2, 4.3, 3.4, 2.5, 1.6});
+    servTelemetryMap->getDisplacementSensors()->getDeltaZ().setVals({6.0, 5.0, 4.0, 3.0, 2.5, 1.4});
+
+    servTelemetryMap->getIlcData()->getStatus().setVals(
+        {7.8, 7.7, 7.6, 7.5, 7.4, 7.3, 7.2, 7.1,
+         6.0, .9, .8, .7, .6, .5, .4, .3, .2, .1,
+         5.0, .9, .8, .7, .6, .5, .4, .3, .2, .1,
+         4.0, .9, .8, .7, .6, .5, .4, .3, .2, .1,
+         3.0, .9, .8, .7, .6, .5, .4, .3, .2, .1,
+         2.0, .9, .8, .7, .6, .5, .4, .3, .2, .1,
+         1.0, .9, .8, .7, .6, .5, .4, .3, .2, .1 });
+
+    servTelemetryMap->getNetForcesTotal()->getFx().setVal(9.0);
+    servTelemetryMap->getNetForcesTotal()->getFy().setVal(5.0);
+    servTelemetryMap->getNetForcesTotal()->getFz().setVal(8.0);
+
+    servTelemetryMap->getNetMomentsTotal()->getMx().setVal(3.0);
+    servTelemetryMap->getNetMomentsTotal()->getMy().setVal(7.0);
+    servTelemetryMap->getNetMomentsTotal()->getMz().setVal(1.0);
+
+    servTelemetryMap->getAxialForce()->getLutGravity().setVals(
+        {3.5, 4.3, 0.3, 0.7, 3.0, 1.9, 4.3, 0.3, 0.7, 3.1,
+         3.4, 4.1, 0.3, 0.7, 3.2, 1.9, 3.9, 0.4, 0.7, 3.2,
+         3.2, 3.8, 0.4, 0.7, 3.1, 1.9, 4.0, 0.3, 0.7, 3.1,
+         0.5, 4.8, 4.6, 0.5, 0.5, 4.8, 4.7, 0.4, 0.6, 4.7,
+         4.7, 0.3, 0.7, 4.7, 4.7, 0.2, 0.6, 4.7, 4.7, 0.3,
+         0.5, 4.7, 4.7, 0.5, 0.2, 2.3, 2.2, 0.2, 2.3, 2.3,
+         0.2, 2.3, 2.3, 0.2, 2.2, 2.4, 0.1, 2.2, 2.3, 0.1,
+         2.2, 2.2});
+
+    servTelemetryMap->getAxialForce()->getLutTemperature().setVals(
+        {3.5, 4.3, 0.3, 0.7, 3.0, 1.9, 4.3, 0.3, 0.7, 3.1,
+         3.4, 4.1, 0.3, 0.7, 3.2, 1.9, 3.9, 0.4, 0.7, 3.2,
+         3.2, 9.8, 0.4, 0.7, 3.1, 1.9, 4.0, 0.3, 0.7, 3.1,
+         0.5, 4.8, 4.6, 3.5, 0.5, 4.8, 4.7, 0.4, 0.6, 4.7,
+         4.7, 0.3, 0.7, 4.7, 4.7, 0.2, 0.6, 4.7, 4.7, 0.3,
+         0.5, 4.7, 4.7, 0.5, 0.2, 2.3, 2.2, 0.2, 2.3, 2.3,
+         0.2, 2.3, 2.3, 0.2, 2.2, 2.4, 0.1, 2.2, 2.3, 0.1,
+         5.2, 2.2});
+
+    servTelemetryMap->getAxialForce()->getApplied().setVals(
+        {3.5, 4.3, 0.3, 0.7, 3.0, 1.9, 4.3, 0.3, 0.7, 3.1,
+         3.4, 4.1, 0.3, 0.7, 3.2, 1.9, 3.9, 0.4, 0.7, 3.2,
+         3.2, 3.8, 0.4, 0.7, 3.1, 1.9, 4.0, 0.3, 0.7, 3.1,
+         0.5, 4.8, 4.6, 0.5, 0.5, 4.8, 4.7, 0.4, 0.6, 4.7,
+         4.7, 0.3, 0.7, 4.7, 4.7, 0.2, 0.6, 4.7, 4.7, 0.3,
+         3.5, 4.7, 4.7, 0.5, 0.2, 2.3, 2.2, 0.2, 2.3, 2.3,
+         0.2, 2.3, 2.3, 0.2, 2.2, 2.4, 0.1, 2.2, 2.3, 0.1,
+         2.2, 2.2});
+
+    servTelemetryMap->getAxialForce()->getMeasured().setVals(
+        {3.5, 4.3, 0.3, 0.7, 3.0, 1.9, 4.3, 0.3, 0.7, 3.1,
+         3.4, 4.1, 0.3, 0.7, 3.2, 1.9, 3.9, 0.4, 0.7, 3.2,
+         3.2, 3.8, 0.4, 0.7, 3.1, 1.9, 4.0, 0.3, 0.7, 3.1,
+         0.5, 4.8, 4.6, 0.5, 0.5, 4.8, 4.7, 0.4, 0.6, 4.7,
+         4.7, 0.3, 0.7, 4.7, 4.7, 0.2, 0.6, 4.7, 4.7, 0.3,
+         0.5, 4.7, 4.7, 0.5, 0.2, 2.3, 2.2, 0.2, 2.3, 2.3,
+         8.2, 2.3, 2.3, 0.2, 2.2, 2.4, 0.1, 2.2, 2.3, 0.1,
+         2.2, 2.2});
+
+    servTelemetryMap->getAxialForce()->getHardpointCorrection().setVals(
+        {3.5, 4.3, 0.3, 0.7, 3.0, 1.9, 4.3, 0.3, 0.7, 3.1,
+         3.4, 4.1, 0.3, 0.7, 3.2, 1.9, 3.9, 0.4, 0.7, 3.2,
+         3.2, 3.8, 0.4, 0.7, 3.1, 1.9, 4.0, 0.3, 0.7, 3.1,
+         0.5, 4.8, 4.6, 0.5, 0.5, 4.8, 4.7, 0.4, 0.6, 4.7,
+         0.7, 0.3, 0.7, 4.7, 4.7, 0.2, 0.6, 4.7, 4.7, 0.3,
+         0.5, 4.7, 4.7, 0.5, 0.2, 2.3, 2.2, 0.2, 2.3, 2.3,
+         0.2, 2.3, 2.3, 0.2, 2.2, 2.4, 0.1, 2.2, 2.3, 0.1,
+         2.2, 2.2});
+
+
     ///&&& at some point, get list of all telemetry text id's and verify they are each found in the map and have the correct type.
 
     LDEBUG("Running clients");

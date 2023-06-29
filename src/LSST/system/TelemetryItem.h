@@ -595,13 +595,13 @@ public:
 
     virtual ~TItemTemperature() = default;
 
-    /// Return pointer to `_ring`.
+    /// Return reference to `_ring`.
     TItemVectorDouble& getRing() { return *_ring; }
 
-    /// Return pointer to `_intake`.
+    /// Return reference to `_intake`.
     TItemVectorDouble& getIntake() { return *_intake; }
 
-    /// Return pointer to `_exhaust`.
+    /// Return reference to `_exhaust`.
     TItemVectorDouble& getExhaust() { return *_exhaust; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -624,13 +624,13 @@ public:
 
     virtual ~TItemZenithAngle() = default;
 
-    /// Return pointer to `_measured`.
+    /// Return reference to `_measured`.
     TItemDouble& getMeasured() { return *_measured; }
 
-    /// Return pointer to `_inclinometerRaw`.
+    /// Return reference to `_inclinometerRaw`.
     TItemDouble& getInclinometerRaw() { return *_inclinometerRaw; }
 
-    /// Return pointer to `_inclinometerProcessed`.
+    /// Return reference to `_inclinometerProcessed`.
     TItemDouble& getInclinometerProcessed() { return *_inclinometerProcessed; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -653,7 +653,7 @@ public:
 
     virtual ~TItemAxialEncoderPositions() = default;
 
-    /// Return pointer to `_position`.
+    /// Return reference to `_position`.
     TItemVectorDouble& getPosition() { return *_position; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -674,7 +674,7 @@ public:
 
     virtual ~TItemTangentEncoderPositions() = default;
 
-    /// Return pointer to `_position`.
+    /// Return reference to `_position`.
     TItemVectorDouble& getPosition() { return *_position; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -695,7 +695,7 @@ public:
 
     virtual ~TItemAxialActuatorSteps() = default;
 
-    /// Return pointer to `_steps`.
+    /// Return reference to `_steps`.
     TItemVectorInt& getSteps() { return *_steps; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -716,7 +716,7 @@ public:
 
     virtual ~TItemTangentActuatorSteps() = default;
 
-    /// Return pointer to `_steps`.
+    /// Return reference to `_steps`.
     TItemVectorInt& getSteps() { return *_steps; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -737,13 +737,13 @@ public:
 
     virtual ~TItemForceErrorTangent() = default;
 
-    /// Return pointer to `_force`.
+    /// Return reference to `_force`.
     TItemVectorDouble& getForce() { return *_force; }
 
-    /// Return pointer to `_weight`.
+    /// Return reference to `_weight`.
     TItemDouble& getWeight() { return *_weight; }
 
-    /// Return pointer to `_sum`.
+    /// Return reference to `_sum`.
     TItemDouble& getSum() { return *_sum; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -766,7 +766,7 @@ public:
 
     virtual ~TItemInclinometerAngleTma() = default;
 
-    /// Return pointer to `_inclinometer`.
+    /// Return reference to `_inclinometer`.
     TItemDouble& getInclinometer() { return *_inclinometer; }
 
 
@@ -788,7 +788,7 @@ public:
 
     virtual ~TItemM2AssemblyInPosition() = default;
 
-    /// Return pointer to `_inPosition`.
+    /// Return reference to `_inPosition`.
     TItemBoolean& getInPosition() { return *_inPosition; }
 
 
@@ -801,8 +801,149 @@ private:
     TItemBoolean::Ptr _inPosition = TItemBoolean::create("inPosition", &_map);
 };
 
+/// &&& doc
+class TItemDisplacementSensors : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemDisplacementSensors>;
 
-/// &&& still need displacementSensors ilcData netForcesTotal netMomentsTotal axialForce
+    TItemDisplacementSensors() : TelemetryItem("displacementSensors") {}
+
+    virtual ~TItemDisplacementSensors() = default;
+
+    /// Return reference to `_thetaZ`.
+    TItemVectorDouble& getThetaZ() { return *_thetaZ; }
+
+    /// Return reference to `_deltaZ`.
+    TItemVectorDouble& getDeltaZ() { return *_deltaZ; }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemDisplacementSensors>(*this, other);
+    }
+
+private:
+    TItemVectorDouble::Ptr _thetaZ = TItemVectorDouble::create("thetaZ", 6, &_map);
+    TItemVectorDouble::Ptr _deltaZ = TItemVectorDouble::create("deltaZ", 6, &_map);
+};
+
+
+/// &&& doc
+class TItemIlcData : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemIlcData>;
+
+    TItemIlcData() : TelemetryItem("ilcData") {}
+
+    virtual ~TItemIlcData() = default;
+
+    /// Return reference to `_status`.
+    TItemVectorDouble& getStatus() { return *_status; }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemIlcData>(*this, other);
+    }
+
+private:
+    TItemVectorDouble::Ptr _status = TItemVectorDouble::create("status", 78, &_map);
+};
+
+/// &&& doc
+class TItemNetForcesTotal : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemNetForcesTotal>;
+
+    TItemNetForcesTotal() : TelemetryItem("netForcesTotal") {}
+
+    virtual ~TItemNetForcesTotal() = default;
+
+    /// Return reference to `_fx`.
+    TItemDouble& getFx() { return *_fx; }
+
+    /// Return reference to `_fy`.
+    TItemDouble& getFy() { return *_fy; }
+
+    /// Return reference to `_fz`.
+    TItemDouble& getFz() { return *_fz; }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemNetForcesTotal>(*this, other);
+    }
+
+private:
+    TItemDouble::Ptr _fx = TItemDouble::create("fx", &_map);
+    TItemDouble::Ptr _fy = TItemDouble::create("fy", &_map);
+    TItemDouble::Ptr _fz = TItemDouble::create("fz", &_map);
+};
+
+/// &&& doc
+class TItemNetMomentsTotal : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemNetMomentsTotal>;
+
+    TItemNetMomentsTotal() : TelemetryItem("netMomentsTotal") {}
+
+    virtual ~TItemNetMomentsTotal() = default;
+
+    /// Return reference to `_mx`.
+    TItemDouble& getMx() { return *_mx; }
+
+    /// Return reference to `_my`.
+    TItemDouble& getMy() { return *_my; }
+
+    /// Return reference to `_mz`.
+    TItemDouble& getMz() { return *_mz; }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemNetMomentsTotal>(*this, other);
+    }
+
+private:
+    TItemDouble::Ptr _mx = TItemDouble::create("mx", &_map);
+    TItemDouble::Ptr _my = TItemDouble::create("my", &_map);
+    TItemDouble::Ptr _mz = TItemDouble::create("mz", &_map);
+};
+
+/// &&& doc
+class TItemAxialForce : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemAxialForce>;
+
+    TItemAxialForce() : TelemetryItem("axialForce") {}
+
+    virtual ~TItemAxialForce() = default;
+
+    /// Return reference to `_lutGravity`.
+    TItemVectorDouble& getLutGravity() { return *_lutGravity; }
+
+    /// Return reference to `_lutTemperature`.
+    TItemVectorDouble& getLutTemperature() { return *_lutTemperature; }
+
+    /// Return reference to `_applied`.
+    TItemVectorDouble& getApplied() { return *_applied; }
+
+    /// Return reference to `_measured`.
+    TItemVectorDouble& getMeasured() { return *_measured; }
+
+    /// Return reference to `_hardpointCorrection`.
+    TItemVectorDouble& getHardpointCorrection() { return *_hardpointCorrection; }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemAxialForce>(*this, other);
+    }
+
+private:
+    TItemVectorDouble::Ptr _lutGravity = TItemVectorDouble::create("lutGravity", 72, &_map);
+    TItemVectorDouble::Ptr _lutTemperature = TItemVectorDouble::create("lutTemperature", 72, &_map);
+    TItemVectorDouble::Ptr _applied = TItemVectorDouble::create("applied", 72, &_map);
+    TItemVectorDouble::Ptr _measured = TItemVectorDouble::create("measured", 72, &_map);
+    TItemVectorDouble::Ptr _hardpointCorrection = TItemVectorDouble::create("hardpointCorrection", 72, &_map);
+};
+
+/// &&& still need axialForce
 
 }  // namespace system
 }  // namespace m2cellcpp
