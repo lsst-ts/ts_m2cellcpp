@@ -26,7 +26,7 @@
 // Third party headers
 
 // project headers
-#include "system/TelemetryItem.h"
+#include "system/TelemetryItemDefs.h"
 
 namespace LSST {
 namespace m2cellcpp {
