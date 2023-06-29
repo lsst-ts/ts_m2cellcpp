@@ -132,6 +132,7 @@ protected:
     /// Return false if `idExpected` and the `js` "id" entry is wrong.
     bool checkIdCorrect(nlohmann::json const& js, bool idExpected) const;
 
+    /// &&& doc
     template <class TIC>
     static bool compareItemsTemplate(TelemetryItem const& a, TelemetryItem const& b) {
         try {
@@ -150,6 +151,8 @@ private:
     std::string const _id;
 };
 
+/// &&& create a TItemSingle template base class for single element items like TItemDouble and TItemBool
+
 /// This class is used to store a specific telemetry item with a double value.
 /// Unit tests in tests/test_TelemetryCom
 class TItemDouble : public TelemetryItem {
@@ -162,6 +165,8 @@ public:
     /// @throws TelemetryException if the new object cannot be inserted into the list.
     static Ptr create(std::string const& id, TelemetryItemMap* itMap, double defaultVal = 0.0);
     TItemDouble() = delete;
+
+    virtual ~TItemDouble() {}
 
     /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal`.
     TItemDouble(std::string const& id, double defaultVal = 0.0) : TelemetryItem(id), _val(defaultVal) {}
@@ -183,6 +188,43 @@ public:
 
 private:
     std::atomic<double> _val;
+};
+
+/// This class is used to store a specific telemetry item with a boolean value.
+/// Unit tests in tests/test_TelemetryCom
+class TItemBoolean : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemBoolean>;
+
+    /// Create a shared pointer instance of TItemBoolean using `id`, and `defaultVal`, and
+    /// insert it into the map `itMap`.
+    /// @see `TItemBoolean`
+    /// @throws TelemetryException if the new object cannot be inserted into the list.
+    static Ptr create(std::string const& id, TelemetryItemMap* itMap, bool defaultVal = false);
+    TItemBoolean() = delete;
+
+    virtual ~TItemBoolean() {}
+
+    /// Create a `TItemBoolean` object with identifier `id` and option value `defaultVal`.
+    TItemBoolean(std::string const& id, bool defaultVal = false) : TelemetryItem(id), _val(defaultVal) {}
+
+    //// Set the value of the object to `val`.
+    void setVal(bool val) { _val = val; }
+
+    //// Return the value of this object.
+    bool getVal() const { return _val; }
+
+    /// Return the json representation of this object.
+    nlohmann::json getJson() const override;
+
+    /// Set the value of this object from json.
+    bool setFromJson(nlohmann::json const& js, bool idExpected) override;
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override;
+
+private:
+    std::atomic<bool> _val;
 };
 
 /// &&& doc
@@ -715,8 +757,52 @@ private:
     TItemDouble::Ptr _sum = TItemDouble::create("sum", &_map);
 };
 
+/// &&& doc
+class TItemInclinometerAngleTma : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemInclinometerAngleTma>;
 
-/// &&& still need forceErrorTangent inclinometerAngleTma m2AssemblyInPosition displacementSensors ilcData netForcesTotal netMomentsTotal axialForce
+    TItemInclinometerAngleTma() : TelemetryItem("inclinometerAngleTma") {}
+
+    virtual ~TItemInclinometerAngleTma() = default;
+
+    /// Return pointer to `_inclinometer`.
+    TItemDouble& getInclinometer() { return *_inclinometer; }
+
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemInclinometerAngleTma>(*this, other);
+    }
+
+private:
+    TItemDouble::Ptr _inclinometer = TItemDouble::create("inclinometer", &_map);
+};
+
+/// &&& doc
+class TItemM2AssemblyInPosition : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemM2AssemblyInPosition>;
+
+    TItemM2AssemblyInPosition() : TelemetryItem("m2AssemblyInPosition") {}
+
+    virtual ~TItemM2AssemblyInPosition() = default;
+
+    /// Return pointer to `_inPosition`.
+    TItemBoolean& getInPosition() { return *_inPosition; }
+
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemM2AssemblyInPosition>(*this, other);
+    }
+
+private:
+    TItemBoolean::Ptr _inPosition = TItemBoolean::create("inPosition", &_map);
+};
+
+
+/// &&& still need displacementSensors ilcData netForcesTotal netMomentsTotal axialForce
 
 }  // namespace system
 }  // namespace m2cellcpp

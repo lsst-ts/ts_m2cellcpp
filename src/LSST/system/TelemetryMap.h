@@ -99,6 +99,12 @@ public:
     /// Return a pointer to `_forceErrorTangent`.
     TItemForceErrorTangent::Ptr getForceErrorTangent() const {return _forceErrorTangent; }
 
+    /// Return a pointer to `_inclinometerAngleTma`.
+    TItemInclinometerAngleTma::Ptr getInclinometerAngleTma() const {return _inclinometerAngleTma; }
+
+    /// Return a pointer to `_m2AssemblyInPosition`.
+    TItemM2AssemblyInPosition::Ptr getM2AssemblyInPosition() const {return _m2AssemblyInPosition; }
+
 /* &&&
     /// Return a pointer to `_`.
     TItem::Ptr get() const {return _; }
@@ -135,6 +141,10 @@ private:
     /// "tangentActuatorSteps"
     TItemTangentActuatorSteps::Ptr _tangentActuatorSteps = _addItem<TItemTangentActuatorSteps>();
     TItemForceErrorTangent::Ptr _forceErrorTangent = _addItem<TItemForceErrorTangent>(); ///< "forceErrorTangent"
+    TItemInclinometerAngleTma::Ptr _inclinometerAngleTma = _addItem<TItemInclinometerAngleTma>(); ///< "inclinometerAngleTma"
+    TItemM2AssemblyInPosition::Ptr _m2AssemblyInPosition = _addItem<TItemM2AssemblyInPosition>(); ///< "m2AssemblyInPosition"
+
+
 
     //&&&    TItem::Ptr _ = _addItem<TItem>(); ///< ""
 };

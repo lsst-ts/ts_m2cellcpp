@@ -137,7 +137,7 @@ TItemDouble::Ptr TItemDouble::create(string const& id, TelemetryItemMap* tiMap, 
 
 json TItemDouble::getJson() const {
     json js;
-    double v = _val;  // conversion from atomic fails
+    double v = _val;  // conversion from atomic fails when js[getId()] = _val;
     js[getId()] = v;
     return js;
 }
@@ -158,13 +158,52 @@ bool TItemDouble::setFromJson(nlohmann::json const& js, bool idExpected) {
     return false;
 }
 
-bool TItemDouble::compareItem(TelemetryItem const& other) const { //&&& looks like all compare items functions can use the same template
+
+bool TItemDouble::compareItem(TelemetryItem const& other) const {
     try {
         TItemDouble const& otherItem = dynamic_cast<TItemDouble const&>(other);
-        return (getId() == other.getId() && _val == otherItem._val);
+        return (getId() == otherItem.getId() && _val == otherItem._val);
     } catch (std::bad_cast const& ex) {
         return false;
     }
+}
+
+bool TItemBoolean::compareItem(TelemetryItem const& other) const {
+    try {
+        TItemBoolean const& otherItem = dynamic_cast<TItemBoolean const&>(other);
+        return (getId() == otherItem.getId() && _val == otherItem._val);
+    } catch (std::bad_cast const& ex) {
+        return false;
+    }
+}
+
+TItemBoolean::Ptr TItemBoolean::create(string const& id, TelemetryItemMap* tiMap, bool defaultVal) {
+    Ptr newItem = Ptr(new TItemBoolean(id, defaultVal));
+    insert(tiMap, newItem);
+    return newItem;
+}
+
+json TItemBoolean::getJson() const {
+    json js;
+    bool v = _val;  // conversion from atomic fails when js[getId()] = _val;
+    js[getId()] = v;
+    return js;
+}
+
+bool TItemBoolean::setFromJson(nlohmann::json const& js, bool idExpected) {
+    if (idExpected) {
+        // This type can only have a floating point value for `_val`.
+        LERROR("TItemBoolean::setFromJson cannot have a json 'id' entry");
+        return false;
+    }
+    try {
+        bool val = js.at(getId());
+        setVal(val);
+        return true;
+    } catch (json::out_of_range const& ex) {
+        LERROR("TItemBoolean::setFromJson out of range for ", getId(), " js=", js);
+    }
+    return false;
 }
 
 }  // namespace system
