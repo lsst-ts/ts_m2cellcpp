@@ -95,7 +95,7 @@ public:
 
     /// Return a json object containing the id.
     virtual nlohmann::json getJson() const {
-        return buildJsonFromMap(_map);
+        return buildJsonFromMap(_tiMap);
     }
 
     /// Return true if this item and `other` have the same id and values.
@@ -103,13 +103,13 @@ public:
 
     /// Parse the json string `jStr` and load the appropriate values into this object.
     /// @return true if item parsed correctly and had appropriate data.
-    bool parse(std::string const& jStr); // &&& use TelemetryException ???
+    bool parse(std::string const& jStr);
 
     /// Set the value of this `TelemetryItem` from `js`.
     /// @param idExpected - If set to true, `js` must contain a valid entry for `id`.
     /// @return true if the value of all relate items could be set from `js`
     virtual bool setFromJson(nlohmann::json const& js, bool idExpected = false) {
-        return setMapFromJson(_map, js, idExpected);
+        return setMapFromJson(_tiMap, js, idExpected);
     }
 
     /// Return a string reasonable for logging.
@@ -132,102 +132,138 @@ protected:
     /// Return false if `idExpected` and the `js` "id" entry is wrong.
     bool checkIdCorrect(nlohmann::json const& js, bool idExpected) const;
 
-    /// &&& doc
+    /// Return true if all items in `a` and `b` match.
     template <class TIC>
     static bool compareItemsTemplate(TelemetryItem const& a, TelemetryItem const& b) {
         try {
             TIC const& aItem = dynamic_cast<TIC const&>(a);
             TIC const& bItem = dynamic_cast<TIC const&>(b);
-            return compareTelemetryItemMaps(aItem._map, bItem._map);
+            return compareTelemetryItemMaps(aItem._tiMap, bItem._tiMap);
         } catch (std::bad_cast const& ex) {
             return false;
         }
     }
 
     /// Map of items for this TelemetryItem. Does not change after constructor.
-    TelemetryItemMap _map; // &&& name change needed, maybe make pointer so classes that don't use it can leave it nullptr and the then check the pointer???
-
+    TelemetryItemMap _tiMap;
 private:
     std::string const _id;
 };
 
-/// &&& create a TItemSingle template base class for single element items like TItemDouble and TItemBool
+/// This is a TelemetryItem child class for handling simple single values (such as
+/// double, boolean, int, etc.), primarily for the purpose of reading them
+/// in and out of json objects. This class only supports types supported by
+/// std::atomic.
+/// Unit tests in tests/test_TelemetryCom
+template <class ST>
+class TItemSimple : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemSimple>;
+
+    TItemSimple() = delete;
+
+    /// Create a `TItemSimple` object with identifier `id` and option value `defaultVal` for all entries.
+    TItemSimple(std::string const& id, ST defaultVal = 0) : TelemetryItem(id), _val(defaultVal) {}
+
+    ~TItemSimple() override {}
+
+    //// Return a copy of the value.
+    ST getVal() const { return _val; }
+
+    /// Set the value of the object to `val`.
+    void setVal(ST const& val) { _val = val; }
+
+    /// Return the json representation of this object.
+    nlohmann::json getJson() const override {
+        nlohmann::json js;
+        ST v = _val;  // conversion from atomic fails when js[getId()] = _val;
+        js[getId()] = v;
+        return js;
+    }
+
+    /// Set the value of this object from json.
+    bool setFromJson(nlohmann::json const& js, bool idExpected) {
+        if (idExpected) {
+            // This type can only have a simple type value for `_val`.
+            LERROR("TItemSimple::setFromJson cannot have a json 'id' entry");
+            return false;
+        }
+        try {
+            ST val = js.at(getId());
+            setVal(val);
+            return true;
+        } catch (nlohmann::json::out_of_range const& ex) {
+            LERROR("TItemSimple::setFromJson out of range for ", getId(), " js=", js);
+        }
+        return false;
+    }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        try {
+            TItemSimple<ST> const& otherItem = dynamic_cast<TItemSimple<ST> const&>(other);
+            return (getId() == otherItem.getId() && _val == otherItem._val);
+        } catch (std::bad_cast const& ex) {
+            return false;
+        }
+    }
+
+private:
+    std::atomic<ST> _val; ///< Vector containing the double values with length _size.
+    mutable std::mutex _mtx; ///< Protects `_val`.
+};
+
 
 /// This class is used to store a specific telemetry item with a double value.
 /// Unit tests in tests/test_TelemetryCom
-class TItemDouble : public TelemetryItem {
+class TItemDouble : public TItemSimple<double> {
 public:
     using Ptr = std::shared_ptr<TItemDouble>;
 
     /// Create a shared pointer instance of TItemDouble using `id`, and `defaultVal`, and
     /// insert it into the map `itMap`.
-    /// @see `TItemDouble`
     /// @throws TelemetryException if the new object cannot be inserted into the list.
-    static Ptr create(std::string const& id, TelemetryItemMap* itMap, double defaultVal = 0.0);
+    static Ptr create(std::string const& id, TelemetryItemMap* tiMap, double defaultVal = 0.0) {
+        Ptr newItem = Ptr(new TItemDouble(id, defaultVal));
+        insert(tiMap, newItem);
+        return newItem;
+    }
+
+        /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal`.
+    TItemDouble(std::string const& id, double defaultVal = 0.0) : TItemSimple(id, defaultVal) {}
+
     TItemDouble() = delete;
 
     virtual ~TItemDouble() {}
-
-    /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal`.
-    TItemDouble(std::string const& id, double defaultVal = 0.0) : TelemetryItem(id), _val(defaultVal) {}
-
-    //// Set the value of the object to `val`.
-    void setVal(double val) { _val = val; }
-
-    //// Return the value of this object.
-    double getVal() const { return _val; }
-
-    /// Return the json representation of this object.
-    nlohmann::json getJson() const override;
-
-    /// Set the value of this object from json.
-    bool setFromJson(nlohmann::json const& js, bool idExpected) override;
-
-    /// Return true if this item and `other` have the same id and values.
-    bool compareItem(TelemetryItem const& other) const override;
-
-private:
-    std::atomic<double> _val;
 };
 
-/// This class is used to store a specific telemetry item with a boolean value.
+/// This class is used to store a specific telemetry item with a bool value.
 /// Unit tests in tests/test_TelemetryCom
-class TItemBoolean : public TelemetryItem {
+class TItemBoolean : public TItemSimple<bool> {
 public:
     using Ptr = std::shared_ptr<TItemBoolean>;
 
     /// Create a shared pointer instance of TItemBoolean using `id`, and `defaultVal`, and
     /// insert it into the map `itMap`.
-    /// @see `TItemBoolean`
     /// @throws TelemetryException if the new object cannot be inserted into the list.
-    static Ptr create(std::string const& id, TelemetryItemMap* itMap, bool defaultVal = false);
+    static Ptr create(std::string const& id, TelemetryItemMap* tiMap, bool defaultVal = 0.0) {
+        Ptr newItem = Ptr(new TItemBoolean(id, defaultVal));
+        insert(tiMap, newItem);
+        return newItem;
+    }
+
+        /// Create a `TItemBoolean` object with identifier `id` and option value `defaultVal`.
+    TItemBoolean(std::string const& id, double defaultVal = 0.0) : TItemSimple(id, defaultVal) {}
+
     TItemBoolean() = delete;
 
     virtual ~TItemBoolean() {}
-
-    /// Create a `TItemBoolean` object with identifier `id` and option value `defaultVal`.
-    TItemBoolean(std::string const& id, bool defaultVal = false) : TelemetryItem(id), _val(defaultVal) {}
-
-    //// Set the value of the object to `val`.
-    void setVal(bool val) { _val = val; }
-
-    //// Return the value of this object.
-    bool getVal() const { return _val; }
-
-    /// Return the json representation of this object.
-    nlohmann::json getJson() const override;
-
-    /// Set the value of this object from json.
-    bool setFromJson(nlohmann::json const& js, bool idExpected) override;
-
-    /// Return true if this item and `other` have the same id and values.
-    bool compareItem(TelemetryItem const& other) const override;
-
-private:
-    std::atomic<bool> _val;
 };
 
-/// &&& doc
+
+/// This is a TelemetryItem child class for handling vectors, primarily
+/// for the purpose of reading them in and out of json objects.
+/// Unit tests in tests/test_TelemetryCom
 template <class VT>
 class TItemVector : public TelemetryItem {
 public:
@@ -235,7 +271,7 @@ public:
 
     TItemVector() = delete;
 
-    /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal` for all entries.
+    /// Create a `TItemVector` object with identifier `id` and option value `defaultVal` for all entries.
     TItemVector(std::string const& id, int size, VT defaultVal = 0) : TelemetryItem(id), _size(size) {
         for(size_t j=0; j<_size; ++j) {
             _vals.push_back(defaultVal);
@@ -244,7 +280,7 @@ public:
 
     ~TItemVector() override {}
 
-    //// Return a copy of the values in this object.
+    //// Return a vector copy of the values in this object.
     std::vector<VT> getVals() const {
         std::vector<VT> outVals;
         std::lock_guard<std::mutex> lg(_mtx);
@@ -282,12 +318,13 @@ public:
     //// Return the value at `index` in `_vals`.
     /// @throw TelemetryException if index is out of range.
     VT getVal(size_t index) const {
-    if (index > _size) {
-        throw TelemetryException(ERR_LOC, "TItemVector::getVal out of range for index=" + std::to_string(index) + " for " + dump());
+        if (index > _size) {
+            throw TelemetryException(ERR_LOC, "TItemVector::getVal out of range for index=" +
+                                     std::to_string(index) + " for " + dump());
+        }
+        std::lock_guard<std::mutex> lg(_mtx);
+        return _vals[index];
     }
-    std::lock_guard<std::mutex> lg(_mtx);
-    return _vals[index];
-}
 
     /// Return the json representation of this object.
     nlohmann::json getJson() const override {
@@ -311,11 +348,6 @@ public:
         }
         try {
             std::vector<VT> vals = js.at(getId());
-            std::string valsStr;                      // &&& delete
-            for (auto const& v : vals) {         // &&& delete
-                valsStr += std::to_string(v) + ", ";  // &&& delete
-            }                                    // &&& delete
-            LDEBUG("&&& TItemVector::setFromJson vals=", valsStr, " js.at=", js.at(getId()));
             return setVals(vals);
         } catch (nlohmann::json::out_of_range const& ex) {
             LERROR("TItemVector::setFromJson out of range for ", getId(), " js=", js);
@@ -349,7 +381,8 @@ private:
 };
 
 
-/// &&& doc
+/// This is a TItemVector child class for handling vectors of doubles.
+/// Unit tests in tests/test_TelemetryCom
 class TItemVectorDouble : public TItemVector<double> {
 public:
     using Ptr = std::shared_ptr<TItemVectorDouble>;
@@ -370,8 +403,8 @@ public:
 
     ~TItemVectorDouble() override {}
 };
-
-/// &&& doc
+/// This is a TItemVector child class for handling vectors of ints.
+/// Unit tests in tests/test_TelemetryCom
 class TItemVectorInt : public TItemVector<int> {
 public:
     using Ptr = std::shared_ptr<TItemVectorInt>;
@@ -379,7 +412,7 @@ public:
     /// Create a shared pointer instance of TItemVectorInt using `id`, number of elements `size, and `defaultVal` for
     /// all entries, then insert it into the map `itMap`.
     /// @throws TelemetryException if the new object cannot be inserted into the list
-    static Ptr create(std::string const& id, size_t size, TelemetryItemMap* tiMap, int defaultVal = 0) { // &&& this can probably be done with a template function.
+    static Ptr create(std::string const& id, size_t size, TelemetryItemMap* tiMap, int defaultVal = 0) {
         Ptr newItem = Ptr(new TItemVectorInt(id, size, defaultVal));
         insert(tiMap, newItem);
         return newItem;

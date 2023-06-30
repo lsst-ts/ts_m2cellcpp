@@ -95,6 +95,9 @@ void Log::logW(spdlog::level::level_enum const lvl, std::stringstream& msg) {
         default:
             std::cout << msg.str() << std::endl;
     }
+    if (_alwaysFlush) {
+        flush();
+    }
 }
 
 void Log::setMaxBuffers(int maxBuffers) {

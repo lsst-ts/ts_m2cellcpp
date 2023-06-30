@@ -223,6 +223,9 @@ public:
     /// @see Log::getEnvironmentLogLvl()
     void useEnvironmentLogLvl();
 
+    /// Set `_alwaysFlush` to `val`, primarily needed with spdlog.
+    void setAlwaysFlush(bool val) { _alwaysFlush = val; }
+
 private:
     /// Private constructor as only instance of Log should be availabel through getLog().
     /// Log needs to be available before the configuration is read so that configuration
@@ -250,6 +253,9 @@ private:
     uint _maxBuffers = 2000;  ///< maximum size of _buffers (need enough to read config)
 
     mutable std::mutex _mtx;  ///< protects all member variables
+
+    /// When set to true, flush will be called for all log messages.
+    std::atomic<bool> _alwaysFlush{false};
 };
 
 }  // namespace util

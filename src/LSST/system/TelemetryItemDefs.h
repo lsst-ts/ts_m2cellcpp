@@ -59,10 +59,10 @@ public:
     }
 
 private:
-    TItemDouble::Ptr _motorVoltage = TItemDouble::create("motorVoltage", &_map);
-    TItemDouble::Ptr _motorCurrent = TItemDouble::create("motorCurrent", &_map);
-    TItemDouble::Ptr _commVoltage = TItemDouble::create("commVoltage", &_map);
-    TItemDouble::Ptr _commCurrent = TItemDouble::create("commCurrent", &_map);
+    TItemDouble::Ptr _motorVoltage = TItemDouble::create("motorVoltage", &_tiMap);
+    TItemDouble::Ptr _motorCurrent = TItemDouble::create("motorCurrent", &_tiMap);
+    TItemDouble::Ptr _commVoltage = TItemDouble::create("commVoltage", &_tiMap);
+    TItemDouble::Ptr _commCurrent = TItemDouble::create("commCurrent", &_tiMap);
 };
 
 /// This class is used to store data for the "powerStatus" entry.
@@ -87,7 +87,8 @@ public:
 
 
 
-/// &&& doc
+/// TelemetryItem child class for storing the "tangentForce" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemTangentForce : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemTangentForce>;
@@ -117,14 +118,15 @@ public:
     }
 
 private:
-    TItemVectorDouble::Ptr _lutGravity = TItemVectorDouble::create("lutGravity", 6, &_map);
-    TItemVectorDouble::Ptr _lutTemperature = TItemVectorDouble::create("lutTemperature", 0, &_map);
-    TItemVectorDouble::Ptr _applied = TItemVectorDouble::create("applied", 6, &_map);
-    TItemVectorDouble::Ptr _measured = TItemVectorDouble::create("measured", 6, &_map);
-    TItemVectorDouble::Ptr _hardpointCorrection = TItemVectorDouble::create("hardpointCorrection", 6, &_map);
+    TItemVectorDouble::Ptr _lutGravity = TItemVectorDouble::create("lutGravity", 6, &_tiMap);
+    TItemVectorDouble::Ptr _lutTemperature = TItemVectorDouble::create("lutTemperature", 0, &_tiMap);
+    TItemVectorDouble::Ptr _applied = TItemVectorDouble::create("applied", 6, &_tiMap);
+    TItemVectorDouble::Ptr _measured = TItemVectorDouble::create("measured", 6, &_tiMap);
+    TItemVectorDouble::Ptr _hardpointCorrection = TItemVectorDouble::create("hardpointCorrection", 6, &_tiMap);
 };
 
-/// &&& doc
+/// TelemetryItem child class for storing the "forceBalance" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemForceBalance : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemForceBalance>;
@@ -157,12 +159,12 @@ public:
     }
 
 private:
-    TItemDouble::Ptr _fx = TItemDouble::create("fx", &_map);
-    TItemDouble::Ptr _fy = TItemDouble::create("fy", &_map);
-    TItemDouble::Ptr _fz = TItemDouble::create("fz", &_map);
-    TItemDouble::Ptr _mx = TItemDouble::create("mx", &_map);
-    TItemDouble::Ptr _my = TItemDouble::create("my", &_map);
-    TItemDouble::Ptr _mz = TItemDouble::create("mz", &_map);
+    TItemDouble::Ptr _fx = TItemDouble::create("fx", &_tiMap);
+    TItemDouble::Ptr _fy = TItemDouble::create("fy", &_tiMap);
+    TItemDouble::Ptr _fz = TItemDouble::create("fz", &_tiMap);
+    TItemDouble::Ptr _mx = TItemDouble::create("mx", &_tiMap);
+    TItemDouble::Ptr _my = TItemDouble::create("my", &_tiMap);
+    TItemDouble::Ptr _mz = TItemDouble::create("mz", &_tiMap);
 };
 
 
@@ -198,12 +200,12 @@ public:
     }
 
 private:
-    TItemDouble::Ptr _x = TItemDouble::create("x", &_map);
-    TItemDouble::Ptr _y = TItemDouble::create("y", &_map);
-    TItemDouble::Ptr _z = TItemDouble::create("z", &_map);
-    TItemDouble::Ptr _xRot = TItemDouble::create("xRot", &_map);
-    TItemDouble::Ptr _yRot = TItemDouble::create("yRot", &_map);
-    TItemDouble::Ptr _zRot = TItemDouble::create("zRot", &_map);
+    TItemDouble::Ptr _x = TItemDouble::create("x", &_tiMap);
+    TItemDouble::Ptr _y = TItemDouble::create("y", &_tiMap);
+    TItemDouble::Ptr _z = TItemDouble::create("z", &_tiMap);
+    TItemDouble::Ptr _xRot = TItemDouble::create("xRot", &_tiMap);
+    TItemDouble::Ptr _yRot = TItemDouble::create("yRot", &_tiMap);
+    TItemDouble::Ptr _zRot = TItemDouble::create("zRot", &_tiMap);
 };
 
 /// This class is used to store data for the "position" entry.
@@ -226,12 +228,13 @@ public:
     virtual ~TItemPositionIMS() = default;
 };
 
-/// &&& doc
+/// TelemetryItem child class for storing the "temperature" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemTemperature : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemTemperature>;
 
-    TItemTemperature() : TelemetryItem("Temperature") {}
+    TItemTemperature() : TelemetryItem("temperature") {}
 
     virtual ~TItemTemperature() = default;
 
@@ -250,12 +253,13 @@ public:
     }
 
 private:
-    TItemVectorDouble::Ptr _ring = TItemVectorDouble::create("ring", 12, &_map);
-    TItemVectorDouble::Ptr _intake = TItemVectorDouble::create("intake", 2, &_map);
-    TItemVectorDouble::Ptr _exhaust = TItemVectorDouble::create("exhaust", 2, &_map);
+    TItemVectorDouble::Ptr _ring = TItemVectorDouble::create("ring", 12, &_tiMap);
+    TItemVectorDouble::Ptr _intake = TItemVectorDouble::create("intake", 2, &_tiMap);
+    TItemVectorDouble::Ptr _exhaust = TItemVectorDouble::create("exhaust", 2, &_tiMap);
 };
 
-/// &&& doc
+/// TelemetryItem child class for storing the "zenithAngle" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemZenithAngle : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemZenithAngle>;
@@ -279,12 +283,13 @@ public:
     }
 
 private:
-    TItemDouble::Ptr _measured = TItemDouble::create("measured", &_map);
-    TItemDouble::Ptr _inclinometerRaw = TItemDouble::create("inclinometerRaw", &_map);
-    TItemDouble::Ptr _inclinometerProcessed = TItemDouble::create("inclinometerProcessed", &_map);
+    TItemDouble::Ptr _measured = TItemDouble::create("measured", &_tiMap);
+    TItemDouble::Ptr _inclinometerRaw = TItemDouble::create("inclinometerRaw", &_tiMap);
+    TItemDouble::Ptr _inclinometerProcessed = TItemDouble::create("inclinometerProcessed", &_tiMap);
 };
 
-/// &&& doc
+/// TelemetryItem child class for storing the "axialEncoderPositions" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemAxialEncoderPositions : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemAxialEncoderPositions>;
@@ -302,10 +307,11 @@ public:
     }
 
 private:
-    TItemVectorDouble::Ptr _position = TItemVectorDouble::create("position", 72, &_map);
+    TItemVectorDouble::Ptr _position = TItemVectorDouble::create("position", 72, &_tiMap);
 };
 
-/// &&& doc
+/// TelemetryItem child class for storing the "tangentEncoderPositions" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemTangentEncoderPositions : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemTangentEncoderPositions>;
@@ -323,10 +329,11 @@ public:
     }
 
 private:
-    TItemVectorDouble::Ptr _position = TItemVectorDouble::create("position", 6, &_map);
+    TItemVectorDouble::Ptr _position = TItemVectorDouble::create("position", 6, &_tiMap);
 };
 
-/// &&& doc
+/// TelemetryItem child class for storing the "axialActuatorSteps" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemAxialActuatorSteps : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemAxialActuatorSteps>;
@@ -344,10 +351,11 @@ public:
     }
 
 private:
-    TItemVectorInt::Ptr _steps = TItemVectorInt::create("steps", 72, &_map);
+    TItemVectorInt::Ptr _steps = TItemVectorInt::create("steps", 72, &_tiMap);
 };
 
-/// &&& doc
+/// TelemetryItem child class for storing the "tangentActuatorSteps" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemTangentActuatorSteps : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemTangentActuatorSteps>;
@@ -365,10 +373,11 @@ public:
     }
 
 private:
-    TItemVectorInt::Ptr _steps = TItemVectorInt::create("steps", 6, &_map);
+    TItemVectorInt::Ptr _steps = TItemVectorInt::create("steps", 6, &_tiMap);
 };
 
-/// &&& doc
+/// TelemetryItem child class for storing the "forceErrorTangent" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemForceErrorTangent : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemForceErrorTangent>;
@@ -392,12 +401,13 @@ public:
     }
 
 private:
-    TItemVectorDouble::Ptr _force = TItemVectorDouble::create("force", 6, &_map);
-    TItemDouble::Ptr _weight = TItemDouble::create("weight", &_map);
-    TItemDouble::Ptr _sum = TItemDouble::create("sum", &_map);
+    TItemVectorDouble::Ptr _force = TItemVectorDouble::create("force", 6, &_tiMap);
+    TItemDouble::Ptr _weight = TItemDouble::create("weight", &_tiMap);
+    TItemDouble::Ptr _sum = TItemDouble::create("sum", &_tiMap);
 };
 
-/// &&& doc
+/// TelemetryItem child class for storing the "inclinometerAngleTma" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemInclinometerAngleTma : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemInclinometerAngleTma>;
@@ -416,10 +426,11 @@ public:
     }
 
 private:
-    TItemDouble::Ptr _inclinometer = TItemDouble::create("inclinometer", &_map);
+    TItemDouble::Ptr _inclinometer = TItemDouble::create("inclinometer", &_tiMap);
 };
 
-/// &&& doc
+/// TelemetryItem child class for storing the "m2AssemblyInPosition" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemM2AssemblyInPosition : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemM2AssemblyInPosition>;
@@ -438,10 +449,11 @@ public:
     }
 
 private:
-    TItemBoolean::Ptr _inPosition = TItemBoolean::create("inPosition", &_map);
+    TItemBoolean::Ptr _inPosition = TItemBoolean::create("inPosition", &_tiMap);
 };
 
-/// &&& doc
+/// TelemetryItem child class for storing the "displacementSensors" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemDisplacementSensors : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemDisplacementSensors>;
@@ -462,12 +474,13 @@ public:
     }
 
 private:
-    TItemVectorDouble::Ptr _thetaZ = TItemVectorDouble::create("thetaZ", 6, &_map);
-    TItemVectorDouble::Ptr _deltaZ = TItemVectorDouble::create("deltaZ", 6, &_map);
+    TItemVectorDouble::Ptr _thetaZ = TItemVectorDouble::create("thetaZ", 6, &_tiMap);
+    TItemVectorDouble::Ptr _deltaZ = TItemVectorDouble::create("deltaZ", 6, &_tiMap);
 };
 
 
-/// &&& doc
+/// TelemetryItem child class for storing the "ilcData" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemIlcData : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemIlcData>;
@@ -485,10 +498,11 @@ public:
     }
 
 private:
-    TItemVectorDouble::Ptr _status = TItemVectorDouble::create("status", 78, &_map);
+    TItemVectorDouble::Ptr _status = TItemVectorDouble::create("status", 78, &_tiMap);
 };
 
-/// &&& doc
+/// TelemetryItem child class for storing the "netForcesTotal" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemNetForcesTotal : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemNetForcesTotal>;
@@ -512,12 +526,13 @@ public:
     }
 
 private:
-    TItemDouble::Ptr _fx = TItemDouble::create("fx", &_map);
-    TItemDouble::Ptr _fy = TItemDouble::create("fy", &_map);
-    TItemDouble::Ptr _fz = TItemDouble::create("fz", &_map);
+    TItemDouble::Ptr _fx = TItemDouble::create("fx", &_tiMap);
+    TItemDouble::Ptr _fy = TItemDouble::create("fy", &_tiMap);
+    TItemDouble::Ptr _fz = TItemDouble::create("fz", &_tiMap);
 };
 
-/// &&& doc
+/// TelemetryItem child class for storing the "netMomentsTotal" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemNetMomentsTotal : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemNetMomentsTotal>;
@@ -541,12 +556,13 @@ public:
     }
 
 private:
-    TItemDouble::Ptr _mx = TItemDouble::create("mx", &_map);
-    TItemDouble::Ptr _my = TItemDouble::create("my", &_map);
-    TItemDouble::Ptr _mz = TItemDouble::create("mz", &_map);
+    TItemDouble::Ptr _mx = TItemDouble::create("mx", &_tiMap);
+    TItemDouble::Ptr _my = TItemDouble::create("my", &_tiMap);
+    TItemDouble::Ptr _mz = TItemDouble::create("mz", &_tiMap);
 };
 
-/// &&& doc
+/// TelemetryItem child class for storing the "naxialForce" values.
+/// Unit tests in tests/test_TelemetryCom
 class TItemAxialForce : public TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TItemAxialForce>;
@@ -576,11 +592,11 @@ public:
     }
 
 private:
-    TItemVectorDouble::Ptr _lutGravity = TItemVectorDouble::create("lutGravity", 72, &_map);
-    TItemVectorDouble::Ptr _lutTemperature = TItemVectorDouble::create("lutTemperature", 72, &_map);
-    TItemVectorDouble::Ptr _applied = TItemVectorDouble::create("applied", 72, &_map);
-    TItemVectorDouble::Ptr _measured = TItemVectorDouble::create("measured", 72, &_map);
-    TItemVectorDouble::Ptr _hardpointCorrection = TItemVectorDouble::create("hardpointCorrection", 72, &_map);
+    TItemVectorDouble::Ptr _lutGravity = TItemVectorDouble::create("lutGravity", 72, &_tiMap);
+    TItemVectorDouble::Ptr _lutTemperature = TItemVectorDouble::create("lutTemperature", 72, &_tiMap);
+    TItemVectorDouble::Ptr _applied = TItemVectorDouble::create("applied", 72, &_tiMap);
+    TItemVectorDouble::Ptr _measured = TItemVectorDouble::create("measured", 72, &_tiMap);
+    TItemVectorDouble::Ptr _hardpointCorrection = TItemVectorDouble::create("hardpointCorrection", 72, &_tiMap);
 };
 
 }  // namespace system

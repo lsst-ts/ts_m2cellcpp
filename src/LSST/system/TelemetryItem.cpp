@@ -114,7 +114,7 @@ bool TelemetryItem::setMapFromJson(TelemetryItemMap& tMap, json const& js, bool 
     bool success = true;
     for (auto&& elem : tMap) {
         TelemetryItem::Ptr item = elem.second;
-        LDEBUG("&&& TelemetryItem::setMapFromJson js=", js);
+        LTRACE("TelemetryItem::setMapFromJson js=", js);
         bool status = item->setFromJson(js);
         if (!status) {
             success = false;
@@ -127,83 +127,6 @@ bool TelemetryItem::setMapFromJson(TelemetryItemMap& tMap, json const& js, bool 
 std::ostream& operator<<(std::ostream& os, TelemetryItem const& item) {
     os << item.dump();
     return os;
-}
-
-TItemDouble::Ptr TItemDouble::create(string const& id, TelemetryItemMap* tiMap, double defaultVal) {
-    Ptr newItem = Ptr(new TItemDouble(id, defaultVal));
-    insert(tiMap, newItem);
-    return newItem;
-}
-
-json TItemDouble::getJson() const {
-    json js;
-    double v = _val;  // conversion from atomic fails when js[getId()] = _val;
-    js[getId()] = v;
-    return js;
-}
-
-bool TItemDouble::setFromJson(nlohmann::json const& js, bool idExpected) {
-    if (idExpected) {
-        // This type can only have a floating point value for `_val`.
-        LERROR("TItemDouble::setFromJson cannot have a json 'id' entry");
-        return false;
-    }
-    try {
-        double val = js.at(getId());
-        setVal(val);
-        return true;
-    } catch (json::out_of_range const& ex) {
-        LERROR("TItemDouble::setFromJson out of range for ", getId(), " js=", js);
-    }
-    return false;
-}
-
-
-bool TItemDouble::compareItem(TelemetryItem const& other) const {
-    try {
-        TItemDouble const& otherItem = dynamic_cast<TItemDouble const&>(other);
-        return (getId() == otherItem.getId() && _val == otherItem._val);
-    } catch (std::bad_cast const& ex) {
-        return false;
-    }
-}
-
-bool TItemBoolean::compareItem(TelemetryItem const& other) const {
-    try {
-        TItemBoolean const& otherItem = dynamic_cast<TItemBoolean const&>(other);
-        return (getId() == otherItem.getId() && _val == otherItem._val);
-    } catch (std::bad_cast const& ex) {
-        return false;
-    }
-}
-
-TItemBoolean::Ptr TItemBoolean::create(string const& id, TelemetryItemMap* tiMap, bool defaultVal) {
-    Ptr newItem = Ptr(new TItemBoolean(id, defaultVal));
-    insert(tiMap, newItem);
-    return newItem;
-}
-
-json TItemBoolean::getJson() const {
-    json js;
-    bool v = _val;  // conversion from atomic fails when js[getId()] = _val;
-    js[getId()] = v;
-    return js;
-}
-
-bool TItemBoolean::setFromJson(nlohmann::json const& js, bool idExpected) {
-    if (idExpected) {
-        // This type can only have a floating point value for `_val`.
-        LERROR("TItemBoolean::setFromJson cannot have a json 'id' entry");
-        return false;
-    }
-    try {
-        bool val = js.at(getId());
-        setVal(val);
-        return true;
-    } catch (json::out_of_range const& ex) {
-        LERROR("TItemBoolean::setFromJson out of range for ", getId(), " js=", js);
-    }
-    return false;
 }
 
 }  // namespace system

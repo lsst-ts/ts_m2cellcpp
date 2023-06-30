@@ -1,5 +1,3 @@
-# Copy and paste the following into http://www.plantuml.com/plantuml/uml/
-
 @startuml
 class Config
 class ComServer
@@ -39,19 +37,73 @@ NetCommandFactory o-- NetCommand : created by factory
 class TelemetryCom
 class TelemetryItem
 class TelemetryMap
+class TItemSimple
 class TItemDouble
+class TItemBoolean
+class TItemVector
+class TItemVectorInt
+class TItemVectorDouble
+
+
 class TItemPowerStatusBase
 class TItemPowerStatus
 class TItemPowerStatusRaw
+class TItemTangentForce
+class TItemAxialActuatorSteps
+class TItemM2AssemblyInPosition
+' Including all of these classes makes the UML too small to read, so just including some for example.
+' All of the TelemetryItem children follow a similar pattern.
+'class TItemForceBalance
+'class TItemPosition
+'class TItemPositionIMS
+'class TItemTemperature
+'class TItemZenithAngle
+'class TItemAxialEncoderPositions
+'class TItemTangentEncoderPositions
+'class TItemTangentActuatorSteps
+'class TItemForceErrorTangent
+'class TItemInclinometerAngleTma
+'class TItemDisplacementSensors
+'class TItemIlcData
+'class TItemNetForcesTotal
+'class TItemNetMomentsTotal
+'class TItemAxialForce
 
 Config ..> TelemetryCom : Configuration data
-TelemetryItem <|-- TItemDouble
+TelemetryItem <|-- TItemSimple
+TItemSimple <|-- TItemDouble
+TItemSimple <|-- TItemBoolean
+TelemetryItem <|-- TItemVector
+TItemVector <|-- TItemVectorInt
+TItemVector <|-- TItemVectorDouble
 TelemetryItem <|-- TItemPowerStatusBase
 TItemPowerStatusBase <|-- TItemPowerStatus
 TItemPowerStatusBase <|-- TItemPowerStatusRaw
 TItemPowerStatusBase *-- TItemDouble
 TelemetryMap *-- TelemetryItem
 TelemetryCom *-- TelemetryMap
+
+TelemetryItem <|-- TItemTangentForce
+TItemTangentForce *-- TItemVectorDouble
+TelemetryItem <|-- TItemAxialActuatorSteps
+TItemAxialActuatorSteps *-- TItemVectorInt
+TelemetryItem <|-- TItemM2AssemblyInPosition
+TItemM2AssemblyInPosition *-- TItemBoolean
+'TelemetryItem <|-- TItemForceBalance
+'TelemetryItem <|-- TItemPosition
+'TelemetryItem <|-- TItemPositionIMS
+'TelemetryItem <|-- TItemTemperature
+'TelemetryItem <|-- TItemZenithAngle
+'TelemetryItem <|-- TItemAxialEncoderPositions
+'TelemetryItem <|-- TItemTangentEncoderPositions
+'TelemetryItem <|-- TItemTangentActuatorSteps
+'TelemetryItem <|-- TItemForceErrorTangent
+'TelemetryItem <|-- TItemInclinometerAngleTma
+'TelemetryItem <|-- TItemDisplacementSensor
+'TelemetryItem <|-- TItemIlcData
+'TelemetryItem <|-- TItemNetForcesTotal
+'TelemetryItem <|-- TItemNetMomentsTotal
+'TelemetryItem <|-- TItemAxialForce
 
 
 @enduml

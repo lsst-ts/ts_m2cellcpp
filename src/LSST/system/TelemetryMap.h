@@ -103,6 +103,7 @@ public:
     TItemInclinometerAngleTma::Ptr getInclinometerAngleTma() const {return _inclinometerAngleTma; }
 
     /// Return a pointer to `_m2AssemblyInPosition`.
+    /// NOTE: The GUI doesn't recognize this item, but it's the only current use of TItemBoolean.
     TItemM2AssemblyInPosition::Ptr getM2AssemblyInPosition() const {return _m2AssemblyInPosition; }
 
     /// Return a pointer to `_displacementSensors`.

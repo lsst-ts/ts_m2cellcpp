@@ -326,9 +326,6 @@ TEST_CASE("Test TelemetryCom", "[TelemetryCom]") {
          0.2, 2.3, 2.3, 0.2, 2.2, 2.4, 0.1, 2.2, 2.3, 0.1,
          2.2, 2.2});
 
-
-    ///&&& at some point, get list of all telemetry text id's and verify they are each found in the map and have the correct type.
-
     LDEBUG("Running clients");
     std::vector<TelemetryCom::Ptr> clients;
     std::vector<thread> clientThreads;
