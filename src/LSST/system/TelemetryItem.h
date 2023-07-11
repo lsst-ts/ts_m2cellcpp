@@ -77,8 +77,12 @@ public:
     /// @throw Telemetry
     static void insert(TelemetryItemMap* tiMap, Ptr const& item);
 
-    /// Return true if all elements of `mapA` have a match in `mapB`, where `note` is
-    /// used to help identify what is being compared in the log.
+    /// Return true if all elements of `mapA` have a match with the sames values in `mapB` and both
+    /// maps are the same size.
+    /// @param mapA - arbitray `TelemetryItemMap` to be compared to `mapB`
+    /// @param mapB - arbitray `TelemetryItemMap` to be compared to `mapA`
+    /// @param note - optional, used to help identify why the two maps are being compared in the log.
+    /// NOTE: Comparing a map to itself will likely deadlock.
     static bool compareTelemetryItemMaps(TelemetryItemMap const& mapA, TelemetryItemMap const& mapB, std::string const& note ="");
 
     /// Create a `TelemetryItem` with immutable id of `id`.
@@ -132,12 +136,12 @@ protected:
     /// Return false if `idExpected` and the `js` "id" entry is wrong.
     bool checkIdCorrect(nlohmann::json const& js, bool idExpected) const;
 
-    /// Return true if all items in `a` and `b` match.
+    /// Return true if all items in `telemItemA` and `telemItemB` match.
     template <class TIC>
-    static bool compareItemsTemplate(TelemetryItem const& a, TelemetryItem const& b) {
+    static bool compareItemsTemplate(TelemetryItem const& telemItemA, TelemetryItem const& telemItemB) {
         try {
-            TIC const& aItem = dynamic_cast<TIC const&>(a);
-            TIC const& bItem = dynamic_cast<TIC const&>(b);
+            TIC const& aItem = dynamic_cast<TIC const&>(telemItemA);
+            TIC const& bItem = dynamic_cast<TIC const&>(telemItemB);
             return compareTelemetryItemMaps(aItem._tiMap, bItem._tiMap);
         } catch (std::bad_cast const& ex) {
             return false;
@@ -167,7 +171,7 @@ public:
 
     ~TItemSimple() override {}
 
-    //// Return a copy of the value.
+    /// Return a copy of the value.
     ST getVal() const { return _val; }
 
     /// Set the value of the object to `val`.
@@ -209,7 +213,7 @@ public:
     }
 
 private:
-    std::atomic<ST> _val; ///< Vector containing the double values with length _size.
+    std::atomic<ST> _val; ///< Stores the typed value for this item.
     mutable std::mutex _mtx; ///< Protects `_val`.
 };
 
@@ -229,7 +233,7 @@ public:
         return newItem;
     }
 
-        /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal`.
+    /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal`.
     TItemDouble(std::string const& id, double defaultVal = 0.0) : TItemSimple(id, defaultVal) {}
 
     TItemDouble() = delete;
@@ -246,13 +250,13 @@ public:
     /// Create a shared pointer instance of TItemBoolean using `id`, and `defaultVal`, and
     /// insert it into the map `itMap`.
     /// @throws TelemetryException if the new object cannot be inserted into the list.
-    static Ptr create(std::string const& id, TelemetryItemMap* tiMap, bool defaultVal = 0.0) {
+    static Ptr create(std::string const& id, TelemetryItemMap* tiMap, bool defaultVal = false) {
         Ptr newItem = Ptr(new TItemBoolean(id, defaultVal));
         insert(tiMap, newItem);
         return newItem;
     }
 
-        /// Create a `TItemBoolean` object with identifier `id` and option value `defaultVal`.
+    /// Create a `TItemBoolean` object with identifier `id` and option value `defaultVal`.
     TItemBoolean(std::string const& id, double defaultVal = 0.0) : TItemSimple(id, defaultVal) {}
 
     TItemBoolean() = delete;
@@ -280,7 +284,7 @@ public:
 
     ~TItemVector() override {}
 
-    //// Return a vector copy of the values in this object.
+    /// Return a vector copy of the values in this object.
     std::vector<VT> getVals() const {
         std::vector<VT> outVals;
         std::lock_guard<std::mutex> lg(_mtx);
@@ -315,7 +319,7 @@ public:
         return true;
     }
 
-    //// Return the value at `index` in `_vals`.
+    /// Return the value at `index` in `_vals`.
     /// @throw TelemetryException if index is out of range.
     VT getVal(size_t index) const {
         if (index > _size) {
@@ -342,7 +346,7 @@ public:
     /// Set the value of this object from json.
     bool setFromJson(nlohmann::json const& js, bool idExpected) override {
         if (idExpected) {
-            // This type can only have a floating point value array for `_val`.
+            // This type can only have a typed value array for `_vals`.
             LERROR("TItemVector::setFromJson cannot have a json 'id' entry");
             return false;
         }
@@ -376,7 +380,7 @@ public:
 
 private:
     size_t const _size; ///< Number of elements in `_vals`.
-    std::vector<VT> _vals; ///< Vector containing the double values with length _size.
+    std::vector<VT> _vals; ///< Vector containing the typed values with length _size.
     mutable std::mutex _mtx; ///< Protects `_vals`.
 };
 

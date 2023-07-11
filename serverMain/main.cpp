@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
         exit(-1);
     }
     log.setOutputDest(util::Log::SPEEDLOG);
-    // FUTURE: add command line argument to turn `Log::_alwaysFlush` off.
+    // FUTURE: DM-39974 add command line argument to turn `Log::_alwaysFlush` off.
     log.setAlwaysFlush(true); // spdlog is highly prone to waiting a long time before writing to disk.
 
     // Setup a simple signal handler to handle when clients closing connection results in SIGPIPE.

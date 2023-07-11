@@ -102,10 +102,6 @@ public:
     /// Return a pointer to `_inclinometerAngleTma`.
     TItemInclinometerAngleTma::Ptr getInclinometerAngleTma() const {return _inclinometerAngleTma; }
 
-    /// Return a pointer to `_m2AssemblyInPosition`.
-    /// NOTE: The GUI doesn't recognize this item, but it's the only current use of TItemBoolean.
-    TItemM2AssemblyInPosition::Ptr getM2AssemblyInPosition() const {return _m2AssemblyInPosition; }
-
     /// Return a pointer to `_displacementSensors`.
     TItemDisplacementSensors::Ptr getDisplacementSensors() const {return _displacementSensors; }
 
@@ -154,7 +150,6 @@ private:
     TItemTangentActuatorSteps::Ptr _tangentActuatorSteps = _addItem<TItemTangentActuatorSteps>();
     TItemForceErrorTangent::Ptr _forceErrorTangent = _addItem<TItemForceErrorTangent>(); ///< "forceErrorTangent"
     TItemInclinometerAngleTma::Ptr _inclinometerAngleTma = _addItem<TItemInclinometerAngleTma>(); ///< "inclinometerAngleTma"
-    TItemM2AssemblyInPosition::Ptr _m2AssemblyInPosition = _addItem<TItemM2AssemblyInPosition>(); ///< "m2AssemblyInPosition"
     TItemDisplacementSensors::Ptr _displacementSensors = _addItem<TItemDisplacementSensors>(); ///< "displacementSensors"
     TItemIlcData::Ptr _ilcData = _addItem<TItemIlcData>(); ///< "ilcData"
     TItemNetForcesTotal::Ptr _netForcesTotal = _addItem<TItemNetForcesTotal>(); ///< "netForcesTotal"

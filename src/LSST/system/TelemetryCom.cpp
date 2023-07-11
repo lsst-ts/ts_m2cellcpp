@@ -190,9 +190,11 @@ void TelemetryCom::ServerConnectionHandler::_servConnHandler() {
         for (auto const& elem : _tItemMap) {
             auto js = elem.second->getJson();
             string msg = to_string(js) + TelemetryCom::TERMINATOR();
-            // When the client is killed, send may result in SIGPIPE being sent to this
-            // program. A signal handler must be set in the main thread to catch SIGPIPE
-            // to prevent this program from crashing.
+            // Calling send() after the client has been killed may result in SIGPIPE
+            // being sent to this program. A signal handler must be set in the main
+            // thread to catch SIGPIPE to prevent this program from crashing.
+            // There is no way of knowing if the client has been killed before
+            // calling send().
             ssize_t status = send(_servConnHSock, msg.c_str(), msg.length(), 0);
             LTRACE("TelemetryCom send status=", status, " msg=", msg);
             if (status < 0) {

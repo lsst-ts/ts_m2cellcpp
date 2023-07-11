@@ -41,16 +41,16 @@ public:
 
     virtual ~TItemPowerStatusBase() = default;
 
-    /// Return reference to `_motorVoltage`.
+    /// Return reference to `_motorVoltage`, unit: volt.
     TItemDouble& getMotorVoltage() { return *_motorVoltage; }
 
-    /// Return reference to `_motorCurrent`.
+    /// Return reference to `_motorCurrent`, unit: ampere.
     TItemDouble& getMotorCurrent() { return *_motorCurrent; }
 
-    /// Return reference to `_commVoltage`.
+    /// Return reference to `_commVoltage`, unit: volt.
     TItemDouble& getCommVoltage() { return *_commVoltage; }
 
-    /// Return reference to `_commCurrent`.
+    /// Return reference to `_commCurrent`, unit: ampere.
     TItemDouble& getCommCurrent() { return *_commCurrent; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -97,19 +97,19 @@ public:
 
     ~TItemTangentForce() override {};
 
-    /// Return reference to `_lutGravity`.
+    /// Return reference to `_lutGravity`, unit: newton.
     TItemVectorDouble& getLutGravity() const { return *_lutGravity; }
 
-    /// Return reference to `_lutTemperature`.
+    /// Return reference to `_lutTemperature`, units: ???newton.
     TItemVectorDouble& getLutTemperature() const { return *_lutTemperature; }
 
-    /// Return reference to `_applied`.
+    /// Return reference to `_applied`, unit: newton.
     TItemVectorDouble& getApplied() const { return *_applied; }
 
-    /// Return reference to `_measured`.
+    /// Return reference to `_measured`, unit: newton.
     TItemVectorDouble& getMeasured() const { return *_measured; }
 
-    /// Return reference to `_hardpointCorrection`.
+    /// Return reference to `_hardpointCorrection`, unit: newton.
     TItemVectorDouble& getHardpointCorrection() const { return *_hardpointCorrection; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -135,22 +135,22 @@ public:
 
     virtual ~TItemForceBalance() = default;
 
-    /// Return reference to `_fx`.
+    /// Return reference to `_fx`, unit: newton.
     TItemDouble& getFx() { return *_fx; }
 
-    /// Return reference to `_fy`.
+    /// Return reference to `_fy`, unit: newton.
     TItemDouble& getFy() { return *_fy; }
 
-    /// Return reference to `_fz`.
+    /// Return reference to `_fz`, unit: newton.
     TItemDouble& getFz() { return *_fz; }
 
-    /// Return reference to `_mx`.
+    /// Return reference to `_mx`, unit: newton*meter.
     TItemDouble& getMx() { return *_mx; }
 
-    /// Return reference to `_my`.
+    /// Return reference to `_my`, unit: newton*meter.
     TItemDouble& getMy() { return *_my; }
 
-    /// Return reference to `_mz`.
+    /// Return reference to `_mz`, unit: newton*meter.
     TItemDouble& getMz() { return *_mz; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -176,22 +176,22 @@ public:
 
     virtual ~TItemPositionBase() = default;
 
-    /// Return reference to `_x`.
+    /// Return reference to `_x`, unit: micron.
     TItemDouble& getX() { return *_x; }
 
-    /// Return reference to `_y`.
+    /// Return reference to `_y`, unit: micron.
     TItemDouble& getY() { return *_y; }
 
-    /// Return reference to `_z`.
+    /// Return reference to `_z`, unit: micron.
     TItemDouble& getZ() { return *_z; }
 
-    /// Return reference to `_xRot`.
+    /// Return reference to `_xRot`, unit: arcsec.
     TItemDouble& getXRot() { return *_xRot; }
 
-    /// Return reference to `_y`.
+    /// Return reference to `_y`, unit: arcsec.
     TItemDouble& getYRot() { return *_yRot; }
 
-    /// Return reference to `_z`.
+    /// Return reference to `_z`, unit: arcsec.
     TItemDouble& getZRot() { return *_zRot; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -238,13 +238,13 @@ public:
 
     virtual ~TItemTemperature() = default;
 
-    /// Return reference to `_ring`.
+    /// Return reference to `_ring`, unit: deg_C.
     TItemVectorDouble& getRing() { return *_ring; }
 
-    /// Return reference to `_intake`.
+    /// Return reference to `_intake`, unit: deg_C.
     TItemVectorDouble& getIntake() { return *_intake; }
 
-    /// Return reference to `_exhaust`.
+    /// Return reference to `_exhaust`, unit: deg_C.
     TItemVectorDouble& getExhaust() { return *_exhaust; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -268,13 +268,13 @@ public:
 
     virtual ~TItemZenithAngle() = default;
 
-    /// Return reference to `_measured`.
+    /// Return reference to `_measured`, unit: degree.
     TItemDouble& getMeasured() { return *_measured; }
 
-    /// Return reference to `_inclinometerRaw`.
+    /// Return reference to `_inclinometerRaw`, unit: degree.
     TItemDouble& getInclinometerRaw() { return *_inclinometerRaw; }
 
-    /// Return reference to `_inclinometerProcessed`.
+    /// Return reference to `_inclinometerProcessed`, unit: degree.
     TItemDouble& getInclinometerProcessed() { return *_inclinometerProcessed; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -298,7 +298,7 @@ public:
 
     virtual ~TItemAxialEncoderPositions() = default;
 
-    /// Return reference to `_position`.
+    /// Return reference to `_position`, unit: micron.
     TItemVectorDouble& getPosition() { return *_position; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -320,7 +320,7 @@ public:
 
     virtual ~TItemTangentEncoderPositions() = default;
 
-    /// Return reference to `_position`.
+    /// Return reference to `_position`, unit: micron.
     TItemVectorDouble& getPosition() { return *_position; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -342,7 +342,7 @@ public:
 
     virtual ~TItemAxialActuatorSteps() = default;
 
-    /// Return reference to `_steps`.
+    /// Return reference to `_steps`, unit: unitless.
     TItemVectorInt& getSteps() { return *_steps; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -364,7 +364,7 @@ public:
 
     virtual ~TItemTangentActuatorSteps() = default;
 
-    /// Return reference to `_steps`.
+    /// Return reference to `_steps`, unit: unitless.
     TItemVectorInt& getSteps() { return *_steps; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -386,13 +386,13 @@ public:
 
     virtual ~TItemForceErrorTangent() = default;
 
-    /// Return reference to `_force`.
+    /// Return reference to `_force`, unit: ??? newton.
     TItemVectorDouble& getForce() { return *_force; }
 
-    /// Return reference to `_weight`.
+    /// Return reference to `_weight`, unit: ??? kilo.
     TItemDouble& getWeight() { return *_weight; }
 
-    /// Return reference to `_sum`.
+    /// Return reference to `_sum`, unit: ??? newton.
     TItemDouble& getSum() { return *_sum; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -416,7 +416,7 @@ public:
 
     virtual ~TItemInclinometerAngleTma() = default;
 
-    /// Return reference to `_inclinometer`.
+    /// Return reference to `_inclinometer`, units ???.
     TItemDouble& getInclinometer() { return *_inclinometer; }
 
 
@@ -429,28 +429,6 @@ private:
     TItemDouble::Ptr _inclinometer = TItemDouble::create("inclinometer", &_tiMap);
 };
 
-/// TelemetryItem child class for storing the "m2AssemblyInPosition" values.
-/// Unit tests in tests/test_TelemetryCom
-class TItemM2AssemblyInPosition : public TelemetryItem {
-public:
-    using Ptr = std::shared_ptr<TItemM2AssemblyInPosition>;
-
-    TItemM2AssemblyInPosition() : TelemetryItem("m2AssemblyInPosition") {}
-
-    virtual ~TItemM2AssemblyInPosition() = default;
-
-    /// Return reference to `_inPosition`.
-    TItemBoolean& getInPosition() { return *_inPosition; }
-
-
-    /// Return true if this item and `other` have the same id and values.
-    bool compareItem(TelemetryItem const& other) const override {
-        return compareItemsTemplate<TItemM2AssemblyInPosition>(*this, other);
-    }
-
-private:
-    TItemBoolean::Ptr _inPosition = TItemBoolean::create("inPosition", &_tiMap);
-};
 
 /// TelemetryItem child class for storing the "displacementSensors" values.
 /// Unit tests in tests/test_TelemetryCom
@@ -462,10 +440,10 @@ public:
 
     virtual ~TItemDisplacementSensors() = default;
 
-    /// Return reference to `_thetaZ`.
+    /// Return reference to `_thetaZ`, unit: micron.
     TItemVectorDouble& getThetaZ() { return *_thetaZ; }
 
-    /// Return reference to `_deltaZ`.
+    /// Return reference to `_deltaZ`, unit: micron.
     TItemVectorDouble& getDeltaZ() { return *_deltaZ; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -489,7 +467,7 @@ public:
 
     virtual ~TItemIlcData() = default;
 
-    /// Return reference to `_status`.
+    /// Return reference to `_status`, unit: unitless.
     TItemVectorDouble& getStatus() { return *_status; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -511,13 +489,13 @@ public:
 
     virtual ~TItemNetForcesTotal() = default;
 
-    /// Return reference to `_fx`.
+    /// Return reference to `_fx`, unit: newton.
     TItemDouble& getFx() { return *_fx; }
 
-    /// Return reference to `_fy`.
+    /// Return reference to `_fy`, unit: newton.
     TItemDouble& getFy() { return *_fy; }
 
-    /// Return reference to `_fz`.
+    /// Return reference to `_fz`, unit: newton.
     TItemDouble& getFz() { return *_fz; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -541,13 +519,13 @@ public:
 
     virtual ~TItemNetMomentsTotal() = default;
 
-    /// Return reference to `_mx`.
+    /// Return reference to `_mx`, unit: newton*meter.
     TItemDouble& getMx() { return *_mx; }
 
-    /// Return reference to `_my`.
+    /// Return reference to `_my`, unit: newton*meter.
     TItemDouble& getMy() { return *_my; }
 
-    /// Return reference to `_mz`.
+    /// Return reference to `_mz`, unit: newton*meter.
     TItemDouble& getMz() { return *_mz; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -561,7 +539,7 @@ private:
     TItemDouble::Ptr _mz = TItemDouble::create("mz", &_tiMap);
 };
 
-/// TelemetryItem child class for storing the "naxialForce" values.
+/// TelemetryItem child class for storing the "axialForce" values.
 /// Unit tests in tests/test_TelemetryCom
 class TItemAxialForce : public TelemetryItem {
 public:
@@ -571,19 +549,19 @@ public:
 
     virtual ~TItemAxialForce() = default;
 
-    /// Return reference to `_lutGravity`.
+    /// Return reference to `_lutGravity`, unit: newton.
     TItemVectorDouble& getLutGravity() { return *_lutGravity; }
 
-    /// Return reference to `_lutTemperature`.
+    /// Return reference to `_lutTemperature`, unit: ??? newton.
     TItemVectorDouble& getLutTemperature() { return *_lutTemperature; }
 
-    /// Return reference to `_applied`.
+    /// Return reference to `_applied`, unit: newton.
     TItemVectorDouble& getApplied() { return *_applied; }
 
-    /// Return reference to `_measured`.
+    /// Return reference to `_measured`, unit: newton.
     TItemVectorDouble& getMeasured() { return *_measured; }
 
-    /// Return reference to `_hardpointCorrection`.
+    /// Return reference to `_hardpointCorrection`, unit: newton.
     TItemVectorDouble& getHardpointCorrection() { return *_hardpointCorrection; }
 
     /// Return true if this item and `other` have the same id and values.

@@ -150,28 +150,6 @@ TEST_CASE("Test TelemetryItem", "[TelemetryItem]") {
     REQUIRE(aaResult);
     REQUIRE(axialActuatorStepsIn->compareItem(*axialActuatorStepsOut) == true);
 
-    // Test TItemBoolean as memeber of TItemM2AssemblyInPosition
-    auto m2AssemblyInPositionA = TItemM2AssemblyInPosition::Ptr(new TItemM2AssemblyInPosition());
-
-    bool inPosA = true;
-    m2AssemblyInPositionA->getInPosition().setVal(inPosA);
-
-    REQUIRE(m2AssemblyInPositionA->getInPosition().getVal() == inPosA);
-    auto m2AssembInPosAJs = m2AssemblyInPositionA->getJson();
-    LDEBUG("m2AssemblyInPositionA=", m2AssembInPosAJs);
-
-
-    // Set values of m2AssemblyInPositionB from m2AssemblyInPositionA and test that they match.
-    auto m2AssemblyInPositionB = TItemM2AssemblyInPosition::Ptr(new TItemM2AssemblyInPosition());
-    LDEBUG("m2AssemblyInPositionB=", m2AssemblyInPositionB->getJson());
-    REQUIRE(m2AssemblyInPositionB->compareItem(*m2AssemblyInPositionA) == false);
-    string m2AssembInPosAStr = to_string(m2AssembInPosAJs);
-    bool m2AInPosResult = m2AssemblyInPositionB->parse(m2AssembInPosAStr);
-    LDEBUG("m2AssemblyInPositionB=", m2AssemblyInPositionB->getJson());
-    REQUIRE(m2AInPosResult == true);
-    REQUIRE(m2AssemblyInPositionB->getInPosition().getVal() == inPosA);
-    REQUIRE(m2AssemblyInPositionB->compareItem(*m2AssemblyInPositionA) == true);
-
     LDEBUG("TelemetryItem::test() end");
 }
 
@@ -253,8 +231,6 @@ TEST_CASE("Test TelemetryCom", "[TelemetryCom]") {
     servTelemetryMap->getForceErrorTangent()->getSum().setVal(99.0);
 
     servTelemetryMap->getInclinometerAngleTma()->getInclinometer().setVal(4.0);
-
-    servTelemetryMap->getM2AssemblyInPosition()->getInPosition().setVal(true);
 
     servTelemetryMap->getDisplacementSensors()->getThetaZ().setVals({6.1, 5.2, 4.3, 3.4, 2.5, 1.6});
     servTelemetryMap->getDisplacementSensors()->getDeltaZ().setVals({6.0, 5.0, 4.0, 3.0, 2.5, 1.4});
