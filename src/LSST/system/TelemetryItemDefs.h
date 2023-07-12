@@ -100,7 +100,7 @@ public:
     /// Return reference to `_lutGravity`, unit: newton.
     TItemVectorDouble& getLutGravity() const { return *_lutGravity; }
 
-    /// Return reference to `_lutTemperature`, units: ???newton.
+    /// Return reference to `_lutTemperature`, units: newton.
     TItemVectorDouble& getLutTemperature() const { return *_lutTemperature; }
 
     /// Return reference to `_applied`, unit: newton.
@@ -386,13 +386,13 @@ public:
 
     virtual ~TItemForceErrorTangent() = default;
 
-    /// Return reference to `_force`, unit: ??? newton.
+    /// Return reference to `_force`, unit: newton.
     TItemVectorDouble& getForce() { return *_force; }
 
-    /// Return reference to `_weight`, unit: ??? kilo.
+    /// Return reference to `_weight`, unit: kilo.
     TItemDouble& getWeight() { return *_weight; }
 
-    /// Return reference to `_sum`, unit: ??? newton.
+    /// Return reference to `_sum`, unit: newton.
     TItemDouble& getSum() { return *_sum; }
 
     /// Return true if this item and `other` have the same id and values.
@@ -416,7 +416,7 @@ public:
 
     virtual ~TItemInclinometerAngleTma() = default;
 
-    /// Return reference to `_inclinometer`, units ???.
+    /// Return reference to `_inclinometer`, units degree.
     TItemDouble& getInclinometer() { return *_inclinometer; }
 
 
@@ -552,7 +552,7 @@ public:
     /// Return reference to `_lutGravity`, unit: newton.
     TItemVectorDouble& getLutGravity() { return *_lutGravity; }
 
-    /// Return reference to `_lutTemperature`, unit: ??? newton.
+    /// Return reference to `_lutTemperature`, unit: newton.
     TItemVectorDouble& getLutTemperature() { return *_lutTemperature; }
 
     /// Return reference to `_applied`, unit: newton.
