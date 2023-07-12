@@ -41,7 +41,7 @@ atomic<uint32_t> TelemetryCom::_seqIdSource{0};
 
 TelemetryCom::TelemetryCom(TelemetryMap::Ptr const& telemMap, int port)
         : _telemetryMap(telemMap), _port(port) {
-    LDEBUG("TelemetryCom::TelemetryCom() _seqId=", _seqId);
+    LDEBUG("TelemetryCom::TelemetryCom() _seqId=", _seqId, " port=", _port);
 }
 
 TelemetryCom::~TelemetryCom() {
@@ -144,7 +144,7 @@ void TelemetryCom::_server() {
     if (listen(_serverFd, 3) < 0) {
         throw util::Bug(ERR_LOC, "TelemetryCom::server() failed to listen " + to_string(_port));
     }
-    LINFO("TelemetryCom::server() listening");
+    LINFO("TelemetryCom::server() listening _seqId=", _seqId, " port=", _port);
 
     _serverRunning = true;
     while (_acceptLoop) {
@@ -190,10 +190,16 @@ void TelemetryCom::ServerConnectionHandler::_servConnHandler() {
         for (auto const& elem : _tItemMap) {
             auto js = elem.second->getJson();
             string msg = to_string(js) + TelemetryCom::TERMINATOR();
-            LTRACE("server sending msg=", msg);
+            // Calling send() after the client has been killed may result in SIGPIPE
+            // being sent to this program. A signal handler must be set in the main
+            // thread to catch SIGPIPE to prevent this program from crashing.
+            // There is no way of knowing if the client has been killed before
+            // calling send().
             ssize_t status = send(_servConnHSock, msg.c_str(), msg.length(), 0);
+            LTRACE("TelemetryCom send status=", status, " msg=", msg);
             if (status < 0) {
                 LWARN("TelemetryCom::ServerConnectionHandler::_servConnHandler failure status=", status);
+                servConnHShutdown();
                 break;
             }
         }

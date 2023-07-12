@@ -27,7 +27,6 @@
 // Third party headers
 
 // Project headers
-#include "util/Bug.h"
 #include "util/Log.h"
 #include "system/TelemetryMap.h"
 
@@ -37,6 +36,42 @@ using json = nlohmann::json;
 namespace LSST {
 namespace m2cellcpp {
 namespace system {
+
+bool TelemetryItem::compareTelemetryItemMaps(TelemetryItemMap const& mapA, TelemetryItemMap const& mapB,
+                                            string const& note) {
+    if (mapA.size() != mapB.size()) {
+        LWARN(note, "::compare sizes different mapA=", mapA.size(), " mapB=", mapB.size());
+        return false;
+    }
+    for (auto const& elem : mapA) {
+        TelemetryItem::Ptr ptrA = elem.second;
+        string itemId = ptrA->getId();
+
+        auto iterB = mapB.find(itemId);
+        if (iterB == mapB.end()) {
+            LWARN(note, "::compare mapB did not contain key=", itemId);
+            return false;
+        }
+        TelemetryItem::Ptr ptrB = iterB->second;
+        bool match = ptrA->compareItem(*ptrB);
+        if (!match) {
+            LWARN(note, "::compare no match for ptrA=", ptrA->dump(), " ptrB=", ptrB->dump());
+            return false;
+        }
+    }
+    return true;
+}
+
+void TelemetryItem::insert(TelemetryItemMap* tiMap, Ptr const& item) {
+    if (tiMap == nullptr) {
+        throw TelemetryException(ERR_LOC, "insert failure, tiMap was null " + item->dump());
+    }
+    auto ret = tiMap->insert(std::make_pair(item->getId(), item));
+    bool insertSuccess = ret.second;
+    if (!insertSuccess) {
+        throw TelemetryException(ERR_LOC, "insert failure, likely duplicate " + item->dump());
+    }
+}
 
 bool TelemetryItem::parse(std::string const& jStr) {
     try {
@@ -79,6 +114,7 @@ bool TelemetryItem::setMapFromJson(TelemetryItemMap& tMap, json const& js, bool 
     bool success = true;
     for (auto&& elem : tMap) {
         TelemetryItem::Ptr item = elem.second;
+        LTRACE("TelemetryItem::setMapFromJson js=", js);
         bool status = item->setFromJson(js);
         if (!status) {
             success = false;
@@ -91,50 +127,6 @@ bool TelemetryItem::setMapFromJson(TelemetryItemMap& tMap, json const& js, bool 
 std::ostream& operator<<(std::ostream& os, TelemetryItem const& item) {
     os << item.dump();
     return os;
-}
-
-TItemDouble::Ptr TItemDouble::create(string const& id, TelemetryItemMap* tiMap, double defaultVal) {
-    Ptr newItem = Ptr(new TItemDouble(id, defaultVal));
-    if (tiMap != nullptr) {
-        if (!insert(*tiMap, newItem)) {
-            throw util::Bug(ERR_LOC, "Failed to insert " + id);
-        }
-    }
-    return newItem;
-}
-
-json TItemDouble::getJson() const {
-    json js;
-    double v = _val;  // conversion from atomic fails
-    js[getId()] = v;
-    return js;
-}
-
-bool TItemDouble::setFromJson(nlohmann::json const& js, bool idExpected) {
-    if (idExpected) {
-        // This type can only have a floating point value for `_val`.
-        LERROR("TItemDouble::setFromJson cannot have a json 'id' entry");
-        return false;
-    }
-    try {
-        double val = js.at(getId());
-        setVal(val);
-        return true;
-    } catch (json::out_of_range const& ex) {
-        LERROR("TItemDouble::setFromJson out of range for ", getId(), " js=", js);
-    }
-    return false;
-}
-
-bool TItemDouble::compareItem(TelemetryItem const& other) const {
-    TItemDouble const& otherTItemDouble = dynamic_cast<TItemDouble const&>(other);
-    return (getId() == other.getId() && _val == otherTItemDouble._val);
-}
-
-bool TItemPowerStatusBase::compareItem(TelemetryItem const& other) const {
-    TItemPowerStatusBase const& otherIpsb = dynamic_cast<TItemPowerStatusBase const&>(other);
-    return TelemetryMap::compareTelemetryItemMaps(_map, otherIpsb._map);
-    ;
 }
 
 }  // namespace system

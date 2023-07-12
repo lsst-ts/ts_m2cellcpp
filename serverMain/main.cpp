@@ -23,10 +23,21 @@
 #include "system/ComControl.h"
 #include "system/ComControlServer.h"
 #include "system/Config.h"
+#include "system/TelemetryCom.h"
+#include "system/TelemetryMap.h"
 #include "util/Log.h"
 
 using namespace std;
 using namespace LSST::m2cellcpp;
+
+void signalHandler(int sig) {
+    if (sig == SIGPIPE) {
+        LWARN("Ignoring SIGPIPE sig=", sig);
+        return;
+    }
+    LCRITICAL("Unhandled signal caught sig=", sig);
+    exit(sig);
+}
 
 int main(int argc, char* argv[]) {
     // Store log messages and send to cout until the logfile is setup.
@@ -52,27 +63,44 @@ int main(int argc, char* argv[]) {
         exit(-1);
     }
     log.setOutputDest(util::Log::SPEEDLOG);
-    log.flush();
+    // FUTURE: DM-39974 add command line argument to turn `Log::_alwaysFlush` off.
+    log.setAlwaysFlush(true); // spdlog is highly prone to waiting a long time before writing to disk.
+
+    // Setup a simple signal handler to handle when clients closing connection results in SIGPIPE.
+    signal(SIGPIPE, signalHandler);
+
+    // Start the telemetry server
+    LINFO("Starting Telemetry Server");
+    // FUTURE: get the correct entries into `system::Config`.
+    int const telemPort = 50001;
+    auto servTelemetryMap = system::TelemetryMap::Ptr(new system::TelemetryMap());
+    auto telemetryServ = system::TelemetryCom::create(servTelemetryMap, telemPort);
+
+    telemetryServ->startServer();
+    if (!telemetryServ->waitForServerRunning(5)) {
+        LCRITICAL("Telemetry server failed to start.");
+        exit(-1);
+    }
 
     // Start the control system
     control::Context::setup();
 
-    // Start the telemetry server
-
     // Start a ComControlServer
     LDEBUG("ComControlServer starting...");
-    log.flush();
     system::IoContextPtr ioContext = make_shared<boost::asio::io_context>();
     int port = system::Config::get().getControlServerPort();
     auto cmdFactory = control::NetCommandFactory::create();
     system::ComControl::setupNormalFactory(cmdFactory);
     auto serv = system::ComControlServer::create(ioContext, port, cmdFactory);
+    LINFO("ComControlServer created port=", port);
 
     atomic<bool> comServerDone{false};
-    LDEBUG("ComControlServer started");
+    auto comServState = serv->getState();
+    LDEBUG("ComControlServer comServState=", serv->prettyState(comServState));
 
-    thread comControlServThrd([&serv, &comServerDone]() {
+    thread comControlServThrd([&serv, &comServerDone, &log]() {
         LINFO("server run ", serv->prettyState(serv->getState()));
+        log.flush();
         serv->run();
         LINFO("server finish");
         comServerDone = true;
@@ -80,6 +108,7 @@ int main(int argc, char* argv[]) {
 
     // Wait as long as the server is running. At some point,
     // something should call comServ->shutdown().
+    LDEBUG("ComControlServer waiting for server shutdown");
     while (serv->getState() != system::ComServer::STOPPED) {
         sleep(5);
     }

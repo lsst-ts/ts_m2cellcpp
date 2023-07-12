@@ -40,10 +40,21 @@
 #include "nlohmann/json.hpp"
 
 // project headers
+#include "util/Issue.h"
+#include "util/Log.h"
 
 namespace LSST {
 namespace m2cellcpp {
 namespace system {
+
+/// Exception specific to Telemetry.
+///
+/// unit test: test_TelemetryCom.cpp
+class TelemetryException : public util::Issue {
+public:
+    TelemetryException(Context const& ctx, std::string const& msg) : util::Issue(ctx, msg) {}
+};
+
 
 class TelemetryItem;
 
@@ -61,15 +72,22 @@ class TelemetryItem {
 public:
     using Ptr = std::shared_ptr<TelemetryItem>;
 
-    /// Return true if `item` was successfully inserted into `tiMap`.
-    static bool insert(TelemetryItemMap& tiMap, Ptr const& item) {
-        auto ret = tiMap.insert(std::make_pair(item->getId(), item));
-        bool insertSuccess = ret.second;
-        return insertSuccess;
-    }
+    /// Return false if `tiMap` is not null and item` was not successfully inserted into `tiMap`.
+    /// Insert `item` into `tiMap`.
+    /// @throw Telemetry
+    static void insert(TelemetryItemMap* tiMap, Ptr const& item);
+
+    /// Return true if all elements of `mapA` have a match with the sames values in `mapB` and both
+    /// maps are the same size.
+    /// @param mapA - arbitray `TelemetryItemMap` to be compared to `mapB`
+    /// @param mapB - arbitray `TelemetryItemMap` to be compared to `mapA`
+    /// @param note - optional, used to help identify why the two maps are being compared in the log.
+    /// NOTE: Comparing a map to itself will likely deadlock.
+    static bool compareTelemetryItemMaps(TelemetryItemMap const& mapA, TelemetryItemMap const& mapB, std::string const& note ="");
 
     /// Create a `TelemetryItem` with immutable id of `id`.
     TelemetryItem(std::string const& id) : _id(id) {}
+
     virtual ~TelemetryItem() = default;
 
     TelemetryItem() = delete;
@@ -80,7 +98,9 @@ public:
     std::string getId() const { return _id; };
 
     /// Return a json object containing the id.
-    virtual nlohmann::json getJson() const = 0;
+    virtual nlohmann::json getJson() const {
+        return buildJsonFromMap(_tiMap);
+    }
 
     /// Return true if this item and `other` have the same id and values.
     virtual bool compareItem(TelemetryItem const& other) const = 0;
@@ -92,7 +112,9 @@ public:
     /// Set the value of this `TelemetryItem` from `js`.
     /// @param idExpected - If set to true, `js` must contain a valid entry for `id`.
     /// @return true if the value of all relate items could be set from `js`
-    virtual bool setFromJson(nlohmann::json const& js, bool idExpected = false) = 0;
+    virtual bool setFromJson(nlohmann::json const& js, bool idExpected = false) {
+        return setMapFromJson(_tiMap, js, idExpected);
+    }
 
     /// Return a string reasonable for logging.
     std::string dump() const {
@@ -114,115 +136,297 @@ protected:
     /// Return false if `idExpected` and the `js` "id" entry is wrong.
     bool checkIdCorrect(nlohmann::json const& js, bool idExpected) const;
 
+    /// Return true if all items in `telemItemA` and `telemItemB` match.
+    template <class TIC>
+    static bool compareItemsTemplate(TelemetryItem const& telemItemA, TelemetryItem const& telemItemB) {
+        try {
+            TIC const& aItem = dynamic_cast<TIC const&>(telemItemA);
+            TIC const& bItem = dynamic_cast<TIC const&>(telemItemB);
+            return compareTelemetryItemMaps(aItem._tiMap, bItem._tiMap);
+        } catch (std::bad_cast const& ex) {
+            return false;
+        }
+    }
+
+    /// Map of items for this TelemetryItem. Does not change after constructor.
+    TelemetryItemMap _tiMap;
 private:
     std::string const _id;
 };
 
+/// This is a TelemetryItem child class for handling simple single values (such as
+/// double, boolean, int, etc.), primarily for the purpose of reading them
+/// in and out of json objects. This class only supports types supported by
+/// std::atomic.
+/// Unit tests in tests/test_TelemetryCom
+template <class ST>
+class TItemSimple : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemSimple>;
+
+    TItemSimple() = delete;
+
+    /// Create a `TItemSimple` object with identifier `id` and option value `defaultVal` for all entries.
+    TItemSimple(std::string const& id, ST defaultVal = 0) : TelemetryItem(id), _val(defaultVal) {}
+
+    ~TItemSimple() override {}
+
+    /// Return a copy of the value.
+    ST getVal() const { return _val; }
+
+    /// Set the value of the object to `val`.
+    void setVal(ST const& val) { _val = val; }
+
+    /// Return the json representation of this object.
+    nlohmann::json getJson() const override {
+        nlohmann::json js;
+        ST v = _val;  // conversion from atomic fails when js[getId()] = _val;
+        js[getId()] = v;
+        return js;
+    }
+
+    /// Set the value of this object from json.
+    bool setFromJson(nlohmann::json const& js, bool idExpected) {
+        if (idExpected) {
+            // This type can only have a simple type value for `_val`.
+            LERROR("TItemSimple::setFromJson cannot have a json 'id' entry");
+            return false;
+        }
+        try {
+            ST val = js.at(getId());
+            setVal(val);
+            return true;
+        } catch (nlohmann::json::out_of_range const& ex) {
+            LERROR("TItemSimple::setFromJson out of range for ", getId(), " js=", js);
+        }
+        return false;
+    }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        try {
+            TItemSimple<ST> const& otherItem = dynamic_cast<TItemSimple<ST> const&>(other);
+            return (getId() == otherItem.getId() && _val == otherItem._val);
+        } catch (std::bad_cast const& ex) {
+            return false;
+        }
+    }
+
+private:
+    std::atomic<ST> _val; ///< Stores the typed value for this item.
+    mutable std::mutex _mtx; ///< Protects `_val`.
+};
+
+
 /// This class is used to store a specific telemetry item with a double value.
 /// Unit tests in tests/test_TelemetryCom
-class TItemDouble : public TelemetryItem {
+class TItemDouble : public TItemSimple<double> {
 public:
     using Ptr = std::shared_ptr<TItemDouble>;
 
     /// Create a shared pointer instance of TItemDouble using `id`, and `defaultVal`, and
     /// insert it into the map `itMap`.
-    /// @see `TItemDouble`
-    /// @throws util::Bug if the new object cannot be inserted into the list
-    static Ptr create(std::string const& id, TelemetryItemMap* itMap, double defaultVal = 0.0);
-    TItemDouble() = delete;
+    /// @throws TelemetryException if the new object cannot be inserted into the list.
+    static Ptr create(std::string const& id, TelemetryItemMap* tiMap, double defaultVal = 0.0) {
+        Ptr newItem = Ptr(new TItemDouble(id, defaultVal));
+        insert(tiMap, newItem);
+        return newItem;
+    }
 
     /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal`.
-    TItemDouble(std::string const& id, double defaultVal = 0.0) : TelemetryItem(id), _val(defaultVal) {}
+    TItemDouble(std::string const& id, double defaultVal = 0.0) : TItemSimple(id, defaultVal) {}
 
-    //// Set the value of the object to `val`.
-    void setVal(double val) { _val = val; }
+    TItemDouble() = delete;
 
-    //// Return the value of this object.
-    double getVal() const { return _val; }
-
-    /// Return the json representation of this object.
-    nlohmann::json getJson() const override;
-
-    /// Set the value of this object from json.
-    bool setFromJson(nlohmann::json const& js, bool idExpected) override;
-
-    /// Return true if this item and `other` have the same id and values.
-    bool compareItem(TelemetryItem const& other) const override;
-
-private:
-    std::atomic<double> _val;
+    virtual ~TItemDouble() {}
 };
 
-/// common elements between powerStatus and powerStatusRaw
+/// This class is used to store a specific telemetry item with a bool value.
 /// Unit tests in tests/test_TelemetryCom
-class TItemPowerStatusBase : public TelemetryItem {
+class TItemBoolean : public TItemSimple<bool> {
 public:
-    TItemPowerStatusBase(std::string const& id) : TelemetryItem(id) {}
+    using Ptr = std::shared_ptr<TItemBoolean>;
 
-    virtual ~TItemPowerStatusBase() = default;
+    /// Create a shared pointer instance of TItemBoolean using `id`, and `defaultVal`, and
+    /// insert it into the map `itMap`.
+    /// @throws TelemetryException if the new object cannot be inserted into the list.
+    static Ptr create(std::string const& id, TelemetryItemMap* tiMap, bool defaultVal = false) {
+        Ptr newItem = Ptr(new TItemBoolean(id, defaultVal));
+        insert(tiMap, newItem);
+        return newItem;
+    }
 
-    /// Set `_motorVoltage` to `val`.
-    void setMotorVoltage(double val) { _motorVoltage->setVal(val); }
+    /// Create a `TItemBoolean` object with identifier `id` and option value `defaultVal`.
+    TItemBoolean(std::string const& id, double defaultVal = 0.0) : TItemSimple(id, defaultVal) {}
 
-    /// Set `_motorCurrent` to `val`.
-    void setMotorCurrent(double val) { _motorCurrent->setVal(val); }
+    TItemBoolean() = delete;
 
-    /// Set `_commVoltage` to `val`.
-    void setCommVoltage(double val) { _commVoltage->setVal(val); }
+    virtual ~TItemBoolean() {}
+};
 
-    /// Set `_commCurrent` to `val`.
-    void setCommCurrent(double val) { _commCurrent->setVal(val); }
 
-    /// Return the value of `_motorVoltage`.
-    double getMotorVoltage() { return _motorVoltage->getVal(); }
+/// This is a TelemetryItem child class for handling vectors, primarily
+/// for the purpose of reading them in and out of json objects.
+/// Unit tests in tests/test_TelemetryCom
+template <class VT>
+class TItemVector : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemVector>;
 
-    /// Return the value of `_motorCurrent`.
-    double getMotorCurrent() { return _motorCurrent->getVal(); }
+    TItemVector() = delete;
 
-    /// Return the value of `_commVoltage`.
-    double getCommVoltage() { return _commVoltage->getVal(); }
+    /// Create a `TItemVector` object with identifier `id` and option value `defaultVal` for all entries.
+    TItemVector(std::string const& id, int size, VT defaultVal = 0) : TelemetryItem(id), _size(size) {
+        for(size_t j=0; j<_size; ++j) {
+            _vals.push_back(defaultVal);
+        }
+    }
 
-    /// Return the value of `_commCurrent`.
-    double getCommCurrent() { return _commCurrent->getVal(); }
+    ~TItemVector() override {}
 
-    /// Local override of getJson
-    nlohmann::json getJson() const override { return buildJsonFromMap(_map); }
+    /// Return a vector copy of the values in this object.
+    std::vector<VT> getVals() const {
+        std::vector<VT> outVals;
+        std::lock_guard<std::mutex> lg(_mtx);
+        for (auto const& v : _vals) {
+            outVals.push_back(v);
+        }
+        return outVals;
+    }
+
+    /// Set the value of the object to `vals`, which must have the same size as `_vals`.
+    /// @return false if the size of `vals` is different from `_size`.
+    bool setVals(std::vector<VT> const& vals) {
+        if (vals.size() != _size) {
+            LERROR("TItemVector::setVals wrong size vals.size()=", vals.size(), " for ", dump());
+            return false;
+        }
+        std::lock_guard<std::mutex> lg(_mtx);
+        for (size_t j = 0; j < _size; ++j) {
+            _vals[j] = vals[j];
+        }
+        return true;
+    }
+
+    /// Set the value at `index` in `_vals` to val.
+    /// @return false if index is out of range.
+    bool setVal(size_t index, VT val) {
+        if (index > _size) {
+            return false;
+        }
+        std::lock_guard<std::mutex> lg(_mtx);
+        _vals[index] = val;
+        return true;
+    }
+
+    /// Return the value at `index` in `_vals`.
+    /// @throw TelemetryException if index is out of range.
+    VT getVal(size_t index) const {
+        if (index > _size) {
+            throw TelemetryException(ERR_LOC, "TItemVector::getVal out of range for index=" +
+                                     std::to_string(index) + " for " + dump());
+        }
+        std::lock_guard<std::mutex> lg(_mtx);
+        return _vals[index];
+    }
+
+    /// Return the json representation of this object.
+    nlohmann::json getJson() const override {
+        nlohmann::json js;
+        nlohmann::json jArray = nlohmann::json::array();
+
+        std::lock_guard<std::mutex> lg(_mtx);
+        for (size_t j = 0; j < _size; ++j) {
+            jArray.push_back(_vals[j]);
+        }
+        js[getId()] = jArray;
+        return js;
+    }
 
     /// Set the value of this object from json.
     bool setFromJson(nlohmann::json const& js, bool idExpected) override {
-        return setMapFromJson(_map, js, idExpected);
+        if (idExpected) {
+            // This type can only have a typed value array for `_vals`.
+            LERROR("TItemVector::setFromJson cannot have a json 'id' entry");
+            return false;
+        }
+        try {
+            std::vector<VT> vals = js.at(getId());
+            return setVals(vals);
+        } catch (nlohmann::json::out_of_range const& ex) {
+            LERROR("TItemVector::setFromJson out of range for ", getId(), " js=", js);
+        }
+        return false;
     }
 
     /// Return true if this item and `other` have the same id and values.
-    bool compareItem(TelemetryItem const& other) const override;
+    bool compareItem(TelemetryItem const& other) const override {
+        try {
+            TItemVector const& otherT = dynamic_cast<TItemVector const&>(other);
+            if (getId() != other.getId() || _size != otherT._size) {
+                return false;
+            }
+            // There's no way to reliably control which gets locked first
+            // (both A.compareItem(B) or B.compareItem(A) are possible),
+            // so this is needed to lock both without risk of deadlock.
+            std::unique_lock lockThis(_mtx, std::defer_lock);
+            std::unique_lock lockOther(otherT._mtx, std::defer_lock);
+            std::lock(lockThis, lockOther);
+            return (_vals == otherT._vals);
+        } catch (std::bad_cast const& ex) {
+            return false;
+        }
+    }
 
 private:
-    /// Map of items for this TelemetryItem. Does not change after constructor.
-    TelemetryItemMap _map;
-    TItemDouble::Ptr _motorVoltage = TItemDouble::create("motorVoltage", &_map);
-    TItemDouble::Ptr _motorCurrent = TItemDouble::create("motorCurrent", &_map);
-    TItemDouble::Ptr _commVoltage = TItemDouble::create("commVoltage", &_map);
-    TItemDouble::Ptr _commCurrent = TItemDouble::create("commCurrent", &_map);
+    size_t const _size; ///< Number of elements in `_vals`.
+    std::vector<VT> _vals; ///< Vector containing the typed values with length _size.
+    mutable std::mutex _mtx; ///< Protects `_vals`.
 };
 
-/// This class is used to store data for the "powerStatus" entry.
-/// Unit tests in tests/test_TelemetryCom
-class TItemPowerStatus : public TItemPowerStatusBase {
-public:
-    using Ptr = std::shared_ptr<TItemPowerStatus>;
 
-    TItemPowerStatus() : TItemPowerStatusBase("powerStatus") {}
-    virtual ~TItemPowerStatus() = default;
+/// This is a TItemVector child class for handling vectors of doubles.
+/// Unit tests in tests/test_TelemetryCom
+class TItemVectorDouble : public TItemVector<double> {
+public:
+    using Ptr = std::shared_ptr<TItemVectorDouble>;
+
+    /// Create a shared pointer instance of TItemVectorDouble using `id`, number of elements `size, and `defaultVal` for
+    /// all entries, then insert it into the map `itMap`.
+    /// @throws TelemetryException if the new object cannot be inserted into the list
+    static Ptr create(std::string const& id, size_t size, TelemetryItemMap* tiMap, double defaultVal = 0.0) {
+        Ptr newItem = Ptr(new TItemVectorDouble(id, size, defaultVal));
+        insert(tiMap, newItem);
+        return newItem;
+    }
+
+    TItemVectorDouble() = delete;
+
+    /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal` for all entries.
+    TItemVectorDouble(std::string const& id, int size, double defaultVal = 0.0) : TItemVector(id, size, defaultVal) {}
+
+    ~TItemVectorDouble() override {}
 };
-
-/// This class is used to store data for the "powerStatusRaw" entry.
+/// This is a TItemVector child class for handling vectors of ints.
 /// Unit tests in tests/test_TelemetryCom
-class TItemPowerStatusRaw : public TItemPowerStatusBase {
+class TItemVectorInt : public TItemVector<int> {
 public:
-    using Ptr = std::shared_ptr<TItemPowerStatusRaw>;
+    using Ptr = std::shared_ptr<TItemVectorInt>;
 
-    TItemPowerStatusRaw() : TItemPowerStatusBase("powerStatusRaw") {}
-    virtual ~TItemPowerStatusRaw() = default;
+    /// Create a shared pointer instance of TItemVectorInt using `id`, number of elements `size, and `defaultVal` for
+    /// all entries, then insert it into the map `itMap`.
+    /// @throws TelemetryException if the new object cannot be inserted into the list
+    static Ptr create(std::string const& id, size_t size, TelemetryItemMap* tiMap, int defaultVal = 0) {
+        Ptr newItem = Ptr(new TItemVectorInt(id, size, defaultVal));
+        insert(tiMap, newItem);
+        return newItem;
+    }
+    TItemVectorInt() = delete;
+
+    /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal` for all entries.
+    TItemVectorInt(std::string const& id, int size, int defaultVal = 0) : TItemVector(id, size, defaultVal) {}
+
+    ~TItemVectorInt() override {}
 };
 
 }  // namespace system

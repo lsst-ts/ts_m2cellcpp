@@ -26,7 +26,7 @@
 // Third party headers
 
 // project headers
-#include "system/TelemetryItem.h"
+#include "system/TelemetryItemDefs.h"
 
 namespace LSST {
 namespace m2cellcpp {
@@ -41,11 +41,6 @@ public:
     TelemetryMap(TelemetryMap const& other) { _map = other.copyMap(); }
     TelemetryMap& operator=(TelemetryMap const&) = delete;
     ~TelemetryMap() = default;
-
-    /// Return true if all elements of `mapA` have a match in `mapB`, where `note` is
-    /// used to help identify what is being compared in the log.
-    static bool compareTelemetryItemMaps(TelemetryItemMap const& mapA, TelemetryItemMap const& mapB,
-                                         std::string const& note = "");
 
     /// Return a copy of the internal `_map` object.
     /// It's a map of pointers, so both maps represent the same items.
@@ -71,6 +66,57 @@ public:
     /// Return a pointer to `_powerStatusRaw`.
     TItemPowerStatusRaw::Ptr getPowerStatusRaw() const { return _powerStatusRaw; }
 
+    /// Return a pointer to `_tangentForce`.
+    TItemTangentForce::Ptr getTangentForce() const { return _tangentForce; }
+
+    /// Return a pointer to `_forceBalance`.
+    TItemForceBalance::Ptr getForceBalance() const {return _forceBalance; }
+
+    /// Return a pointer to `_position`.
+    TItemPosition::Ptr getPosition() const {return _position; }
+
+    /// Return a pointer to `_positionIMS`.
+    TItemPositionIMS::Ptr getPositionIMS() const {return _positionIMS; }
+
+    /// Return a pointer to `_temperature`.
+    TItemTemperature::Ptr getTemperature() const {return _temperature; }
+
+    /// Return a pointer to `_zenithAngle`.
+    TItemZenithAngle::Ptr getZenithAngle() const {return _zenithAngle; }
+
+    /// Return a pointer to `_axialEncoderPositions`.
+    TItemAxialEncoderPositions::Ptr getAxialEncoderPositions() const {return _axialEncoderPositions; }
+
+    /// Return a pointer to `_tangentEncoderPositions`.
+    TItemTangentEncoderPositions::Ptr getTangentEncoderPositions() const {return _tangentEncoderPositions; }
+
+    /// Return a pointer to `_axialActuatorSteps`.
+    TItemAxialActuatorSteps::Ptr getAxialActuatorSteps() const {return _axialActuatorSteps; }
+
+    /// Return a pointer to `_tangentActuatorSteps`.
+    TItemTangentActuatorSteps::Ptr getTangentActuatorSteps() const {return _tangentActuatorSteps; }
+
+    /// Return a pointer to `_forceErrorTangent`.
+    TItemForceErrorTangent::Ptr getForceErrorTangent() const {return _forceErrorTangent; }
+
+    /// Return a pointer to `_inclinometerAngleTma`.
+    TItemInclinometerAngleTma::Ptr getInclinometerAngleTma() const {return _inclinometerAngleTma; }
+
+    /// Return a pointer to `_displacementSensors`.
+    TItemDisplacementSensors::Ptr getDisplacementSensors() const {return _displacementSensors; }
+
+    /// Return a pointer to `_ilcData`.
+    TItemIlcData::Ptr getIlcData() const {return _ilcData; }
+
+    /// Return a pointer to `_netForcesTotal`.
+    TItemNetForcesTotal::Ptr getNetForcesTotal() const {return _netForcesTotal; }
+
+    /// Return a pointer to `_netMomentsTotal`.
+    TItemNetMomentsTotal::Ptr getNetMomentsTotal() const {return _netMomentsTotal; }
+
+    /// Return a pointer to `_axialForce`.
+    TItemAxialForce::Ptr getAxialForce() const {return _axialForce; }
+
 private:
     /// Map of all telemetry items to be sent to clients.
     /// Once created, the items contained in the map will not change, but their values will.
@@ -89,6 +135,26 @@ private:
     TItemPowerStatus::Ptr _powerStatus = TelemetryMap::_addItem<TItemPowerStatus>();  ///< "powerStatus"
     TItemPowerStatusRaw::Ptr _powerStatusRaw =
             TelemetryMap::_addItem<TItemPowerStatusRaw>();  ///< "powerStatusRaw"
+    TItemTangentForce::Ptr _tangentForce = _addItem<TItemTangentForce>(); ///< "tangentForce"
+    TItemForceBalance::Ptr _forceBalance = _addItem<TItemForceBalance>(); ///< "forceBalance"
+    TItemPosition::Ptr _position = _addItem<TItemPosition>(); ///< "position"
+    TItemPositionIMS::Ptr _positionIMS = _addItem<TItemPositionIMS>(); ///< "positionIMS"
+    TItemTemperature::Ptr _temperature = _addItem<TItemTemperature>(); ///< "temperature"
+    TItemZenithAngle::Ptr _zenithAngle = _addItem<TItemZenithAngle>(); ///< "zenithAngle"
+    /// "axialEncoderPositions"
+    TItemAxialEncoderPositions::Ptr _axialEncoderPositions = _addItem<TItemAxialEncoderPositions>();
+     /// "tangentEncoderPositions"
+    TItemTangentEncoderPositions::Ptr _tangentEncoderPositions = _addItem<TItemTangentEncoderPositions>();
+    TItemAxialActuatorSteps::Ptr _axialActuatorSteps = _addItem<TItemAxialActuatorSteps>(); ///< "axialActuatorSteps"
+    /// "tangentActuatorSteps"
+    TItemTangentActuatorSteps::Ptr _tangentActuatorSteps = _addItem<TItemTangentActuatorSteps>();
+    TItemForceErrorTangent::Ptr _forceErrorTangent = _addItem<TItemForceErrorTangent>(); ///< "forceErrorTangent"
+    TItemInclinometerAngleTma::Ptr _inclinometerAngleTma = _addItem<TItemInclinometerAngleTma>(); ///< "inclinometerAngleTma"
+    TItemDisplacementSensors::Ptr _displacementSensors = _addItem<TItemDisplacementSensors>(); ///< "displacementSensors"
+    TItemIlcData::Ptr _ilcData = _addItem<TItemIlcData>(); ///< "ilcData"
+    TItemNetForcesTotal::Ptr _netForcesTotal = _addItem<TItemNetForcesTotal>(); ///< "netForcesTotal"
+    TItemNetMomentsTotal::Ptr _netMomentsTotal = _addItem<TItemNetMomentsTotal>(); ///< "netMomentsTotal"
+    TItemAxialForce::Ptr _axialForce = _addItem<TItemAxialForce>(); ///< "axialForce"
 };
 
 }  // namespace system

@@ -48,32 +48,32 @@ TEST_CASE("Test TelemetryItem", "[TelemetryItem]") {
     double mc = -2.0;
     double cv = 3.0;
     double cc = 4.0;
-    powerStatus1->setMotorVoltage(mv);
-    powerStatus1->setMotorCurrent(mc);
-    powerStatus1->setCommVoltage(cv);
-    powerStatus1->setCommCurrent(cc);
+    powerStatus1->getMotorVoltage().setVal(mv);
+    powerStatus1->getMotorCurrent().setVal(mc);
+    powerStatus1->getCommVoltage().setVal(cv);
+    powerStatus1->getCommCurrent().setVal(cc);
 
     auto powerStatusRaw1 = TItemPowerStatusRaw::Ptr(new TItemPowerStatusRaw());
     double rmv = 7.0;
     double rmc = 8.0;
     double rcv = -9.0;
     double rcc = -12.0;
-    powerStatusRaw1->setMotorVoltage(rmv);
-    powerStatusRaw1->setMotorCurrent(rmc);
-    powerStatusRaw1->setCommVoltage(rcv);
-    powerStatusRaw1->setCommCurrent(rcc);
+    powerStatusRaw1->getMotorVoltage().setVal(rmv);
+    powerStatusRaw1->getMotorCurrent().setVal(rmc);
+    powerStatusRaw1->getCommVoltage().setVal(rcv);
+    powerStatusRaw1->getCommCurrent().setVal(rcc);
 
-    REQUIRE(powerStatus1->getMotorVoltage() == mv);
-    REQUIRE(powerStatus1->getMotorCurrent() == mc);
-    REQUIRE(powerStatus1->getCommVoltage() == cv);
-    REQUIRE(powerStatus1->getCommCurrent() == cc);
+    REQUIRE(powerStatus1->getMotorVoltage().getVal() == mv);
+    REQUIRE(powerStatus1->getMotorCurrent().getVal() == mc);
+    REQUIRE(powerStatus1->getCommVoltage().getVal() == cv);
+    REQUIRE(powerStatus1->getCommCurrent().getVal() == cc);
     auto ps1Js = powerStatus1->getJson();
     LDEBUG("powerStatus1=", ps1Js);
 
-    REQUIRE(powerStatusRaw1->getMotorVoltage() == rmv);
-    REQUIRE(powerStatusRaw1->getMotorCurrent() == rmc);
-    REQUIRE(powerStatusRaw1->getCommVoltage() == rcv);
-    REQUIRE(powerStatusRaw1->getCommCurrent() == rcc);
+    REQUIRE(powerStatusRaw1->getMotorVoltage().getVal() == rmv);
+    REQUIRE(powerStatusRaw1->getMotorCurrent().getVal() == rmc);
+    REQUIRE(powerStatusRaw1->getCommVoltage().getVal() == rcv);
+    REQUIRE(powerStatusRaw1->getCommCurrent().getVal() == rcc);
     auto psRaw1Js = powerStatusRaw1->getJson();
     LDEBUG("powerStatusRaw1=", psRaw1Js);
 
@@ -83,10 +83,10 @@ TEST_CASE("Test TelemetryItem", "[TelemetryItem]") {
     bool result = powerStatus2->parse(ps1Str);
     LDEBUG("powerStatus2=", powerStatus2->getJson());
     REQUIRE(result == true);
-    REQUIRE(powerStatus2->getMotorVoltage() == mv);
-    REQUIRE(powerStatus2->getMotorCurrent() == mc);
-    REQUIRE(powerStatus2->getCommVoltage() == cv);
-    REQUIRE(powerStatus2->getCommCurrent() == cc);
+    REQUIRE(powerStatus2->getMotorVoltage().getVal() == mv);
+    REQUIRE(powerStatus2->getMotorCurrent().getVal() == mc);
+    REQUIRE(powerStatus2->getCommVoltage().getVal() == cv);
+    REQUIRE(powerStatus2->getCommCurrent().getVal() == cc);
 
     // Set values of powerStatusRaw2 from powerStatusRaw1 and test that they match.
     auto powerStatusRaw2 = TItemPowerStatusRaw::Ptr(new TItemPowerStatusRaw());
@@ -94,60 +94,240 @@ TEST_CASE("Test TelemetryItem", "[TelemetryItem]") {
     bool rresult = powerStatusRaw2->parse(psRaw1Str);
     LDEBUG("powerStatusRaw2=", powerStatusRaw2->getJson());
     REQUIRE(rresult == true);
-    REQUIRE(powerStatusRaw2->getMotorVoltage() == rmv);
-    REQUIRE(powerStatusRaw2->getMotorCurrent() == rmc);
-    REQUIRE(powerStatusRaw2->getCommVoltage() == rcv);
-    REQUIRE(powerStatusRaw2->getCommCurrent() == rcc);
+    REQUIRE(powerStatusRaw2->getMotorVoltage().getVal() == rmv);
+    REQUIRE(powerStatusRaw2->getMotorCurrent().getVal() == rmc);
+    REQUIRE(powerStatusRaw2->getCommVoltage().getVal() == rcv);
+    REQUIRE(powerStatusRaw2->getCommCurrent().getVal() == rcc);
+
+    // Test TItemTangentForce and TItemVectorDouble
+    auto tangForceIn = TItemTangentForce::Ptr(new TItemTangentForce());
+    vector<double> tfInLutGravity{0.6, -0.5, -0.4, 0.3, 0.2, -0.1};
+    vector<double> tfInLutTemperature{};
+    vector<double> tfInApplied{-6.0, -1.5, 3.4, 7.3, 9.2, -2.1};
+    vector<double> tfInMeasured{8.6, -3.5, -1.4, 9.3, 4.2, -5.1};
+    vector<double> tfInHardpointCorrection{9.6, -7.5, -2.4, 6.3, 1.2, -7.1};
+    tangForceIn->getLutGravity().setVals(tfInLutGravity);
+    tangForceIn->getLutTemperature().setVals(tfInLutTemperature);
+    tangForceIn->getApplied().setVals(tfInApplied);
+    tangForceIn->getMeasured().setVals(tfInMeasured);
+    tangForceIn->getHardpointCorrection().setVals(tfInHardpointCorrection);
+    auto tangFInJs = tangForceIn->getJson();
+    string tangFInStr = to_string(tangFInJs);
+    LDEBUG("tangForceIn=", tangFInStr);
+    REQUIRE(tangForceIn->getLutGravity().getVals() == tfInLutGravity);
+    REQUIRE(tangForceIn->getLutTemperature().getVals() == tfInLutTemperature);
+    REQUIRE(tangForceIn->getApplied().getVals() == tfInApplied);
+    REQUIRE(tangForceIn->getMeasured().getVals() == tfInMeasured);
+    REQUIRE(tangForceIn->getHardpointCorrection().getVals() == tfInHardpointCorrection);
+    REQUIRE(tangForceIn->getLutTemperature().getVals() != tfInHardpointCorrection);
+    REQUIRE(tangForceIn->getApplied().getVals() != tfInMeasured);
+
+    // Create a new TangentForce object that is different that tangForceIn
+    // to check comparisons.
+    auto tangForceOut = TItemTangentForce::Ptr(new TItemTangentForce());
+    REQUIRE(tangForceIn->compareItem(*tangForceOut) == false);
+    REQUIRE(tangForceIn->compareItem(*powerStatusRaw2) == false);
+    // Set the new object to the old object using json and check that they match
+    bool tfResult = tangForceOut->parse(tangFInStr);
+    REQUIRE(tfResult);
+    REQUIRE(tangForceIn->compareItem(*tangForceOut) == true);
+
+    // Test TItemAxialActuatorSteps as it contains a TItemVectorInt item
+    auto axialActuatorStepsIn = TItemAxialActuatorSteps::Ptr(new TItemAxialActuatorSteps());
+    vector<int> aaSteps;
+    for(int j=0; j<72; ++j) {
+        aaSteps.push_back(j);
+    }
+    axialActuatorStepsIn->getSteps().setVals(aaSteps);
+    auto axialActInJs = axialActuatorStepsIn->getJson();
+    string axialActInStr = to_string(axialActInJs);
+    LDEBUG("axialActInStr=", axialActInStr);
+    // Make a new  object and verify that they are different
+    auto axialActuatorStepsOut = TItemAxialActuatorSteps::Ptr(new TItemAxialActuatorSteps());
+    REQUIRE(axialActuatorStepsOut->compareItem(*axialActuatorStepsIn) == false);
+    // Set the new object to the old object using json and check that they match
+    bool aaResult = axialActuatorStepsOut->parse(axialActInStr);
+    REQUIRE(aaResult);
+    REQUIRE(axialActuatorStepsIn->compareItem(*axialActuatorStepsOut) == true);
 
     LDEBUG("TelemetryItem::test() end");
 }
 
 TEST_CASE("Test TelemetryCom", "[TelemetryCom]") {
-    {
-        LINFO("Creating serv");
-        int const port = 10081;
-        auto servTelemetryMap = TelemetryMap::Ptr(new TelemetryMap());
-        auto serv = TelemetryCom::create(servTelemetryMap, port);
+    LINFO("Creating serv");
+    int const port = 10081;
+    auto servTelemetryMap = TelemetryMap::Ptr(new TelemetryMap());
+    auto serv = TelemetryCom::create(servTelemetryMap, port);
 
-        serv->startServer();
-        REQUIRE(serv->waitForServerRunning(5) == true);
+    serv->startServer();
+    REQUIRE(serv->waitForServerRunning(5) == true);
 
-        servTelemetryMap->getPowerStatus()->setMotorVoltage(-3.0);
-        servTelemetryMap->getPowerStatus()->setMotorCurrent(4.0);
-        servTelemetryMap->getPowerStatus()->setCommVoltage(-5.0);
-        servTelemetryMap->getPowerStatus()->setCommCurrent(6.0);
+    servTelemetryMap->getPowerStatus()->getMotorVoltage().setVal(-3.0);
+    servTelemetryMap->getPowerStatus()->getMotorCurrent().setVal(4.0);
+    servTelemetryMap->getPowerStatus()->getCommVoltage().setVal(-5.0);
+    servTelemetryMap->getPowerStatus()->getCommCurrent().setVal(6.0);
 
-        servTelemetryMap->getPowerStatusRaw()->setMotorVoltage(17.0);
-        servTelemetryMap->getPowerStatusRaw()->setMotorCurrent(27.0);
-        servTelemetryMap->getPowerStatusRaw()->setCommVoltage(30.0);
-        servTelemetryMap->getPowerStatusRaw()->setCommCurrent(25.0);
+    servTelemetryMap->getPowerStatusRaw()->getMotorVoltage().setVal(17.0);
+    servTelemetryMap->getPowerStatusRaw()->getMotorCurrent().setVal(27.0);
+    servTelemetryMap->getPowerStatusRaw()->getCommVoltage().setVal(30.0);
+    servTelemetryMap->getPowerStatusRaw()->getCommCurrent().setVal(25.0);
 
-        LDEBUG("Running clients");
-        std::vector<TelemetryCom::Ptr> clients;
-        std::vector<thread> clientThreads;
+    vector<double> tfInLutGravity{0.6, -0.5, -0.4, 0.3, 0.2, -0.1};
+    vector<double> tfInLutTemperature{};
+    vector<double> tfInApplied{-6.0, -1.5, 3.4, 7.3, 9.2, -2.1};
+    vector<double> tfInMeasured{8.6, -3.5, -1.4, 9.3, 4.2, -5.1};
+    vector<double> tfInHardpointCorrection{9.6, -7.5, -2.4, 6.3, 1.2, -7.1};
+    servTelemetryMap->getTangentForce()->getLutGravity().setVals(tfInLutGravity);
+    servTelemetryMap->getTangentForce()->getLutTemperature().setVals(tfInLutTemperature);
+    servTelemetryMap->getTangentForce()->getApplied().setVals(tfInApplied);
+    servTelemetryMap->getTangentForce()->getMeasured().setVals(tfInMeasured);
+    servTelemetryMap->getTangentForce()->getHardpointCorrection().setVals(tfInHardpointCorrection);
 
-        for (int j = 0; j < 10; ++j) {
-            auto clientTelemetryMap = TelemetryMap::Ptr(new TelemetryMap());
-            REQUIRE(clientTelemetryMap->compareMaps(*servTelemetryMap) == false);
-            TelemetryCom::Ptr client = TelemetryCom::create(clientTelemetryMap, port);
-            clients.push_back(client);
-            clientThreads.emplace_back(&TelemetryCom::client, client, j);
-        }
-        sleep(2);
-        LDEBUG("Stopping server");
-        serv->shutdownCom();
-        LDEBUG("serv joined");
-        for (auto& thrd : clientThreads) {
-            LDEBUG("client joining");
-            thrd.join();
-        }
-        LDEBUG("clients joined");
+    servTelemetryMap->getForceBalance()->getFx().setVal(3.0);
+    servTelemetryMap->getForceBalance()->getFy().setVal(7.0);
+    servTelemetryMap->getForceBalance()->getFz().setVal(2.0);
+    servTelemetryMap->getForceBalance()->getMx().setVal(6.0);
+    servTelemetryMap->getForceBalance()->getMy().setVal(9.0);
+    servTelemetryMap->getForceBalance()->getMz().setVal(4.0);
 
-        // Test that client data matches the server data.
-        for (auto const& client : clients) {
-            TelemetryMap::Ptr clientMap = client->getTMap();
-            LDEBUG("comparing client map");
-            REQUIRE(clientMap->compareMaps(*servTelemetryMap) == true);
-        }
+    servTelemetryMap->getPosition()->getX().setVal(6.0);
+    servTelemetryMap->getPosition()->getY().setVal(5.0);
+    servTelemetryMap->getPosition()->getZ().setVal(3.0);
+    servTelemetryMap->getPosition()->getXRot().setVal(1.0);
+    servTelemetryMap->getPosition()->getYRot().setVal(7.0);
+    servTelemetryMap->getPosition()->getZRot().setVal(9.0);
+
+    servTelemetryMap->getPositionIMS()->getX().setVal(2.0);
+    servTelemetryMap->getPositionIMS()->getY().setVal(5.0);
+    servTelemetryMap->getPositionIMS()->getZ().setVal(8.0);
+    servTelemetryMap->getPositionIMS()->getXRot().setVal(1.0);
+    servTelemetryMap->getPositionIMS()->getYRot().setVal(7.0);
+    servTelemetryMap->getPositionIMS()->getZRot().setVal(4.0);
+
+    servTelemetryMap->getTemperature()->getRing().setVals({12.0, 11.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0});
+    servTelemetryMap->getTemperature()->getIntake().setVals({6.0, 2.0});
+    servTelemetryMap->getTemperature()->getExhaust().setVals({27.0, 9.0});
+
+    servTelemetryMap->getZenithAngle()->getMeasured().setVal(13.0);
+    servTelemetryMap->getZenithAngle()->getInclinometerRaw().setVal(19.0);
+    servTelemetryMap->getZenithAngle()->getInclinometerProcessed().setVal(5.0);
+
+    vector<double> posVectIn;
+    vector<int> stepVectIn;
+    for(int j=1; j<=72; ++j) {
+        posVectIn.push_back(j);
+        stepVectIn.push_back(j - 4);
+    }
+    servTelemetryMap->getAxialEncoderPositions()->getPosition().setVals(posVectIn);
+
+    servTelemetryMap->getTangentEncoderPositions()->getPosition().setVals({11.0, 10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 12.0});
+
+    servTelemetryMap->getAxialActuatorSteps()->getSteps().setVals(stepVectIn);
+
+    servTelemetryMap->getTangentActuatorSteps()->getSteps().setVals({5, 2, 3, 1, 6, 4});
+
+    servTelemetryMap->getForceErrorTangent()->getForce().setVals({21.0, 22.0, -23.0, 24.0, 25.0, 26.0});
+    servTelemetryMap->getForceErrorTangent()->getWeight().setVal(8.0);
+    servTelemetryMap->getForceErrorTangent()->getSum().setVal(99.0);
+
+    servTelemetryMap->getInclinometerAngleTma()->getInclinometer().setVal(4.0);
+
+    servTelemetryMap->getDisplacementSensors()->getThetaZ().setVals({6.1, 5.2, 4.3, 3.4, 2.5, 1.6});
+    servTelemetryMap->getDisplacementSensors()->getDeltaZ().setVals({6.0, 5.0, 4.0, 3.0, 2.5, 1.4});
+
+    servTelemetryMap->getIlcData()->getStatus().setVals(
+        {7.8, 7.7, 7.6, 7.5, 7.4, 7.3, 7.2, 7.1,
+         6.0, .9, .8, .7, .6, .5, .4, .3, .2, .1,
+         5.0, .9, .8, .7, .6, .5, .4, .3, .2, .1,
+         4.0, .9, .8, .7, .6, .5, .4, .3, .2, .1,
+         3.0, .9, .8, .7, .6, .5, .4, .3, .2, .1,
+         2.0, .9, .8, .7, .6, .5, .4, .3, .2, .1,
+         1.0, .9, .8, .7, .6, .5, .4, .3, .2, .1 });
+
+    servTelemetryMap->getNetForcesTotal()->getFx().setVal(9.0);
+    servTelemetryMap->getNetForcesTotal()->getFy().setVal(5.0);
+    servTelemetryMap->getNetForcesTotal()->getFz().setVal(8.0);
+
+    servTelemetryMap->getNetMomentsTotal()->getMx().setVal(3.0);
+    servTelemetryMap->getNetMomentsTotal()->getMy().setVal(7.0);
+    servTelemetryMap->getNetMomentsTotal()->getMz().setVal(1.0);
+
+    servTelemetryMap->getAxialForce()->getLutGravity().setVals(
+        {3.5, 4.3, 0.3, 0.7, 3.0, 1.9, 4.3, 0.3, 0.7, 3.1,
+         3.4, 4.1, 0.3, 0.7, 3.2, 1.9, 3.9, 0.4, 0.7, 3.2,
+         3.2, 3.8, 0.4, 0.7, 3.1, 1.9, 4.0, 0.3, 0.7, 3.1,
+         0.5, 4.8, 4.6, 0.5, 0.5, 4.8, 4.7, 0.4, 0.6, 4.7,
+         4.7, 0.3, 0.7, 4.7, 4.7, 0.2, 0.6, 4.7, 4.7, 0.3,
+         0.5, 4.7, 4.7, 0.5, 0.2, 2.3, 2.2, 0.2, 2.3, 2.3,
+         0.2, 2.3, 2.3, 0.2, 2.2, 2.4, 0.1, 2.2, 2.3, 0.1,
+         2.2, 2.2});
+
+    servTelemetryMap->getAxialForce()->getLutTemperature().setVals(
+        {3.5, 4.3, 0.3, 0.7, 3.0, 1.9, 4.3, 0.3, 0.7, 3.1,
+         3.4, 4.1, 0.3, 0.7, 3.2, 1.9, 3.9, 0.4, 0.7, 3.2,
+         3.2, 9.8, 0.4, 0.7, 3.1, 1.9, 4.0, 0.3, 0.7, 3.1,
+         0.5, 4.8, 4.6, 3.5, 0.5, 4.8, 4.7, 0.4, 0.6, 4.7,
+         4.7, 0.3, 0.7, 4.7, 4.7, 0.2, 0.6, 4.7, 4.7, 0.3,
+         0.5, 4.7, 4.7, 0.5, 0.2, 2.3, 2.2, 0.2, 2.3, 2.3,
+         0.2, 2.3, 2.3, 0.2, 2.2, 2.4, 0.1, 2.2, 2.3, 0.1,
+         5.2, 2.2});
+
+    servTelemetryMap->getAxialForce()->getApplied().setVals(
+        {3.5, 4.3, 0.3, 0.7, 3.0, 1.9, 4.3, 0.3, 0.7, 3.1,
+         3.4, 4.1, 0.3, 0.7, 3.2, 1.9, 3.9, 0.4, 0.7, 3.2,
+         3.2, 3.8, 0.4, 0.7, 3.1, 1.9, 4.0, 0.3, 0.7, 3.1,
+         0.5, 4.8, 4.6, 0.5, 0.5, 4.8, 4.7, 0.4, 0.6, 4.7,
+         4.7, 0.3, 0.7, 4.7, 4.7, 0.2, 0.6, 4.7, 4.7, 0.3,
+         3.5, 4.7, 4.7, 0.5, 0.2, 2.3, 2.2, 0.2, 2.3, 2.3,
+         0.2, 2.3, 2.3, 0.2, 2.2, 2.4, 0.1, 2.2, 2.3, 0.1,
+         2.2, 2.2});
+
+    servTelemetryMap->getAxialForce()->getMeasured().setVals(
+        {3.5, 4.3, 0.3, 0.7, 3.0, 1.9, 4.3, 0.3, 0.7, 3.1,
+         3.4, 4.1, 0.3, 0.7, 3.2, 1.9, 3.9, 0.4, 0.7, 3.2,
+         3.2, 3.8, 0.4, 0.7, 3.1, 1.9, 4.0, 0.3, 0.7, 3.1,
+         0.5, 4.8, 4.6, 0.5, 0.5, 4.8, 4.7, 0.4, 0.6, 4.7,
+         4.7, 0.3, 0.7, 4.7, 4.7, 0.2, 0.6, 4.7, 4.7, 0.3,
+         0.5, 4.7, 4.7, 0.5, 0.2, 2.3, 2.2, 0.2, 2.3, 2.3,
+         8.2, 2.3, 2.3, 0.2, 2.2, 2.4, 0.1, 2.2, 2.3, 0.1,
+         2.2, 2.2});
+
+    servTelemetryMap->getAxialForce()->getHardpointCorrection().setVals(
+        {3.5, 4.3, 0.3, 0.7, 3.0, 1.9, 4.3, 0.3, 0.7, 3.1,
+         3.4, 4.1, 0.3, 0.7, 3.2, 1.9, 3.9, 0.4, 0.7, 3.2,
+         3.2, 3.8, 0.4, 0.7, 3.1, 1.9, 4.0, 0.3, 0.7, 3.1,
+         0.5, 4.8, 4.6, 0.5, 0.5, 4.8, 4.7, 0.4, 0.6, 4.7,
+         0.7, 0.3, 0.7, 4.7, 4.7, 0.2, 0.6, 4.7, 4.7, 0.3,
+         0.5, 4.7, 4.7, 0.5, 0.2, 2.3, 2.2, 0.2, 2.3, 2.3,
+         0.2, 2.3, 2.3, 0.2, 2.2, 2.4, 0.1, 2.2, 2.3, 0.1,
+         2.2, 2.2});
+
+    LDEBUG("Running clients");
+    std::vector<TelemetryCom::Ptr> clients;
+    std::vector<thread> clientThreads;
+
+    for (int j = 0; j < 10; ++j) {
+        auto clientTelemetryMap = TelemetryMap::Ptr(new TelemetryMap());
+        REQUIRE(clientTelemetryMap->compareMaps(*servTelemetryMap) == false);
+        TelemetryCom::Ptr client = TelemetryCom::create(clientTelemetryMap, port);
+        clients.push_back(client);
+        clientThreads.emplace_back(&TelemetryCom::client, client, j);
+    }
+    sleep(2);
+    LDEBUG("Stopping server");
+    serv->shutdownCom();
+    LDEBUG("serv joined");
+    for (auto& thrd : clientThreads) {
+        LDEBUG("client joining");
+        thrd.join();
+    }
+    LDEBUG("clients joined");
+
+    // Test that client data matches the server data.
+    for (auto const& client : clients) {
+        TelemetryMap::Ptr clientMap = client->getTMap();
+        LDEBUG("comparing client map");
+        REQUIRE(clientMap->compareMaps(*servTelemetryMap) == true);
     }
 }
+
