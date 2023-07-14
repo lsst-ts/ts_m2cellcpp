@@ -23,6 +23,7 @@
 #define CATCH_CONFIG_MAIN
 
 // System headers
+#include <csignal>
 #include <exception>
 
 // 3rd party headers
@@ -38,8 +39,20 @@
 using namespace std;
 using namespace LSST::m2cellcpp::system;
 
+void signalHandler(int sig) {
+    if (sig == SIGPIPE) {
+        LWARN("Ignoring SIGPIPE sig=", sig);
+        return;
+    }
+    LCRITICAL("Unhandled signal caught sig=", sig);
+    exit(sig);
+}
+
 TEST_CASE("Test TelemetryItem", "[TelemetryItem]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
+
+    // Setup a simple signal handler to handle when clients closing connection results in SIGPIPE.
+    signal(SIGPIPE, signalHandler);
 
     LDEBUG("TelemetryItem::test() start");
     auto powerStatus1 = TItemPowerStatus::Ptr(new TItemPowerStatus());

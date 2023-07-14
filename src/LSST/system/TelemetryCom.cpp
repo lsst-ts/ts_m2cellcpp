@@ -52,7 +52,7 @@ TelemetryCom::~TelemetryCom() {
     lock_guard<mutex> htLock();
     for (auto&& ht : _handlerThreads) {
         ht->servConnHShutdown();
-        ht->join();
+        ht->joinAll();
     }
 }
 
@@ -168,8 +168,8 @@ void TelemetryCom::_server() {
             auto iter = _handlerThreads.begin();
             while (iter != _handlerThreads.end()) {
                 auto oldIter = iter++;
-                auto needToErase = (*oldIter)->checkJoin();
-                if (needToErase || (*oldIter)->getJoined()) {
+                auto needToErase = (*oldIter)->checkJoinAll();
+                if (needToErase || (*oldIter)->getJoinedAll()) {
                     LINFO("TelemetryCom::server() removing old client");
                     _handlerThreads.erase(oldIter);
                 }
@@ -184,8 +184,15 @@ void TelemetryCom::_server() {
     LINFO("TelemetryCom::server() done");
 }
 
+void TelemetryCom::ServerConnectionHandler::servConnHShutdown() {
+    _connLoop = false;
+    shutdown(_servConnHSock, SHUT_RDWR);
+    close(_servConnHSock);
+}
+
 void TelemetryCom::ServerConnectionHandler::_servConnHandler() {
     LDEBUG("TelemetryCom::ServerConnectionHandler::_servConnHandler starting sock=", _servConnHSock);
+    unsigned int msgSentCount = 0;
     while (_connLoop) {
         for (auto const& elem : _tItemMap) {
             auto js = elem.second->getJson();
@@ -197,51 +204,117 @@ void TelemetryCom::ServerConnectionHandler::_servConnHandler() {
             // calling send().
             ssize_t status = send(_servConnHSock, msg.c_str(), msg.length(), 0);
             LTRACE("TelemetryCom send status=", status, " msg=", msg);
+            if ((msgSentCount++)%100000 == 0) {
+                LDEBUG("TelemetryCom send sock=", _servConnHSock, " status=", status, " msgSentCount=", msgSentCount);
+            }
             if (status < 0) {
                 LWARN("TelemetryCom::ServerConnectionHandler::_servConnHandler failure status=", status);
                 servConnHShutdown();
                 break;
             }
         }
-        this_thread::sleep_for(50ms);
+        this_thread::sleep_for(50ms); // Deliver telemetry update about 20 times per second.
     }
     LDEBUG("TelemetryCom::ServerConnectionHandler::_servConnHandler close sock=", _servConnHSock);
     close(_servConnHSock);
-    {
-        lock_guard<mutex> lck(_joinMtx);
-        _readyToJoin = true;
-    }
+        _readyToJoinHandler = true;
     LINFO("TelemetryCom::ServerConnectionHandler::_servConnHandler done sock=", _servConnHSock);
 }
 
-bool TelemetryCom::ServerConnectionHandler::checkJoin() {
-    lock_guard<mutex> lck(_joinMtx);
-    if (_joined) {
-        LDEBUG("TelemetryCom::ServerConnectionHandler::checkJoin already joined");
-        return true;
+void TelemetryCom::ServerConnectionHandler::_servConnReader() {
+    LDEBUG("TelemetryCom::::_servConnHandler starting sock=", _servConnHSock);
+    bool connOk = true;
+    string inMsg;
+    while (_connLoop && connOk) {
+        char buffer[3];
+        // Read one byte at a time to check every byte for terminator.
+        LWARN("&&&_servConnReader() read()");
+        ssize_t status = read(_servConnHSock, buffer, 1);
+        if (status <= 0) {
+            LINFO("TelemetryCom::::_servConnReader() read failed with status=", status);
+            connOk = false;
+            break;
+        }
+        char inChar = buffer[0];
+        if (inChar == '\n' && inMsg.back() == '\r') {
+            inMsg.pop_back();
+            LDEBUG("TelemetryCom::::_servConnReader() sock=", _servConnHSock, " got inMsg=", inMsg);
+            LWARN("&&&_servConnReader() sock=", _servConnHSock, " got inMsg=", inMsg);
+            inMsg.clear();
+        } else {
+            inMsg += inChar;
+        }
     }
-    if (!_servConnHThrd.joinable() || !_readyToJoin) {
-        LDEBUG("TelemetryCom::ServerConnectionHandler::checkJoin not ready to join");
+    LDEBUG("TelemetryCom::ServerConnectionHandler::_servConnHandler close sock=", _servConnHSock);
+    close(_servConnHSock);
+    _readyToJoinReader = true;
+    LINFO("TelemetryCom::ServerConnectionHandler::_servConnHandler done sock=", _servConnHSock);
+}
+
+
+bool TelemetryCom::ServerConnectionHandler::checkJoinAll() {
+    lock_guard<mutex> lck(_joinMtx);
+    if (_joinedHandler) {
+        LDEBUG("TelemetryCom::ServerConnectionHandler::checkJoinAll already joined handler");
+        return _checkJoinReader();
+    }
+    if (!_servConnHThrd.joinable() || !_readyToJoinHandler) {
+        LDEBUG("TelemetryCom::ServerConnectionHandler::checkJoinAll not ready to join handler");
         return false;
     }
-    LINFO("TelemetryCom::ServerConnectionHandler::checkJoin joining");
+    LINFO("TelemetryCom::ServerConnectionHandler::checkJoinAll joining Handler");
     // The join should happen quickly as the thread should be finished, or very nearly so.
-    _join();
-    LINFO("TelemetryCom::ServerConnectionHandler::checkJoin joined");
+    _joinHandler();
+    LINFO("TelemetryCom::ServerConnectionHandler::checkJoinAll joined _servConnHThrd");
+    auto ret = _checkJoinReader();
+    return ret;
+}
+
+bool TelemetryCom::ServerConnectionHandler::_checkJoinReader() {
+    // _joinMtx should be locked before calling this function.
+    if (_joinedReader) {
+        LDEBUG("TelemetryCom::ServerConnectionHandler::_checkJoinReader already joined Reader");
+        return true;
+    }
+    if (!_servConnReadThrd.joinable() || !_readyToJoinReader) {
+        LDEBUG("TelemetryCom::ServerConnectionHandler::_checkJoinReader not ready to join Reader");
+        return false;
+    }
+    LINFO("TelemetryCom::ServerConnectionHandler::_checkJoinReader joining");
+    // The join should happen quickly as the thread should be finished, or very nearly so.
+    _joinReader();
+    LINFO("TelemetryCom::ServerConnectionHandler::_checkJoinReader joined _servConnReaderThrd");
     return true;
 }
 
-void TelemetryCom::ServerConnectionHandler::join() {
+void TelemetryCom::ServerConnectionHandler::joinAll() {
+    LDEBUG("TelemetryCom::ServerConnectionHandler::joinAll() start");
     lock_guard<mutex> lck(_joinMtx);
-    _join();
+    _joinHandler();
+    _joinReader();
+    LDEBUG("TelemetryCom::ServerConnectionHandler::joinAll() end");
 }
 
-void TelemetryCom::ServerConnectionHandler::_join() {
-    if (_joined) {
+void TelemetryCom::ServerConnectionHandler::_joinHandler() {
+    // _joinMtx must be locked before calling this function.
+    if (_joinedHandler) {
         return;
     }
+    LDEBUG("TelemetryCom::::_joinHandler() _servConnHThrd trying to join");
     _servConnHThrd.join();
-    _joined = true;
+    _joinedHandler = true;
+    LDEBUG("TelemetryCom::::_joinHandler() _servConnHThrd joined");
+}
+
+void TelemetryCom::ServerConnectionHandler::_joinReader() {
+    // _joinMtx must be locked before calling this function.
+    if (_joinedReader) {
+        return;
+    }
+    LDEBUG("TelemetryCom::::_joinReaderer() _servConnReadThrd trying to join");
+    _servConnReadThrd.join();
+    _joinedReader = true;
+    LDEBUG("TelemetryCom::::_joinReaderer() _servConnReadThrd trying to join");
 }
 
 int TelemetryCom::client(int idNum) {
