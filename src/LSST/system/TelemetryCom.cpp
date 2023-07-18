@@ -161,7 +161,7 @@ void TelemetryCom::_server() {
         LINFO("TelemetryCom::server() accepting new client");
         {
             auto handlerThrd =
-                    ServerConnectionHandler::Ptr(new ServerConnectionHandler(sock, _telemetryMap->copyMap()));
+            		ServerConnectionHandler::Ptr(new ServerConnectionHandler(sock, _telemetryMap));
             lock_guard<mutex> htLock();
             _handlerThreads.push_back(handlerThrd);
             // Check if any of the threads should be joined and removed.
@@ -193,8 +193,12 @@ void TelemetryCom::ServerConnectionHandler::servConnHShutdown() {
 void TelemetryCom::ServerConnectionHandler::_servConnHandler() {
     LDEBUG("TelemetryCom::ServerConnectionHandler::_servConnHandler starting sock=", _servConnHSock);
     unsigned int msgSentCount = 0;
+    auto itemMap = _tItemMap->copyMap();
     while (_connLoop) {
-        for (auto const& elem : _tItemMap) {
+        for (auto const& elem : itemMap) {
+            if (elem.second->getDoNotSend()) {
+                continue;
+            }
             auto js = elem.second->getJson();
             string msg = to_string(js) + TelemetryCom::TERMINATOR();
             // Calling send() after the client has been killed may result in SIGPIPE
@@ -204,7 +208,7 @@ void TelemetryCom::ServerConnectionHandler::_servConnHandler() {
             // calling send().
             ssize_t status = send(_servConnHSock, msg.c_str(), msg.length(), 0);
             LTRACE("TelemetryCom send status=", status, " msg=", msg);
-            if ((msgSentCount++)%100000 == 0) {
+            if ((msgSentCount++)%1000 == 0) {
                 LDEBUG("TelemetryCom send sock=", _servConnHSock, " status=", status, " msgSentCount=", msgSentCount);
             }
             if (status < 0) {
@@ -228,7 +232,6 @@ void TelemetryCom::ServerConnectionHandler::_servConnReader() {
     while (_connLoop && connOk) {
         char buffer[3];
         // Read one byte at a time to check every byte for terminator.
-        LWARN("&&&_servConnReader() read()");
         ssize_t status = read(_servConnHSock, buffer, 1);
         if (status <= 0) {
             LINFO("TelemetryCom::::_servConnReader() read failed with status=", status);
@@ -238,8 +241,12 @@ void TelemetryCom::ServerConnectionHandler::_servConnReader() {
         char inChar = buffer[0];
         if (inChar == '\n' && inMsg.back() == '\r') {
             inMsg.pop_back();
-            LDEBUG("TelemetryCom::::_servConnReader() sock=", _servConnHSock, " got inMsg=", inMsg);
-            LWARN("&&&_servConnReader() sock=", _servConnHSock, " got inMsg=", inMsg);
+            TelemetryItem::Ptr updatedItem = _tItemMap->setItemFromJsonStr(inMsg);
+            if (updatedItem != nullptr) {
+            	LDEBUG("TelemetryCom::::_servConnReader() inMsg=", inMsg, " updated=", updatedItem->dump());
+            } else {
+            	LWARN("TelemetryCom::::_servConnReader() failed to find item in map inMsg=", inMsg);
+            }
             inMsg.clear();
         } else {
             inMsg += inChar;

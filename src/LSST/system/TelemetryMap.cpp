@@ -41,26 +41,28 @@ bool TelemetryMap::compareMaps(TelemetryMap const& other) {
     return TelemetryItem::compareTelemetryItemMaps(_map, other._map);
 }
 
-bool TelemetryMap::setItemFromJsonStr(string const& jsStr) {
+TelemetryItem::Ptr TelemetryMap::setItemFromJsonStr(string const& jsStr) {
     try {
         json js = json::parse(jsStr);
         return setItemFromJson(js);
     } catch (json::parse_error const& ex) {
         LERROR("TelemetryMap::setItemFromJsonStr json parse error msg=", ex.what());
-        return false;
+        return nullptr;
     }
 }
 
-bool TelemetryMap::setItemFromJson(nlohmann::json const& js) {
+TelemetryItem::Ptr TelemetryMap::setItemFromJson(nlohmann::json const& js) {
     string id = js["id"];
     auto iter = _map.find(id);
     if (iter == _map.end()) {
         LERROR("TelemetryMap::setItemFromJson did not find ", js);
-        return false;
+        return nullptr;
     }
     bool idExpected = true;
     LTRACE("TelemetryMap::setItemFromJson idExpected=", idExpected, " js=", js);
-    return iter->second->setFromJson(js, idExpected);
+    // If set successfully, return a pointer to the set element, otherwise return nullptr.
+    TelemetryItem::Ptr retPtr = (iter->second->setFromJson(js, idExpected)) ? (iter->second) : nullptr;
+    return retPtr;
 }
 
 }  // namespace system

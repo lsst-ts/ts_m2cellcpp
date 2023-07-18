@@ -116,6 +116,12 @@ public:
         return setMapFromJson(_tiMap, js, idExpected);
     }
 
+    /// Return `_doNotSend`.
+    bool getDoNotSend() { return _doNotSend; }
+
+    /// Set `_doNotSend` to `val`.
+    void setDoNotSend(bool val) { _doNotSend = val; }
+
     /// Return a string reasonable for logging.
     std::string dump() const {
         std::stringstream os;
@@ -151,7 +157,8 @@ protected:
     /// Map of items for this TelemetryItem. Does not change after constructor.
     TelemetryItemMap _tiMap;
 private:
-    std::string const _id;
+    std::string const _id; ///< Identifier for this item.
+    std::atomic<bool> _doNotSend{false}; ///< Do not transmit this item when this is true.
 };
 
 /// This is a TelemetryItem child class for handling simple single values (such as
@@ -214,7 +221,6 @@ public:
 
 private:
     std::atomic<ST> _val; ///< Stores the typed value for this item.
-    mutable std::mutex _mtx; ///< Protects `_val`.
 };
 
 
@@ -262,6 +268,86 @@ public:
     TItemBoolean() = delete;
 
     virtual ~TItemBoolean() {}
+};
+
+/// This class is used to store a specific telemetry item with a string value.
+/// Unit tests in tests/test_TelemetryCom
+class TItemString : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemString>;
+
+    TItemString() = delete;
+
+    /// Create a shared pointer instance of TItemString using `id`, and `defaultVal`, and
+    /// insert it into the map `itMap`.
+    /// @throws TelemetryException if the new object cannot be inserted into the list.
+    static Ptr create(std::string const& id, TelemetryItemMap* tiMap, std::string const& defaultVal = std::string()) {
+        Ptr newItem = Ptr(new TItemString(id, defaultVal));
+        insert(tiMap, newItem);
+        return newItem;
+    }
+
+    /// Create a `TItemString` object with identifier `id` and option value `defaultVal` for all entries.
+    TItemString(std::string const& id, std::string const& defaultVal = std::string()) : TelemetryItem(id), _val(defaultVal) {}
+
+    ~TItemString() override {}
+
+    /// Return a copy of the value.
+    std::string getVal() const {
+    	std::lock_guard<std::mutex> lg(_stMtx);
+    	return _val;
+    }
+
+    /// Set the value of the object to `val`.
+    void setVal(std::string const& val) {
+    	std::lock_guard<std::mutex> lg(_stMtx);
+    	_val = val;
+    }
+
+    /// Return the json representation of this object.
+    nlohmann::json getJson() const override {
+        nlohmann::json js;
+        std::lock_guard<std::mutex> lg(_stMtx);
+        js[getId()] = _val;
+        return js;
+    }
+
+    /// Set the value of this object from json.
+    bool setFromJson(nlohmann::json const& js, bool idExpected) {
+        if (idExpected) {
+            // This type can only have a simple type value for `_val`.
+            LERROR("TItemSimple::setFromJson cannot have a json 'id' entry");
+            return false;
+        }
+        try {
+            std::string val = js.at(getId());
+            setVal(val);
+            return true;
+        } catch (nlohmann::json::out_of_range const& ex) {
+            LERROR("TItemSimple::setFromJson out of range for ", getId(), " js=", js);
+        }
+        return false;
+    }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        try {
+            TItemString const& otherItem = dynamic_cast<TItemString const&>(other);
+            // There's no way to reliably control which gets locked first
+            // (both A.compareItem(B) or B.compareItem(A) are possible),
+            // so this is needed to lock both without risk of deadlock.
+            std::unique_lock lockThis(_stMtx, std::defer_lock);
+            std::unique_lock lockOther(otherItem._stMtx, std::defer_lock);
+            std::lock(lockThis, lockOther);
+            return (getId() == otherItem.getId() && _val == otherItem._val);
+        } catch (std::bad_cast const& ex) {
+            return false;
+        }
+    }
+
+private:
+    std::string _val; ///< Stores the typed value for this item.
+    mutable std::mutex _stMtx; ///< Protects `_val`.
 };
 
 

@@ -37,7 +37,7 @@ namespace system {
 class TelemetryMap {
 public:
     using Ptr = std::shared_ptr<TelemetryMap>;
-    TelemetryMap() = default;
+    TelemetryMap() { _telElevation->setDoNotSend(true); }
     TelemetryMap(TelemetryMap const& other) { _map = other.copyMap(); }
     TelemetryMap& operator=(TelemetryMap const&) = delete;
     ~TelemetryMap() = default;
@@ -50,12 +50,12 @@ public:
     }
 
     /// Locate and set the single item represented by `jsStr`.
-    /// @return true if the item was found and set.
-    bool setItemFromJsonStr(std::string const& jsStr);
+    /// @return a pointer to the item if the item was found and set, otherwise nullptr.
+    TelemetryItem::Ptr setItemFromJsonStr(std::string const& jsStr);
 
     /// Locate and set the single item represented by `js`.
-    /// @return true if the item was found and set.
-    bool setItemFromJson(nlohmann::json const& js);
+    /// @return a pointer to the item if the item was found and set, otherwise nullptr.
+    TelemetryItem::Ptr setItemFromJson(nlohmann::json const& js);
 
     /// Return true if all items in this map match and equall all items in `other`.
     bool compareMaps(TelemetryMap const& other);
@@ -117,6 +117,9 @@ public:
     /// Return a pointer to `_axialForce`.
     TItemAxialForce::Ptr getAxialForce() const {return _axialForce; }
 
+    /// Return a pointer to `_telElevation`.
+    TItemTelElevation::Ptr getTelElevation() const {return _telElevation; }
+
 private:
     /// Map of all telemetry items to be sent to clients.
     /// Once created, the items contained in the map will not change, but their values will.
@@ -155,7 +158,11 @@ private:
     TItemNetForcesTotal::Ptr _netForcesTotal = _addItem<TItemNetForcesTotal>(); ///< "netForcesTotal"
     TItemNetMomentsTotal::Ptr _netMomentsTotal = _addItem<TItemNetMomentsTotal>(); ///< "netMomentsTotal"
     TItemAxialForce::Ptr _axialForce = _addItem<TItemAxialForce>(); ///< "axialForce"
+
+    // The following items are read from the telemetry channel
+    TItemTelElevation::Ptr _telElevation = _addItem<TItemTelElevation>(); ///< "tel_elevation"
 };
+
 
 }  // namespace system
 }  // namespace m2cellcpp

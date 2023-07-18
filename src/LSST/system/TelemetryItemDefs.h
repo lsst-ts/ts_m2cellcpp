@@ -577,6 +577,31 @@ private:
     TItemVectorDouble::Ptr _hardpointCorrection = TItemVectorDouble::create("hardpointCorrection", 72, &_tiMap);
 };
 
+/// This class is used to accept the telescope elevation angle from a client.
+class TItemTelElevation : public TelemetryItem {
+public:
+    using Ptr = std::shared_ptr<TItemTelElevation>;
+
+    TItemTelElevation() : TelemetryItem("tel_elevation") {}
+
+    virtual ~TItemTelElevation() = default;
+
+    /// Return reference to `actualPosition`, unit: degree.
+    TItemDouble& getActualPosition() { return *_actualPosition; }
+
+    /// Return reference to `compName`, unit: unitless.
+    /// Expected values: "MTMount"
+    TItemString& getCompName() { return *_compName; }
+
+    /// Return true if this item and `other` have the same id and values.
+    bool compareItem(TelemetryItem const& other) const override {
+        return compareItemsTemplate<TItemTelElevation>(*this, other);
+    }
+
+private:
+    TItemDouble::Ptr _actualPosition = TItemDouble::create("actualPosition", &_tiMap);
+    TItemString::Ptr _compName = TItemString::create("compName", &_tiMap);
+};
 }  // namespace system
 }  // namespace m2cellcpp
 }  // namespace LSST
