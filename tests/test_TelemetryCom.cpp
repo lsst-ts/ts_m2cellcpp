@@ -315,6 +315,10 @@ TEST_CASE("Test TelemetryCom", "[TelemetryCom]") {
          0.2, 2.3, 2.3, 0.2, 2.2, 2.4, 0.1, 2.2, 2.3, 0.1,
          2.2, 2.2});
 
+    servTelemetryMap->getTelElevation()->getActualPosition().setVal(2.0);
+    servTelemetryMap->getTelElevation()->getCompName().setVal("MTtest");
+    servTelemetryMap->getTelElevation()->setDoNotSend(false);
+
     LDEBUG("Running clients");
     std::vector<TelemetryCom::Ptr> clients;
     std::vector<thread> clientThreads;
