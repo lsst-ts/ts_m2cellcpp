@@ -102,50 +102,62 @@ public:
         ServerConnectionHandler() = delete;
         ServerConnectionHandler(ServerConnectionHandler const&) = delete;
 
-        /// Create a new `ServerConnectionHandler` and start its thread to handle `sock`.
-        /// Future: add a thread to read inclination updates ticket/DM-39538
-        ServerConnectionHandler(int sock, TelemetryItemMap tItemMap)
-                : _servConnHSock(sock), _tItemMap(tItemMap) {
-            std::thread thrd(&ServerConnectionHandler::_servConnHandler, this);
-            _servConnHThrd = std::move(thrd);
+        /// Create a new `ServerConnectionHandler` and start its threads to handle `sock`.
+        ServerConnectionHandler(int sock, TelemetryMap::Ptr const& tItemMap) : _servConnHSock(sock), _tItemMap(tItemMap) {
+            std::thread thrdH(&ServerConnectionHandler::_servConnHandler, this);
+            _servConnHThrd = std::move(thrdH);
+            std::thread thrdR(&ServerConnectionHandler::_servConnReader, this);
+            _servConnReadThrd = std::move(thrdR);
         }
 
         /// Join associated threads.
         ~ServerConnectionHandler() {
-            std::lock_guard<std::mutex> lck(_joinMtx);
-            _join();
+            joinAll();
         }
 
         /// Stop this instance's threads.
-        void servConnHShutdown() { _connLoop = false; };
+        void servConnHShutdown();
 
-        /// If the thread has completed, try to join it.
-        bool checkJoin();
+        /// If the threads have completed, try joining them.
+        bool checkJoinAll();
 
-        /// Returns true if the thread has been joined.
-        bool getJoined() { return _joined; }
+        /// Returns true if both the handler and read threads have been joined.
+        bool getJoinedAll() { return _joinedHandler && _joinedReader; }
 
-        /// Lock `_joinMtx` and call _`join()`.
-        void join();
+        /// Lock `_joinMtx` and join all of our threads.
+        void joinAll();
 
     private:
-        /// Private constructor to force creation as shared pointer object.
+        /// This function writes all TelemetryItem's over the connection.
         void _servConnHandler();
 
-        /// Join `_servConnHThrd`. `_joinMtx` shopuld be locked before calling
-        void _join();
+        /// This function reads json messages from the connection.
+        void _servConnReader();
+
+        /// Join `_servConnHThrd`. `_joinMtx` must be locked before calling
+        void _joinHandler();
+
+       /// Join `_servConnReadThrd`. `_joinMtx` must be locked before calling
+        void _joinReader();
+
+        /// Check if the reader thread is ready to join, and try to join it if it is.
+        /// @return - Returns true if the Reader thread has been joined.
+        bool _checkJoinReader();
 
         const int _servConnHSock;  ///< Socket used by this class.
 
-        /// A map of all the telemry values that need to be sent to the client.
-        TelemetryItemMap _tItemMap;
+        /// A map of all the telemetry values that need to be sent to the client.
+        TelemetryMap::Ptr _tItemMap;
         std::thread _servConnHThrd;  ///< The thread running the handler.
+        std::thread _servConnReadThrd;  ///< The thread running the read thread.
 
         std::atomic<bool> _connLoop{true};  ///< Setting this to false stops the threads.
 
-        std::atomic<bool> _readyToJoin{false};  ///< True when the handler thread has reached its end.
-        std::atomic<bool> _joined{false};       ///< True when the handler thread has joined.
-        std::mutex _joinMtx;                    ///< protects `_readyToJoin` and `_joined`;
+        std::atomic<bool> _readyToJoinHandler{false}; ///< True when the handler thread has reached its end.
+        std::atomic<bool> _joinedHandler{false};      ///< True when the handler thread has joined.
+        std::atomic<bool> _readyToJoinReader{false}; ///< True when the reader thread has reached its end.
+        std::atomic<bool> _joinedReader{false};      ///< True when the reader thread has joined.
+        std::mutex _joinMtx;                          ///< protects `_readyToJoinHandler`, `_joinedHandler`, `_readyToJoinReader`, and `_joinedReader`
     };
 
 private:
@@ -168,8 +180,8 @@ private:
     /// telemetry data to transmit.
     TelemetryMap::Ptr _telemetryMap;
 
-    int _serverFd;                                ///< File descriptor for server socket.
-    int _port;                                    ///< Port number
+    int _serverFd = -1;                           ///< File descriptor for server socket.
+    int _port = -1;                               ///< Port number
     std::atomic<bool> _acceptLoop{true};          ///< Set to false to stop the accept loop.
     std::atomic<bool> _shutdownComCalled{false};  ///< Set to true when `shutdownCom` has been called.
     std::atomic<bool> _serverRunning{false};      ///< Set to true once the server has started.

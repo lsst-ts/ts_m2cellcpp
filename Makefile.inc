@@ -16,10 +16,11 @@ DEPS := $(OBJS:.o=.d)
 INC_DIRS := $(shell find $(SRC_DIRS) -type d)
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
+# The optimizer is doing somthing at -O3 that causes segfaults when -g is not used.
 ifdef DEBUG
-  c_opts := -g -O3
+  c_opts := -g -O2
 else
-  c_opts := -O3
+  c_opts := -O2
 endif
 
 # Code coverage by gcovr

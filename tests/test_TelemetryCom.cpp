@@ -23,6 +23,7 @@
 #define CATCH_CONFIG_MAIN
 
 // System headers
+#include <csignal>
 #include <exception>
 
 // 3rd party headers
@@ -38,8 +39,20 @@
 using namespace std;
 using namespace LSST::m2cellcpp::system;
 
+void signalHandler(int sig) {
+    if (sig == SIGPIPE) {
+        LWARN("Ignoring SIGPIPE sig=", sig);
+        return;
+    }
+    LCRITICAL("Unhandled signal caught sig=", sig);
+    exit(sig);
+}
+
 TEST_CASE("Test TelemetryItem", "[TelemetryItem]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
+
+    // Setup a simple signal handler to handle when clients closing connection results in SIGPIPE.
+    signal(SIGPIPE, signalHandler);
 
     LDEBUG("TelemetryItem::test() start");
     auto powerStatus1 = TItemPowerStatus::Ptr(new TItemPowerStatus());
@@ -102,7 +115,7 @@ TEST_CASE("Test TelemetryItem", "[TelemetryItem]") {
     // Test TItemTangentForce and TItemVectorDouble
     auto tangForceIn = TItemTangentForce::Ptr(new TItemTangentForce());
     vector<double> tfInLutGravity{0.6, -0.5, -0.4, 0.3, 0.2, -0.1};
-    vector<double> tfInLutTemperature{};
+    vector<double> tfInLutTemperature{-0.1, 0.6, -0.5, -0.4, 0.3, 0.2};
     vector<double> tfInApplied{-6.0, -1.5, 3.4, 7.3, 9.2, -2.1};
     vector<double> tfInMeasured{8.6, -3.5, -1.4, 9.3, 4.2, -5.1};
     vector<double> tfInHardpointCorrection{9.6, -7.5, -2.4, 6.3, 1.2, -7.1};
@@ -301,6 +314,10 @@ TEST_CASE("Test TelemetryCom", "[TelemetryCom]") {
          0.5, 4.7, 4.7, 0.5, 0.2, 2.3, 2.2, 0.2, 2.3, 2.3,
          0.2, 2.3, 2.3, 0.2, 2.2, 2.4, 0.1, 2.2, 2.3, 0.1,
          2.2, 2.2});
+
+    servTelemetryMap->getTelElevation()->getActualPosition().setVal(2.0);
+    servTelemetryMap->getTelElevation()->getCompName().setVal("MTtest");
+    servTelemetryMap->getTelElevation()->setDoNotSend(false);
 
     LDEBUG("Running clients");
     std::vector<TelemetryCom::Ptr> clients;
