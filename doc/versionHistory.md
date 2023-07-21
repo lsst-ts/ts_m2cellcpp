@@ -1,4 +1,8 @@
 # Version History
+0.3.0
+
+ - Added Thread to read tel_elevation.
+
 0.2.9
 
  - Added telemetry items.

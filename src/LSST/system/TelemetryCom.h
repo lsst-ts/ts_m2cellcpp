@@ -118,7 +118,7 @@ public:
         /// Stop this instance's threads.
         void servConnHShutdown();
 
-        /// If the threads have completed, try to joining them.
+        /// If the threads have completed, try joining them.
         bool checkJoinAll();
 
         /// Returns true if both the handler and read threads have been joined.

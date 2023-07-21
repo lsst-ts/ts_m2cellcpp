@@ -68,6 +68,7 @@ class TItemM2AssemblyInPosition
 'class TItemNetForcesTotal
 'class TItemNetMomentsTotal
 'class TItemAxialForce
+'class TItemTelElevation
 
 Config ..> TelemetryCom : Configuration data
 TelemetryItem <|-- TItemSimple

@@ -160,8 +160,7 @@ void TelemetryCom::_server() {
         // Create an object to handle the new connection.
         LINFO("TelemetryCom::server() accepting new client");
         {
-            auto handlerThrd =
-            		ServerConnectionHandler::Ptr(new ServerConnectionHandler(sock, _telemetryMap));
+            auto handlerThrd = ServerConnectionHandler::Ptr(new ServerConnectionHandler(sock, _telemetryMap));
             lock_guard<mutex> htLock();
             _handlerThreads.push_back(handlerThrd);
             // Check if any of the threads should be joined and removed.
@@ -208,8 +207,9 @@ void TelemetryCom::ServerConnectionHandler::_servConnHandler() {
             // calling send().
             ssize_t status = send(_servConnHSock, msg.c_str(), msg.length(), 0);
             LTRACE("TelemetryCom send status=", status, " msg=", msg);
-            if ((msgSentCount++)%1000 == 0) {
-                LDEBUG("TelemetryCom send sock=", _servConnHSock, " status=", status, " msgSentCount=", msgSentCount);
+            int const logMsgOccasionally = 10000; // Log a message once in while to indicate communication is active.
+            if ((msgSentCount++)%logMsgOccasionally == 0) {
+                LINFO("TelemetryCom send sock=", _servConnHSock, " status=", status, " msgSentCount=", msgSentCount);
             }
             if (status < 0) {
                 LWARN("TelemetryCom::ServerConnectionHandler::_servConnHandler failure status=", status);
@@ -217,7 +217,7 @@ void TelemetryCom::ServerConnectionHandler::_servConnHandler() {
                 break;
             }
         }
-        this_thread::sleep_for(50ms); // Deliver telemetry update about 20 times per second.
+        this_thread::sleep_for(50ms); // Deliver telemetry update about 20 times per second. DM-39974 Add config entry
     }
     LDEBUG("TelemetryCom::ServerConnectionHandler::_servConnHandler close sock=", _servConnHSock);
     close(_servConnHSock);
@@ -229,6 +229,8 @@ void TelemetryCom::ServerConnectionHandler::_servConnReader() {
     LDEBUG("TelemetryCom::::_servConnHandler starting sock=", _servConnHSock);
     bool connOk = true;
     string inMsg;
+    TItemTelElevation::Ptr telElevation = _tItemMap->getTelElevation();
+    TItemInclinometerAngleTma::Ptr inclinometerAngleTma = _tItemMap->getInclinometerAngleTma();
     while (_connLoop && connOk) {
         char buffer[3];
         // Read one byte at a time to check every byte for terminator.
@@ -244,6 +246,12 @@ void TelemetryCom::ServerConnectionHandler::_servConnReader() {
             TelemetryItem::Ptr updatedItem = _tItemMap->setItemFromJsonStr(inMsg);
             if (updatedItem != nullptr) {
             	LDEBUG("TelemetryCom::::_servConnReader() inMsg=", inMsg, " updated=", updatedItem->dump());
+            	if(updatedItem->getId() == telElevation->getId()) {
+            	    double ang = telElevation->getActualPosition().getVal();
+            	    inclinometerAngleTma->getInclinometer().setVal(ang);
+            	    LTRACE("TelemetryCom::::_servConnReader() ang=", ang,
+            	           " telE=", telElevation->dump(), " inclTma=", inclinometerAngleTma->dump());
+            	}
             } else {
             	LWARN("TelemetryCom::::_servConnReader() failed to find item in map inMsg=", inMsg);
             }

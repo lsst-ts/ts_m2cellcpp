@@ -119,7 +119,7 @@ public:
 
 private:
     TItemVectorDouble::Ptr _lutGravity = TItemVectorDouble::create("lutGravity", 6, &_tiMap);
-    TItemVectorDouble::Ptr _lutTemperature = TItemVectorDouble::create("lutTemperature", 0, &_tiMap);
+    TItemVectorDouble::Ptr _lutTemperature = TItemVectorDouble::create("lutTemperature", 6, &_tiMap);
     TItemVectorDouble::Ptr _applied = TItemVectorDouble::create("applied", 6, &_tiMap);
     TItemVectorDouble::Ptr _measured = TItemVectorDouble::create("measured", 6, &_tiMap);
     TItemVectorDouble::Ptr _hardpointCorrection = TItemVectorDouble::create("hardpointCorrection", 6, &_tiMap);

@@ -115,7 +115,7 @@ TEST_CASE("Test TelemetryItem", "[TelemetryItem]") {
     // Test TItemTangentForce and TItemVectorDouble
     auto tangForceIn = TItemTangentForce::Ptr(new TItemTangentForce());
     vector<double> tfInLutGravity{0.6, -0.5, -0.4, 0.3, 0.2, -0.1};
-    vector<double> tfInLutTemperature{};
+    vector<double> tfInLutTemperature{-0.1, 0.6, -0.5, -0.4, 0.3, 0.2};
     vector<double> tfInApplied{-6.0, -1.5, 3.4, 7.3, 9.2, -2.1};
     vector<double> tfInMeasured{8.6, -3.5, -1.4, 9.3, 4.2, -5.1};
     vector<double> tfInHardpointCorrection{9.6, -7.5, -2.4, 6.3, 1.2, -7.1};

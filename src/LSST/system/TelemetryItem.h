@@ -179,7 +179,10 @@ public:
     ~TItemSimple() override {}
 
     /// Return a copy of the value.
-    ST getVal() const { return _val; }
+    ST getVal() const {
+        ST ret = _val;
+        return ret;
+    }
 
     /// Set the value of the object to `val`.
     void setVal(ST const& val) { _val = val; }
