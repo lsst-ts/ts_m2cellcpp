@@ -91,11 +91,17 @@ public:
     /// @return the final string, used for unit testing only.
     static std::string makeTestFinal(std::string const& msg);
 
+    /// &&& doc
+    void setDoSendWelcomeMsg(bool doSend) { _doSendWelcomeMsg = doSend; }
+
 protected:
     /// @see ComConnection::create()
     ComConnection(IoContextPtr const& ioContext, uint64_t connId, std::shared_ptr<ComServer> const& server);
 
 private:
+    /// Send a message with some basic information about the server.
+    void _sendWelcomeMsg();
+
     /// Receive a command from a client.
     void _receiveCommand();
 
@@ -125,6 +131,9 @@ private:
     /// @param xfer The number of bytes sent to a client in a response.
     void _asyncWriteSent(boost::system::error_code const& ec, size_t xfer);
 
+    /// Do a synchronous write using the asio socket and sending `msg`.
+    void _syncWrite(std::string const& msg);
+
     /// A socket for communication with clients
     boost::asio::ip::tcp::socket _socket;
     IoContextPtr _ioContext;
@@ -139,7 +148,11 @@ private:
     boost::asio::streambuf _streamBuf;
     std::string _buffer;
 
-    std::atomic<bool> _shutdown{false};
+    std::atomic<bool> _shutdown{false}; ///< Set to true to stop loops and shutdown.
+    std::atomic<bool> _connectionActive{false}; ///< True when there is an active connection.
+
+    /// If true, send the welcome message when the connection is established.
+    std::atomic<bool> _doSendWelcomeMsg{true};
 };
 
 }  // namespace system

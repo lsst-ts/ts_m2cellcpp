@@ -28,13 +28,17 @@
 #include "system/ComControlServer.h"
 #include "system/ComServer.h"
 #include "system/Config.h"
+#include "system/Globals.h"
 #include "util/Log.h"
 
 using namespace std;
 using namespace LSST::m2cellcpp::system;
 using namespace LSST::m2cellcpp;
 
+
+
 tuple<nlohmann::json, nlohmann::json> comTest(string const& jStr, ComClient& client, string const& note) {
+    Globals::setup();
     client.writeCommand(jStr);
     LDEBUG(note, ":wrote jStr=", jStr);
     auto ack = client.readCommand();
@@ -51,12 +55,15 @@ TEST_CASE("Test ComControl", "[ComControl]") {
     string cfgPath = Config::getEnvironmentCfgPath("../configs");
     Config::setup(cfgPath + "unitTestCfg.yaml");
 
+
+
     // Start a ComControlServer
     IoContextPtr ioContext = make_shared<boost::asio::io_context>();
     int port = Config::get().getControlServerPort();
     auto cmdFactory = control::NetCommandFactory::create();
     ComControl::setupNormalFactory(cmdFactory);
     auto serv = ComControlServer::create(ioContext, port, cmdFactory);
+    serv->_doSendWelcomeMsgServ = false;
 
     atomic<bool> done{false};
     REQUIRE(serv->getState() == ComServer::CREATED);
