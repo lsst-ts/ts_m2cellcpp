@@ -78,7 +78,7 @@ ComConnection::~ComConnection() { shutdown(); }
 void ComConnection::_syncWrite(string const& msg) {
     size_t bytesWritten = 0;
     LDEBUG("ComConnection::_syncWrite ", msg);
-    while (bytesWritten != msg.length()) {
+    while (bytesWritten < msg.length()) {
         size_t bytesToSend = msg.length() - bytesWritten;
         bytesWritten += _socket.write_some(boost::asio::buffer(msg.c_str() + bytesWritten, bytesToSend));
     }
@@ -105,12 +105,12 @@ void ComConnection::_sendWelcomeMsg() {
 
     Globals& globals = Globals::get();
 
-    // &&& send tcp connected message
+    // send tcp connected message
     {
         json js;
         js["id"] = "tcpIpConnected";
         js["isConnected"] = globals.getTcpIpConnected();
-        _syncWrite(js);
+        _syncWrite(to_string(js));
     }
 
     // FUTURE: Setting to true to make the gui happy, not sure what the real conditions are.
@@ -118,76 +118,75 @@ void ComConnection::_sendWelcomeMsg() {
         json js;
         js["id"] = "commandableByDDS";
         js["state"] = globals.getCommandableByDds();
-        _syncWrite(js);
+        _syncWrite(to_string(js));
     }
 
-    // &&& send hardpoint information mock_server.py:281 await self._message_event.write_hardpoint_list(hardpoints)
+    // send hardpoint information mock_server.py:281 await self._message_event.write_hardpoint_list(hardpoints)
     {
         json js;
         js["id"] = "hardpointList";
         js["actuators"] = globals.getHardPointList();
-        _syncWrite(js);
+        _syncWrite(to_string(js));
     }
 
-    // &&& send interlock mock_server.py:283 await self._message_event.write_interlock(False)
+    // send interlock mock_server.py:283 await self._message_event.write_interlock(False)
     {
         json js;
         js["id"] = "interlock";
         js["state"] = globals.getInterlock();
-        _syncWrite(js);
+        _syncWrite(to_string(js));
     }
 
-    // &&& elev external source  mock_server.py:290 await self._message_event.write_inclination_telemetry_source(is_external_source)
+    // elev external source  mock_server.py:290 await self._message_event.write_inclination_telemetry_source(is_external_source)
     {
         json js;
         js["id"] = "inclinationTelemetrySource";
         js["source"] = globals.getTelemetrySource();
-        _syncWrite(js);
+        _syncWrite(to_string(js));
     }
 
-    // &&& temp offset mock_server.py:292 await self._message_event.write_temperature_offset(
+    // temp offset mock_server.py:292 await self._message_event.write_temperature_offset(
     {
         json js;
         js["id"] = "temperatureOffset";
         js["ring"] = globals.getTemperatureOffsetsRing();
         js["intake"] = globals.getTemperatureOffsetsIntake();
         js["exhaust"] = globals.getTemperatureOffsetsExhaust();
-        _syncWrite(js);
+        _syncWrite(to_string(js));
     }
 
     // FUTURE: Currently unsure what these messages are supposed to look like.
-    // &&& if self._is_csc:
-    // &&&     await self._message_event.write_detailed_state(DetailedState.PublishOnly)
-    // &&&     await asyncio.sleep(0.01)
-    // &&&     await self._message_event.write_detailed_state(DetailedState.Available)
-
-    // &&& summary_state = salobj.State.OFFLINE if self._is_csc else salobj.State.STANDBY
-    // &&& await self._message_event.write_summary_state(summary_state)
+    // if self._is_csc:
+    //     await self._message_event.write_detailed_state(DetailedState.PublishOnly)
+    //     await asyncio.sleep(0.01)
+    //     await self._message_event.write_detailed_state(DetailedState.Available)
+    // summary_state = salobj.State.OFFLINE if self._is_csc else salobj.State.STANDBY
+    // await self._message_event.write_summary_state(summary_state)
     {
         json js;
         js["id"] = "summaryState";
         js["summaryState"] = globals.getSummaryState();
-        _syncWrite(js);
+        _syncWrite(to_string(js));
     }
 
-    // &&& # Send the digital input and output
-    // &&& digital_input = self.model.get_digital_input()
-    // &&& await self._message_event.write_digital_input(digital_input)
+    // # Send the digital input and output
+    // digital_input = self.model.get_digital_input()
+    // await self._message_event.write_digital_input(digital_input)
     {
         json js;
         js["id"] = "digitalInput";
         js["value"] = globals.getDigitalInput();
-        _syncWrite(js);
+        _syncWrite(to_string(js));
     }
 
 
-    // &&& digital_output = self.model.get_digital_output()
-    // &&& await self._message_event.write_digital_output(digital_output)
+    // digital_output = self.model.get_digital_output()
+    // await self._message_event.write_digital_output(digital_output)
     {
         json js;
         js["id"] = "digitalOutput";
         js["value"] = globals.getDigitalOutput();
-        _syncWrite(js);
+        _syncWrite(to_string(js));
     }
 
     // &&& await self._message_event.write_config()
@@ -235,7 +234,7 @@ void ComConnection::_sendWelcomeMsg() {
         js["inclinometerDelta"] = 2.0;
         js["inclinometerDiffEnabled"] = true;
         js["cellTemperatureDelta"] = 2.0;
-        _syncWrite(js);
+        _syncWrite(to_string(js));
     }
 
     // &&& await self._message_event.write_closed_loop_control_mode(
@@ -245,7 +244,7 @@ void ComConnection::_sendWelcomeMsg() {
         json js;
         js["id"] = "closedLoopControlMode";
         js["mode"] = globals.getClosedLoopControlMode();
-        _syncWrite(js);
+        _syncWrite(to_string(js));
     }
 
     // &&& await self._message_event.write_enabled_faults_mask(
@@ -255,7 +254,7 @@ void ComConnection::_sendWelcomeMsg() {
         json js;
         js["id"] = "enabledFaultsMask";
         js["mode"] = globals.getEnabledFaultMask();
-        _syncWrite(js);
+        _syncWrite(to_string(js));
     }
 
     // &&& await self._message_event.write_configuration_files()
@@ -267,7 +266,7 @@ void ComConnection::_sendWelcomeMsg() {
                        "Configurable_File_Description_PLACEHOLDER_M2_handling.csv",
                        "Configurable_File_Description_PLACEHOLDER_surrogate_optical.csv",
                        "Configurable_File_Description_PLACEHOLDER_surrogate_handling.csv"};
-        _syncWrite(js);
+        _syncWrite(to_string(js));
     }
 }
 

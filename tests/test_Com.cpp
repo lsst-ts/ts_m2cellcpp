@@ -35,6 +35,7 @@
 #include "system/Config.h"
 #include "system/ComClient.h"
 #include "system/ComServer.h"
+#include "system/Globals.h"
 #include "util/Log.h"
 
 using namespace std;
@@ -44,6 +45,7 @@ TEST_CASE("Test Com echo", "[Com]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
     string cfgPath = Config::getEnvironmentCfgPath("../configs");
     Config::setup(cfgPath + "unitTestCfg.yaml");
+    Globals::setup();
 
     REQUIRE(ComServer::prettyState(ComServer::CREATED) == "CREATED");
     REQUIRE(ComServer::prettyState(ComServer::RUNNING) == "RUNNING");

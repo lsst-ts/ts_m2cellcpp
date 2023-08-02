@@ -23,6 +23,7 @@
 #include "system/ComControl.h"
 #include "system/ComControlServer.h"
 #include "system/Config.h"
+#include "system/Globals.h"
 #include "system/TelemetryCom.h"
 #include "system/TelemetryMap.h"
 #include "util/Log.h"
@@ -51,6 +52,9 @@ int main(int argc, char* argv[]) {
     string cfgPath = system::Config::getEnvironmentCfgPath("./configs");
     system::Config::setup(cfgPath + "m2cellCfg.yaml");
     system::Config& sysCfg = system::Config::get();
+
+    // Setup global items.
+    system::Globals::setup();
 
     // Setup logging
     string logFileName = sysCfg.getLogFileName();
