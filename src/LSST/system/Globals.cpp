@@ -39,16 +39,17 @@ unique_ptr<Globals> Globals::_thisPtr;
 mutex Globals::_thisMtx;
 
 
-void Globals::setup() {
+void Globals::setup(Config const& config) {
     lock_guard<mutex> lock(_thisMtx);
     if (_thisPtr) {
         LERROR("Globals already setup");
         return;
     }
-    _thisPtr = std::unique_ptr<Globals>(new Globals());
+    _thisPtr = std::unique_ptr<Globals>(new Globals(config));
 }
 
-Globals::Globals() {
+
+Globals::Globals(Config const& config) {
 
 }
 

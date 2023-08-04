@@ -49,30 +49,41 @@ class Config;
 ///         location so they aren't lurking in the depths of the code.
 class Globals {
 public:
-    /// Create the global Context object
-    /// &&& doc
-    static void setup();
-
-    /// &&& doc
+    /// Create the global Context object, aquiring some values from the `config`.
     static void setup(Config const& config);
 
-    /// &&& doc
+    /// Return a reference to the Global instance.
+    /// @throws `ConfigException` if `setup` has not already been called.
     static Globals& get();
 
+    Globals() = delete;
     Globals(Globals const&) = delete;
     Globals& operator=(Globals const&) = delete;
 
     ~Globals() = default;
 
-    /// &&& all of these vectors must change to be thread safe
     /// Return const vector of the hardpoints.
-    std::vector<int>& getHardPointList() { return _hardPointList; }
+    std::vector<int>& getHardPointList() {
+        std::lock_guard<std::mutex> lock(_hardPointListMtx);
+        return _hardPointList;
+    }
+
     /// Return list of ring temperature offsets. PLACEHOLDER
-    std::vector<double>& getTemperatureOffsetsRing() { return _temperatureOffsetsRing; }
+    std::vector<double>& getTemperatureOffsetsRing() {
+        std::lock_guard<std::mutex> lock(_temperatureOffsetsRingMtx);
+        return _temperatureOffsetsRing;
+    }
+
     /// Return list of intake temperature offsets. PLACEHOLDER
-    std::vector<double>& getTemperatureOffsetsIntake() { return _temperatureOffsetsIntake; }
+    std::vector<double>& getTemperatureOffsetsIntake() {
+        std::lock_guard<std::mutex> lock(_temperatureOffsetsIntakeMtx);
+        return _temperatureOffsetsIntake;
+    }
+
     /// Return list of exhaust temperature offsets. PLACEHOLDER
-    std::vector<double>& getTemperatureOffsetsExhaust() { return _temperatureOffsetsExhaust; }
+    std::vector<double>& getTemperatureOffsetsExhaust() {
+        std::lock_guard<std::mutex> lock(_temperatureOffsetsExhaustMtx);
+        return _temperatureOffsetsExhaust; }
 
     /// Increment the the number of connections when `connecting` is true, decrement when false;
     void setTcpIpConnected(bool connecting);
@@ -104,12 +115,20 @@ public:
     /// Return the closed loop control mode identifier. PLACEHOLDER
     int getClosedLoopControlMode() const { return _closedLoopControlMode; }
 
+    /// Set command source to remote when `isRemote` is true, otherwise local.
+    /// @return true if the command source was set successfully.
+    bool setCommandSourceIsRemote(bool isRemote) {
+        _commandSourceIsRemote = isRemote;
+        return true;
+    }
+
     /// Reset the global Ptr to Globals. PLACEHOLDER
     /// This should only be called at termination or unit testing.
     void reset();
 
 private:
-    Globals();
+    /// Private constructor to force call to `setup(Config const& config)`.
+    Globals(Config const& config);
 
     static std::unique_ptr<Globals> _thisPtr; ///< Pointer to the global instance of Globals
     static std::mutex _thisMtx;               ///< Protects _thisPtr.
@@ -117,14 +136,19 @@ private:
     /// List of hard points.
     /// FUTURE: Is this where this should be set/stored? PLACEHOLDER
     std::vector<int> _hardPointList{6, 16, 26, 74, 76, 78};
+    std::mutex _hardPointListMtx; ///< Protects `_hardPointList`
 
     /// List of ring temperature offsets. PLACEHOLDER
     std::vector<double> _temperatureOffsetsRing{21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0};
+    std::mutex _temperatureOffsetsRingMtx; ///< Protects `_temperatureOffsetsRing`
+
     /// List of intake temperature offsets. PLACEHOLDER
     std::vector<double> _temperatureOffsetsIntake{0.0, 0.0};
+    std::mutex _temperatureOffsetsIntakeMtx; ///< Protects `_temperatureOffsetsIntake`
+
     /// List of exhaust temperature offsets. PLACEHOLDER
     std::vector<double> _temperatureOffsetsExhaust{0.0, 0.0};
-
+    std::mutex _temperatureOffsetsExhaustMtx; ///< Protects `_temperatureOffsetsExhaust`
 
     int _tcpIpConnectedCount = 0;  ///< Number of active connections   FUTURE: Should this be in ComControlServer?
     mutable std::mutex _tcpIpConnectedMtx; ///< protects _tcpIpConnectedCount
@@ -139,6 +163,12 @@ private:
     std::atomic<uint64_t> _enabledFaultMask{0xff800007ffffffff}; ///< Model enabled fault mask. PLACEHOLDER from python = 18410715311050326015
 
     std::atomic<int> _closedLoopControlMode{1}; ///< Closed loop control mode. PLACEHOLDER from python 1=ClosedLoopControlMode.Idle
+
+    std::atomic<bool> _commandSourceIsRemote{false}; ///< Command source is remote when true, otherwise false.
+
+
+
+
 
 };
 

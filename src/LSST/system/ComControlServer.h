@@ -52,8 +52,6 @@ public:
     ComConnection::Ptr newComConnection(IoContextPtr const& ioContext, uint64_t connId,
                                         std::shared_ptr<ComServer> const& server) override;
 
-    std::atomic<bool> _doSendWelcomeMsgServ{true}; ///< &&& doc &&& make private.
-
 protected:
     /// Protected constructor to force use of create().
     ComControlServer(IoContextPtr const& ioContext, int port,

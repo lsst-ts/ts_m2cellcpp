@@ -91,7 +91,8 @@ public:
     /// @return the final string, used for unit testing only.
     static std::string makeTestFinal(std::string const& msg);
 
-    /// &&& doc
+    /// New connections will receive the `_sendWelcomeMsg()` when `doSend` is set
+    /// to true. This is only expected to be used for unit tests.
     void setDoSendWelcomeMsg(bool doSend) { _doSendWelcomeMsg = doSend; }
 
 protected:

@@ -53,9 +53,6 @@ int main(int argc, char* argv[]) {
     system::Config::setup(cfgPath + "m2cellCfg.yaml");
     system::Config& sysCfg = system::Config::get();
 
-    // Setup global items.
-    system::Globals::setup();
-
     // Setup logging
     string logFileName = sysCfg.getLogFileName();
     int logFileSizeMB = sysCfg.getLogFileSizeMB();
@@ -69,6 +66,9 @@ int main(int argc, char* argv[]) {
     log.setOutputDest(util::Log::SPEEDLOG);
     // FUTURE: DM-39974 add command line argument to turn `Log::_alwaysFlush` off.
     log.setAlwaysFlush(true); // spdlog is highly prone to waiting a long time before writing to disk.
+
+    // Setup global items.
+    system::Globals::setup(sysCfg);
 
     // Setup a simple signal handler to handle when clients closing connection results in SIGPIPE.
     signal(SIGPIPE, signalHandler);

@@ -60,7 +60,7 @@ public:
 
     /// Get the NetCommand appropriate for the jsonStr.
     /// @return Appropriate NetCommand. _defaultNoAck is returned on
-    ///         unknown commands that have a parsable id and seq_id.
+    ///         unknown commands that have a parsable id and sequence_id.
     /// @throws NetCommandException if there are any problems.
     NetCommand::Ptr getCommandFor(std::string const& jsonStr);
 

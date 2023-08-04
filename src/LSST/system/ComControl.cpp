@@ -33,6 +33,7 @@
 // Third party headers
 
 // Project headers
+#include "control/NetCommandDefs.h"
 #include "util/Log.h"
 
 using namespace std;
@@ -51,6 +52,7 @@ void ComControl::setupNormalFactory(control::NetCommandFactory::Ptr const& cmdFa
     cmdFactory->addNetCommand(control::NCmdAck::createFactoryVersion());
     cmdFactory->addNetCommand(control::NCmdNoAck::createFactoryVersion());
     cmdFactory->addNetCommand(control::NCmdEcho::createFactoryVersion());
+    cmdFactory->addNetCommand(control::NCmdSwitchCommandSource::createFactoryVersion());
 }
 
 std::tuple<std::string, util::Command::Ptr> ComControl::interpretCommand(std::string const& commandStr) {

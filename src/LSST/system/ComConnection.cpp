@@ -66,7 +66,9 @@ namespace system {
 
 ComConnection::Ptr ComConnection::create(IoContextPtr const& ioContext, uint64_t connId,
                                          shared_ptr<ComServer> const& server) {
-    return ComConnection::Ptr(new ComConnection(ioContext, connId, server));
+    auto ptr =  ComConnection::Ptr(new ComConnection(ioContext, connId, server));
+
+    return ptr;
 }
 
 ComConnection::ComConnection(IoContextPtr const& ioContext, uint64_t connId,
@@ -75,7 +77,8 @@ ComConnection::ComConnection(IoContextPtr const& ioContext, uint64_t connId,
 
 ComConnection::~ComConnection() { shutdown(); }
 
-void ComConnection::_syncWrite(string const& msg) {
+void ComConnection::_syncWrite(string const& inMsg) {
+    string msg = inMsg + getDelimiter();
     size_t bytesWritten = 0;
     LDEBUG("ComConnection::_syncWrite ", msg);
     while (bytesWritten < msg.length()) {
@@ -189,9 +192,9 @@ void ComConnection::_sendWelcomeMsg() {
         _syncWrite(to_string(js));
     }
 
-    // &&& await self._message_event.write_config()
-    // TODO: It looks like all of these values should come out of the configuration PLACEHOLDER DM-&&&
-    //       Also, can the gui, and future systems be capable of handling a dump of the entire config in the json msg? Probably useful.
+    // await self._message_event.write_config()
+    // TODO: It looks like all of these values should come out of the configuration PLACEHOLDER DM-40317
+    // FUTURE: Also, can the gui (and future systems) be capable of handling a dump of the entire config in the json msg? Probably useful.
     // {'id': 'config',
     // 'configuration': 'Configurable_File_Description_20180831T092556_surrogate_handling.csv',
     // 'version': '20180831T092556',
@@ -237,9 +240,7 @@ void ComConnection::_sendWelcomeMsg() {
         _syncWrite(to_string(js));
     }
 
-    // &&& await self._message_event.write_closed_loop_control_mode(
-    // &&&     ClosedLoopControlMode.Idle
-    // &&& )
+    // await self._message_event.write_closed_loop_control_mode( ClosedLoopControlMode.Idle )
     {
         json js;
         js["id"] = "closedLoopControlMode";
@@ -247,9 +248,7 @@ void ComConnection::_sendWelcomeMsg() {
         _syncWrite(to_string(js));
     }
 
-    // &&& await self._message_event.write_enabled_faults_mask(
-    // &&&     self.model.error_handler.enabled_faults_mask
-    // &&& )
+    // await self._message_event.write_enabled_faults_mask( self.model.error_handler.enabled_faults_mask )
     {
         json js;
         js["id"] = "enabledFaultsMask";
@@ -257,7 +256,8 @@ void ComConnection::_sendWelcomeMsg() {
         _syncWrite(to_string(js));
     }
 
-    // &&& await self._message_event.write_configuration_files()
+    // await self._message_event.write_configuration_files()
+    // FUTURE: These files need to be located and added to this project DM-40317
     // PLACEHOLDER
     {
         json js;

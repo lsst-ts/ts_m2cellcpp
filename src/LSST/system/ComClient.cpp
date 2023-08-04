@@ -22,6 +22,9 @@
 // Class header
 #include "system/ComClient.h"
 
+// Third party headers
+#include "nlohmann/json.hpp"
+
 // Project headers
 #include "util/Log.h"
 
@@ -92,6 +95,28 @@ string ComClient::readCommand() {
     // Remove the entire message, including delimiter, from _readStream so the next message is clean.
     _readStream.consume(xfer);
     return outStr;
+}
+
+int ComClient::readWelcomeMsg() {
+    string lastMsgId("configurationFiles");
+    int count = 0;
+    bool done = false;
+    while (!done) {
+        string inMsg = readCommand();
+        try {
+            nlohmann::json js = nlohmann::json::parse(inMsg);
+            string id = js["id"];
+            ++count;
+            LDEBUG("readWelcomeMsg count=", count, " ", inMsg);
+            if (id == lastMsgId) {
+                done = true;
+            }
+        } catch (nlohmann::json::parse_error const& ex) {
+            LERROR("json parse error msg=", ex.what());
+            return -1;
+        }
+    }
+    return count;
 }
 
 }  // namespace system
