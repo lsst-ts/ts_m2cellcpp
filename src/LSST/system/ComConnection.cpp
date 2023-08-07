@@ -158,13 +158,7 @@ void ComConnection::_sendWelcomeMsg() {
         _syncWrite(to_string(js));
     }
 
-    // FUTURE: Currently unsure what these messages are supposed to look like.
-    // if self._is_csc:
-    //     await self._message_event.write_detailed_state(DetailedState.PublishOnly)
-    //     await asyncio.sleep(0.01)
-    //     await self._message_event.write_detailed_state(DetailedState.Available)
-    // summary_state = salobj.State.OFFLINE if self._is_csc else salobj.State.STANDBY
-    // await self._message_event.write_summary_state(summary_state)
+    // FUTURE: This is only for backward compatibility and will not be needed if the final version
     {
         json js;
         js["id"] = "summaryState";
@@ -195,26 +189,6 @@ void ComConnection::_sendWelcomeMsg() {
     // await self._message_event.write_config()
     // TODO: It looks like all of these values should come out of the configuration PLACEHOLDER DM-40317
     // FUTURE: Also, can the gui (and future systems) be capable of handling a dump of the entire config in the json msg? Probably useful.
-    // {'id': 'config',
-    // 'configuration': 'Configurable_File_Description_20180831T092556_surrogate_handling.csv',
-    // 'version': '20180831T092556',
-    // 'controlParameters': 'CtrlParameterFiles_2018-07-19_104314_surg',
-    // 'lutParameters': 'FinalHandlingLUTs',
-    // 'powerWarningMotor': 5.0,
-    // 'powerFaultMotor': 10.0,
-    // 'powerThresholdMotor': 20.0,
-    // 'powerWarningComm': 5.0,
-    // 'powerFaultComm': 10.0,
-    // 'powerThresholdComm': 10.0,
-    // 'inPositionAxial': 0.158,
-    // 'inPositionTangent': 1.1,
-    // 'inPositionSample': 1.0,
-    // 'timeoutSal': 15.0,
-    // 'timeoutCrio': 1.0,
-    // 'timeoutIlc': 3,
-    // 'inclinometerDelta': 2.0,
-    // 'inclinometerDiffEnabled': True,
-    // 'cellTemperatureDelta': 2.0}
     {
         json js;
         js["id"] = "config";

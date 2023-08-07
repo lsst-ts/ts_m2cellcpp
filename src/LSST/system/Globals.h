@@ -85,7 +85,7 @@ public:
         std::lock_guard<std::mutex> lock(_temperatureOffsetsExhaustMtx);
         return _temperatureOffsetsExhaust; }
 
-    /// Increment the the number of connections when `connecting` is true, decrement when false;
+    /// Increment the number of connections when `connecting` is true, decrement when false;
     void setTcpIpConnected(bool connecting);
 
     /// Return true if the number of connections is greater than zero.
@@ -134,11 +134,13 @@ private:
     static std::mutex _thisMtx;               ///< Protects _thisPtr.
 
     /// List of hard points.
+    /// The hardpoint list is the 1-based index {6, 16, 26, 74, 76, 78}
+    /// some calculations are done with the 0-based index {5, 15,25,73, 75, 77}
     /// FUTURE: Is this where this should be set/stored? PLACEHOLDER
     std::vector<int> _hardPointList{6, 16, 26, 74, 76, 78};
     std::mutex _hardPointListMtx; ///< Protects `_hardPointList`
 
-    /// List of ring temperature offsets. PLACEHOLDER
+    /// List of ring temperature offsets in degrees C. PLACEHOLDER
     std::vector<double> _temperatureOffsetsRing{21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0};
     std::mutex _temperatureOffsetsRingMtx; ///< Protects `_temperatureOffsetsRing`
 
@@ -165,10 +167,6 @@ private:
     std::atomic<int> _closedLoopControlMode{1}; ///< Closed loop control mode. PLACEHOLDER from python 1=ClosedLoopControlMode.Idle
 
     std::atomic<bool> _commandSourceIsRemote{false}; ///< Command source is remote when true, otherwise false.
-
-
-
-
 
 };
 

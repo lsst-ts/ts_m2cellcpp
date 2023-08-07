@@ -76,6 +76,10 @@ void Globals::setTcpIpConnected(bool connecting) {
     } else {
         --_tcpIpConnectedCount;
     }
+    if (_tcpIpConnectedCount <= 0) {
+        // FUTURE: change state to SAFE MODE - power off ILC communication and actuator motor
+        LCRITICAL("PLACEHOLDER - set system to safe mode");
+    }
 }
 
 /// Return true if the number of connections is greater than zero.

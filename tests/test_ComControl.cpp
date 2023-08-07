@@ -35,8 +35,6 @@ using namespace std;
 using namespace LSST::m2cellcpp::system;
 using namespace LSST::m2cellcpp;
 
-
-
 tuple<nlohmann::json, nlohmann::json> comTest(string const& jStr, ComClient& client, string const& note) {
     client.writeCommand(jStr);
     LDEBUG(note, ":wrote jStr=", jStr);
