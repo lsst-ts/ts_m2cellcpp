@@ -35,6 +35,7 @@
 #include "system/Config.h"
 #include "system/ComClient.h"
 #include "system/ComServer.h"
+#include "system/Globals.h"
 #include "util/Log.h"
 
 using namespace std;
@@ -44,6 +45,7 @@ TEST_CASE("Test Com echo", "[Com]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
     string cfgPath = Config::getEnvironmentCfgPath("../configs");
     Config::setup(cfgPath + "unitTestCfg.yaml");
+    Globals::setup(Config::get());
 
     REQUIRE(ComServer::prettyState(ComServer::CREATED) == "CREATED");
     REQUIRE(ComServer::prettyState(ComServer::RUNNING) == "RUNNING");
@@ -55,9 +57,9 @@ TEST_CASE("Test Com echo", "[Com]") {
     auto serv = ComServer::create(ioContext, port);
     atomic<bool> done{false};
     REQUIRE(serv->getState() == ComServer::CREATED);
-    LDEBUG("server started");
-
-    thread servThrd([&serv, &done]() {
+    serv->setDoSendWelcomeMsgServ(false);
+    LDEBUG("server starting");
+    thread servThrd([serv, &done]() {
         LINFO("server run ", serv->prettyState(serv->getState()));
         serv->run();
         LINFO("server finish");

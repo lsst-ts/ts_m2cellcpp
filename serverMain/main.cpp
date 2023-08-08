@@ -23,6 +23,7 @@
 #include "system/ComControl.h"
 #include "system/ComControlServer.h"
 #include "system/Config.h"
+#include "system/Globals.h"
 #include "system/TelemetryCom.h"
 #include "system/TelemetryMap.h"
 #include "util/Log.h"
@@ -65,6 +66,9 @@ int main(int argc, char* argv[]) {
     log.setOutputDest(util::Log::SPEEDLOG);
     // FUTURE: DM-39974 add command line argument to turn `Log::_alwaysFlush` off.
     log.setAlwaysFlush(true); // spdlog is highly prone to waiting a long time before writing to disk.
+
+    // Setup global items.
+    system::Globals::setup(sysCfg);
 
     // Setup a simple signal handler to handle when clients closing connection results in SIGPIPE.
     signal(SIGPIPE, signalHandler);

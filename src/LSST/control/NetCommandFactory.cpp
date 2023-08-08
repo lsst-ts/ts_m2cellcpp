@@ -55,15 +55,15 @@ void NetCommandFactory::addNetCommand(NetCommand::Ptr const& cmd) {
 NetCommand::Ptr NetCommandFactory::getCommandFor(std::string const& jsonStr) {
     auto inJson = NetCommand::parse(jsonStr);
     lock_guard<mutex> lg(_mtx);
-    // If parse didn't throw, there must be a valid id and seq_id.
+    // If parse didn't throw, there must be a valid id and sequence_id.
     string cmdId = inJson->at("id");
-    uint64_t seqId = inJson->at("seq_id");
+    uint64_t seqId = inJson->at("sequence_id");
     NetCommand::Ptr cmdOut;
     // Check if seqId is valid (must be larger than the previous one)
     if (seqId <= _prevSeqId) {
-        string badSeqId = string("Bad seq_id ") + to_string(seqId) + " " + cmdId + " previous seq_id was " +
+        string badSeqId = string("Bad sequence_id ") + to_string(seqId) + " " + cmdId + " previous sequence_id was " +
                           to_string(_prevSeqId);
-        LWARN("getCommandFor seq_id ", seqId, " ", cmdId, badSeqId, " returning ",
+        LWARN("getCommandFor sequence_id ", seqId, " ", cmdId, badSeqId, " returning ",
               _defaultNoAck->getCommandName());
         cmdOut = _defaultNoAck->createNewNetCommand(inJson);
         cmdOut->setAckUserInfo(badSeqId);
@@ -99,7 +99,7 @@ NetCommand::Ptr NetCommandFactory::getNoAck() {
     NetCommand::JsonPtr inJson = std::shared_ptr<nlohmann::json>(new nlohmann::json());
     nlohmann::json& js = *inJson;
     js["id"] = "noack";  // This will be overwritten by the default.
-    js["seq_id"] = 0;
+    js["sequence_id"] = 0;
     auto cmdOut = _defaultNoAck->createNewNetCommand(inJson);
     cmdOut->setAckUserInfo("factory default noack");
     return cmdOut;

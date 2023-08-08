@@ -61,6 +61,7 @@ protected:
 private:
     /// NetCommandFactory to decipher messages and provide NetCommands.
     control::NetCommandFactory::Ptr _cmdFactory;
+
 };
 
 }  // namespace system

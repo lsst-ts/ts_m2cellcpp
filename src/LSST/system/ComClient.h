@@ -59,6 +59,10 @@ public:
     /// @throw boost::system::system_error on other errors.
     std::string readCommand();
 
+    /// Return the number of entries read in the welcome message.
+    ///  A negative value indicates failure.
+    int readWelcomeMsg();
+
     /// Close the connection.
     void close();
 

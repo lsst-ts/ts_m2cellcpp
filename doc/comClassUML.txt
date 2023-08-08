@@ -1,3 +1,5 @@
+# Copy and paste the following into http://www.plantuml.com/plantuml/uml/
+
 @startuml
 class Config
 class ComServer
@@ -22,11 +24,13 @@ NetCommand : Children vary in action() and json parameters
 class NCmdAck
 class NCmdNoAck
 class NCmdEcho
+class NCmdSwitchCommandSource
 
 NetCommandException <.. NetCommand : throws
 NetCommand <|-- NCmdAck
 NetCommand <|-- NCmdNoAck
 NetCommand <|-- NCmdEcho
+NetCommand <|-- NCmdSwitchCommandSource
 
 NetCommandException <.. NetCommandFactory : throws
 

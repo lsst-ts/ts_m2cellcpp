@@ -42,7 +42,7 @@ NetCommand::NetCommand(JsonPtr const& inJson_) : inJson(inJson_) {
     }
     try {
         _name = inJson->at("id");
-        _seqId = inJson->at("seq_id");
+        _seqId = inJson->at("sequence_id");
         LDEBUG("NetCommand constructor id=", " seqId=", _seqId);
     } catch (json::exception const& ex) {
         string eMsg = string("NetCommand constructor error in ") + inJson->dump() + " what=" + ex.what();
@@ -50,9 +50,9 @@ NetCommand::NetCommand(JsonPtr const& inJson_) : inJson(inJson_) {
         throw NetCommandException(ERR_LOC, eMsg);
     }
 
-    ackJson["seq_id"] = _seqId;
+    ackJson["sequence_id"] = _seqId;
     ackJson["user_info"] = string("invalid:") + _name;
-    respJson["seq_id"] = _seqId;
+    respJson["sequence_id"] = _seqId;
 }
 
 NetCommand::JsonPtr NetCommand::parse(string const& inStr) {
@@ -66,13 +66,13 @@ NetCommand::JsonPtr NetCommand::parse(string const& inStr) {
         throw NetCommandException(ERR_LOC, eMsg);
     }
     LDEBUG("NetCommand::parse inStr=", inStr, "\njson=", inJson->dump(2));
-    // All commands must have at least id and seq_id
+    // All commands must have at least id and sequence_id
     try {
         string id = inJson->at("id");
-        uint64_t seqId = inJson->at("seq_id");
+        uint64_t seqId = inJson->at("sequence_id");
         LDEBUG("NetCommand::parse id=", id, " seq=", seqId);
     } catch (json::exception const& ex) {
-        string eMsg = string("NetCommand::parse error missing id or seq_id in ") + inJson->dump() +
+        string eMsg = string("NetCommand::parse error missing id or sequence_id in ") + inJson->dump() +
                       " what=" + ex.what();
         LERROR(eMsg);
         throw NetCommandException(ERR_LOC, eMsg);

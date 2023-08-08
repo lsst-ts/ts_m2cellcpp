@@ -47,6 +47,7 @@ ComControlServer::Ptr ComControlServer::create(IoContextPtr const& ioContext, in
 ComConnection::Ptr ComControlServer::newComConnection(IoContextPtr const& ioContext, uint64_t connId,
                                                       std::shared_ptr<ComServer> const& server) {
     ComConnection::Ptr ptr = ComControl::create(ioContext, connId, server, _cmdFactory);
+    ptr->setDoSendWelcomeMsg(getDoSendWelcomeMsgServ());
     return ptr;
 }
 

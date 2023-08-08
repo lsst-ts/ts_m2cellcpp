@@ -1,4 +1,9 @@
 # Version History
+
+0.3.1
+
+ - Added welcome message and some basic communication. 
+
 0.3.0
 
  - Added Thread to read tel_elevation.

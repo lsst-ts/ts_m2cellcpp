@@ -51,7 +51,7 @@ public:
 ///
 /// The children of this class can be created from a `json` object
 /// where the "id" defines which child class will be used. "id"
-/// and "seq_id" are the only parameters expected in all `json`
+/// and "sequence_id" are the only parameters expected in all `json`
 /// objects. The child classes may require other keys be set.
 /// They should set `ackJson["id"] = "ack";` after all expected
 /// items have been parsed successfully, and throw
@@ -84,7 +84,7 @@ public:
 
     /// Try to parse inStr and return a json object.
     /// @return a json object if `inStr` contains at least
-    ///     a valid "id" and "seq_id".
+    ///     a valid "id" and "sequence_id".
     /// @throw NetCommandException if there are issues with parsing
     ///     `inStr`
     static JsonPtr parse(std::string const& inStr);
@@ -129,7 +129,7 @@ public:
 
 protected:
     /// Protected to ensure proper construction of enable_shared_From_this object.
-    /// @param json must contain "id" and "seq_id" fields.
+    /// @param json must contain "id" and "sequence_id" fields.
     NetCommand(JsonPtr const& json);
 
     /// Execute the action this particular NetCommand needs to take.
@@ -146,9 +146,9 @@ protected:
     NetCommand() = default;
     JsonPtr inJson;  ///< json representation of the received command.
     /// json used to create return ack.
-    nlohmann::json ackJson = {{"id", "noack"}, {"seq_id", 0}, {"user_info", ""}};
+    nlohmann::json ackJson = {{"id", "noack"}, {"sequence_id", 0}, {"user_info", ""}};
     /// json used to create the final response
-    nlohmann::json respJson = {{"id", "fail"}, {"seq_id", 0}, {"user_info", ""}};
+    nlohmann::json respJson = {{"id", "fail"}, {"sequence_id", 0}, {"user_info", ""}};
 
 private:
     std::string _name = "none";  ///< Name of the command as parsed from `inJson`.
@@ -157,7 +157,7 @@ private:
 
 /// NetCommand to simply respond with an ack, and a success.
 /// This class is meant to be useful for testing and diagnostics.
-/// id and seq_id are the only json parameters expected.
+/// id and sequence_id are the only json parameters expected.
 ///
 /// unit test: test_NetCommand.cpp
 class NCmdAck : public NetCommand {
@@ -193,7 +193,7 @@ private:
 /// This class is used to respond to NetCommand requests
 /// that have an error in the initial request. This
 /// includes unknown commands, missing parameters,
-/// and seq_id issues. This command can be added to
+/// and sequence_id issues. This command can be added to
 /// a NetCommandFactory, but it will always respond
 /// with "noack" and then "fail".
 ///

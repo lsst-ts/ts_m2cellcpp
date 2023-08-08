@@ -28,6 +28,7 @@
 #include "system/ComControlServer.h"
 #include "system/ComServer.h"
 #include "system/Config.h"
+#include "system/Globals.h"
 #include "util/Log.h"
 
 using namespace std;
@@ -50,6 +51,8 @@ TEST_CASE("Test ComControl", "[ComControl]") {
     util::Log::getLog().useEnvironmentLogLvl();
     string cfgPath = Config::getEnvironmentCfgPath("../configs");
     Config::setup(cfgPath + "unitTestCfg.yaml");
+
+    Globals::setup(Config::get());
 
     // Start a ComControlServer
     IoContextPtr ioContext = make_shared<boost::asio::io_context>();
@@ -76,39 +79,42 @@ TEST_CASE("Test ComControl", "[ComControl]") {
 
     {
         ComClient client(ioContext, "127.0.0.1", port);
+        int welcomeCount = client.readWelcomeMsg();
+        LDEBUG("welcomeCount=", welcomeCount);
+        REQUIRE(welcomeCount == 13);
         {
             string note("Correct NCmdAck");
             LDEBUG(note);
-            string jStr = R"({"id":"cmd_ack","seq_id": 1 })";
+            string jStr = R"({"id":"cmd_ack","sequence_id": 1 })";
             int seqId = 1;
             auto [ackJ, finJ] = comTest(jStr, client, note);
-            REQUIRE(ackJ["seq_id"] == seqId);
+            REQUIRE(ackJ["sequence_id"] == seqId);
             REQUIRE(ackJ["id"] == "ack");
-            REQUIRE(finJ["seq_id"] == seqId);
+            REQUIRE(finJ["sequence_id"] == seqId);
             REQUIRE(finJ["id"] == "success");
             REQUIRE(finJ["user_info"] == "");
         }
         {
             string note = "Correct NCmdEcho";
             LDEBUG(note);
-            string jStr = R"({"id":"cmd_echo","seq_id": 2, "msg":"This is an echomsg" })";
+            string jStr = R"({"id":"cmd_echo","sequence_id": 2, "msg":"This is an echomsg" })";
             int seqId = 2;
             auto [ackJ, finJ] = comTest(jStr, client, note);
-            REQUIRE(ackJ["seq_id"] == seqId);
+            REQUIRE(ackJ["sequence_id"] == seqId);
             REQUIRE(ackJ["id"] == "ack");
-            REQUIRE(finJ["seq_id"] == seqId);
+            REQUIRE(finJ["sequence_id"] == seqId);
             REQUIRE(finJ["id"] == "success");
             REQUIRE(finJ["msg"] == "This is an echomsg");
         }
         {
             string note = "Incorrect NCmdAck";
             LDEBUG(note);
-            string jStr = R"({"id":"cmd_ak","seq_id": 3 })";
+            string jStr = R"({"id":"cmd_ak","sequence_id": 3 })";
             int seqId = 3;
             auto [ackJ, finJ] = comTest(jStr, client, note);
-            REQUIRE(ackJ["seq_id"] == seqId);
+            REQUIRE(ackJ["sequence_id"] == seqId);
             REQUIRE(ackJ["id"] == "noack");
-            REQUIRE(finJ["seq_id"] == seqId);
+            REQUIRE(finJ["sequence_id"] == seqId);
             REQUIRE(finJ["id"] == "fail");
         }
     }

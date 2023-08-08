@@ -70,17 +70,26 @@ public:
     /// Remove 'connId' from the set of ComConnections.
     void eraseConnection(uint64_t connId);
 
-    /// @return the number of active ComConnections.
+    /// Return the number of active ComConnections.
     int connectionCount() const;
 
     State getState() const { return _state; }
 
-    /// @return a new ComConnection object.
+    /// Return a new ComConnection object.
     virtual ComConnection::Ptr newComConnection(IoContextPtr const& ioContext, uint64_t connId,
                                                 std::shared_ptr<ComServer> const& server);
 
-    /// @return Human readable string for State
+    /// Return Human readable string for State
     static std::string prettyState(State state);
+
+    /// Return the value of `_doSendWelcomeMsgServ`, which causes the welcome
+    /// message to be sent on new connections.
+    bool getDoSendWelcomeMsgServ() { return _doSendWelcomeMsgServ; }
+
+    /// Set the value of `_doSendWelcomeMsgServ`, where true means the welcome message will
+    /// be sent, this should be called before the server thread is started.
+    /// Setting `doSend` to false is only meant for unit tests.
+    void setDoSendWelcomeMsgServ(bool doSend) { _doSendWelcomeMsgServ = doSend; }
 
 protected:
     /// Protected constructor to force use of create().
@@ -108,6 +117,9 @@ private:
     /// It should take hundreds or thousands of years for it
     /// uint64_t to wrap around.
     uint64_t _connIdSeq{0};
+
+    /// When true, new connections will start by sending `_sendWelcomeMsg()`.
+    std::atomic<bool> _doSendWelcomeMsgServ{true};
 };
 
 }  // namespace system

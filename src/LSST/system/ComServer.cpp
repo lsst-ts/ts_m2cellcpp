@@ -173,6 +173,7 @@ string ComServer::prettyState(State state) {
 ComConnection::Ptr ComServer::newComConnection(IoContextPtr const& ioContext, uint64_t connId,
                                                std::shared_ptr<ComServer> const& server) {
     ComConnection::Ptr ptr = ComConnection::create(ioContext, connId, server);
+    ptr->setDoSendWelcomeMsg(_doSendWelcomeMsgServ);
     return ptr;
 }
 
