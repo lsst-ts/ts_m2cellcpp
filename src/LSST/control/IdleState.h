@@ -35,6 +35,8 @@ namespace m2cellcpp {
 namespace control {
 
 /// Class representation of the "IdleState", aka ReadyIdle.
+/// &&& what should the system output be in this state ???
+/// &&& Is this the "Safe mode" state ???
 class IdleState : public State {
 public:
     using Ptr = std::shared_ptr<IdleState>;

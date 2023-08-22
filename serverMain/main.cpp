@@ -73,7 +73,28 @@ int main(int argc, char* argv[]) {
     // Setup a simple signal handler to handle when clients closing connection results in SIGPIPE.
     signal(SIGPIPE, signalHandler);
 
+
+    // Create the control system
+    control::Context::setup();
+
+    // Setup the control system
+    control::Context::get().model.ctrlSetup();
+
+
+    // &&& At this point, MotionCtrl and FpgaCtrl should be configured. Start the control loops
+    control::Context::get().model.ctrlStart();
+
+    // &&& At this point, the LabView code seems to want to put the system into
+    // &&& ReadyIdle. We're NOT doing that. The system is going into StandbyState
+    // &&& until it gets an explicit command to do something else.
+
+
+
     // Start the telemetry server
+    // FUTURE: Telemetry for the GUI requires the ComControlServer->ComConnection::welcomeMsg to
+    //         work properly. Those elements should be in the telemetry so there's no need for a
+    //         ComControlServer connection for Telemetry. This has to wait until the existing
+    //         controller is no longer used.
     LINFO("Starting Telemetry Server");
     // FUTURE: get the correct entries into `system::Config`.
     int const telemPort = 50001;
@@ -83,11 +104,11 @@ int main(int argc, char* argv[]) {
     telemetryServ->startServer();
     if (!telemetryServ->waitForServerRunning(5)) {
         LCRITICAL("Telemetry server failed to start.");
-        exit(-1);
+        exit(-1); // &&& change to powerdown and exit
     }
 
-    // Start the control system
-    control::Context::setup();
+    // &&& wait for MotionCtrl to be ready
+    control::Context::get().model.waitForCtrlReady();
 
     // Start a ComControlServer
     LDEBUG("ComControlServer starting...");
@@ -109,6 +130,12 @@ int main(int argc, char* argv[]) {
         LINFO("server finish");
         comServerDone = true;
     });
+
+    // &&& join the MotionCtrl thread
+    control::Context::get().model.CtrlJoin();
+
+    // &&& send shutdown  to ComServer.
+    // &&& send shutdown  to TelemetryServer
 
     // Wait as long as the server is running. At some point,
     // something should call comServ->shutdown().

@@ -48,11 +48,20 @@ public:
     Model& operator=(Model const&) = delete;
     virtual ~Model() = default;
 
+    // &&& merge
     /// Return a pointer to the FpgaIo instance.
     std::shared_ptr<FpgaIo> getFpgaIo() { return _fpgaIo; }
 
+/// &&& <<<<<<< HEAD
     /// Return a pointer to the `_powerSystem`.
     std::shared_ptr<PowerSystem> getPowerSystem() { return _powerSystem; }
+/// &&&=======
+    /// &&& doc
+    void ctrlSetup();
+
+    /// &&& doc
+    void ctrlStart();
+/// &&& >>>>>>> Added class framework.
 
     /// Change the current state to `newState`, taking rquired actions.
     /// @return false in `newState` is invalid.
@@ -153,9 +162,14 @@ private:
     /// This memeber serves a similar purpose to the LabView `_commandFactory` and `_state`.
     StateMap _stateMap;
 
+    // &&& merge
     // _cellCommRT_FIFO // systemElement VI-PH
     // _deltaForceRT_FIFO // systemElement VI-PH
     std::shared_ptr<FpgaIo> _fpgaIo; ///< The FpgaIo instance for communicating with hardware.
+
+    std::shared_ptr<MotionCtrl> _motionCtrl; ///< The MotionCtrl instance.
+    std::shared_ptr<FpgaCtrl> _fpgaCtrl; ///< The FpgaCtrl instance;
+
 
     // The LabView implementation of Model has the folowing systemElements that need to
     // acounted for in the C++ version.
