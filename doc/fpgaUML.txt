@@ -1,3 +1,5 @@
+# Copy and paste the following into http://www.plantuml.com/plantuml/uml/
+
 @startuml
 class Config
 class FpgaIo
@@ -16,6 +18,7 @@ class DaqBoolOutMock
 class DaqBoolOutReal
 class Ilc
 class AllIlc
+class FaultStateMap
 
 
 DaqIn : theoretical, unimplemented

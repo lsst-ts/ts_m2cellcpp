@@ -1,0 +1,265 @@
+/*
+ * This file is part of LSST ts_m2cellcpp test suite.
+ *
+ * Developed for the Vera C. Rubin Observatory Telescope & Site Software Systems.
+ * This product includes software developed by the Vera C.Rubin Observatory Project
+ * (https://www.lsst.org). See the COPYRIGHT file at the top-level directory of
+ * this distribution for details of code ownership.
+ *
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+// Class header
+#include "control/FaultStatusMap.h"
+
+// System headers
+#include <bitset>
+#include <sstream>
+#include <mutex>
+#include <stdexcept>
+#include <string>
+
+using namespace std;
+
+namespace LSST {
+namespace m2cellcpp {
+namespace control {
+
+FaultStatusMap::Ptr FaultStatusMap::_maskOpenLoopControl;
+FaultStatusMap::Ptr FaultStatusMap::_maskTelemetryOnlyControl;
+FaultStatusMap::Ptr FaultStatusMap::_maskFaults;
+FaultStatusMap::Ptr FaultStatusMap::_maskWarn;
+FaultStatusMap::Ptr FaultStatusMap::_maskInfo;
+
+/// `faultMaskCreationMtx` is only needed during the creation of fault
+/// status masks. There's a slight race condition when creating masks
+/// where more than one thread could get past the if ( == nullptr) latch.
+/// This mutex prevents that from being an issue. If the pointer has not yet
+/// been set, this mutex is locked and the pointer is checked a second
+/// time. Only if the pointer is still nullptr then the pointer will be set.
+/// Once the pointer is set, there should be no need to ever lock the mutex
+/// again, so it it should have no performance penalty.
+mutex faultMaskCreationMtx;
+
+void FaultStatusMap::setBit64(uint64_t& bitmap, int pos, bool set)  {
+    if (pos < 0 || pos >= 64 ) {
+        throw std::range_error("setBit out of range pos=" + to_string(pos));
+    }
+    uint64_t bit = 1;
+    bit <<= pos;
+    if (set) {
+        bitmap |= bit;
+    } else {
+        bitmap &= ~bit;
+    }
+}
+
+void FaultStatusMap::setBit(int pos) {
+    setBit64(_bitmap, pos, true);
+}
+
+void FaultStatusMap::unsetBit(int pos) {
+    setBit64(_bitmap, pos, false);
+}
+
+
+uint64_t FaultStatusMap::getBit(int pos) {
+    if (pos < 0 || pos >= 64 ) {
+        return 0;
+    }
+    uint64_t mask = 1;
+    mask <<= pos;
+    return getBitsSetInMask(mask);
+}
+
+uint64_t FaultStatusMap::getMaskOpenLoopControl() {
+    if (_maskOpenLoopControl == nullptr) {
+        FaultStatusMap::Ptr fsm(new FaultStatusMap(getMaskClosedLoopControl()));
+        lock_guard<mutex> lg(faultMaskCreationMtx);
+        if (_maskOpenLoopControl == nullptr) {
+            // - open-loop control mask:
+            fsm->setBit(ACTUATOR_LIMIT_CL);          // “Actuator limit CL”
+            fsm->setBit(INCLINOMETER_W_LUT);         // “Inclinometer error w/ lut”
+            fsm->setBit(CRIO_TIMING_FAULT);          // “cRIO timing fault”
+            fsm->setBit(INCLINOMETER_RANGE_ERR);     // “Inclinometer range error”
+            fsm->setBit(MIRROR_TEMP_SENSOR_FAULT);   // “mirror temp sensor fault”
+            fsm->setBit(ELEVATION_ANGLE_DIFF_FAULT); // “elevation angle difference error fault”
+            _maskOpenLoopControl = fsm;
+        }
+    }
+    return  _maskOpenLoopControl->_bitmap;
+}
+
+uint64_t FaultStatusMap::getMaskTelemetryOnlyControl() {
+    if (_maskTelemetryOnlyControl == nullptr) {
+        FaultStatusMap::Ptr fsm(new FaultStatusMap(getMaskOpenLoopControl()));
+        lock_guard<mutex> lg(faultMaskCreationMtx);
+        if (_maskTelemetryOnlyControl == nullptr) {
+            // - telemetry-only control mask - all of the _maskOpenLoopControl and
+            fsm->setBit(FaultStatusMap::ACTUATOR_FAULT);             // “actuator fault”
+            fsm->setBit(FaultStatusMap::EXCESSIVE_FORCE);            // “excessive force”
+            fsm->setBit(FaultStatusMap::MOTOR_VOLTAGE_FAULT);        // “motor voltage error fault”
+            fsm->setBit(FaultStatusMap::MOTOR_OVER_CURRENT);         // “Motor over current”
+            fsm->setBit(FaultStatusMap::MOTOR_MULTI_BREAKER_FAULT);  // “Motor mult-breaker fault”
+            fsm->setBit(FaultStatusMap::AXIAL_ACTUATOR_ENCODER_RANGE_FAULT); // “Axial actuator encoder range fault”
+            fsm->setBit(FaultStatusMap::TANGENT_ACTUATOR_ENCODER_RANGE_FAULT); // “tangent actuator encoder range fault”
+            fsm->setBit(FaultStatusMap::ILC_STATE_TRANSITION_FAULT); // “ILC state transition error fault”
+            _maskTelemetryOnlyControl = fsm;
+        }
+    }
+
+    return _maskTelemetryOnlyControl->_bitmap;
+}
+
+uint64_t FaultStatusMap::getMaskFaults() {
+    if (_maskFaults == nullptr) {
+        FaultStatusMap::Ptr fsm(new FaultStatusMap(getMaskTelemetryOnlyControl()));
+        lock_guard<mutex> lg(faultMaskCreationMtx);
+        if (_maskFaults == nullptr) {
+            // - Faults Mask - all of the faults in getMaskTelemetryOnlyControl and the following
+            fsm->setBit(FaultStatusMap::COMM_VOLTAGE_FAULT);          // “comm voltage error fault”
+            fsm->setBit(FaultStatusMap::COMM_OVER_CURRENT);           // “comm over current”
+            fsm->setBit(FaultStatusMap::POWER_RELAY_OPEN_FAULT);      // “power relay open fault”
+            fsm->setBit(FaultStatusMap::POWER_HEALTH_FAULT);          // “power supply health fault”
+            fsm->setBit(FaultStatusMap::COMM_MULTI_BREAKER_FAULT);    // “comm multi-breaker fault”
+            fsm->setBit(FaultStatusMap::POWER_SUPPLY_LOAD_SHARE_ERR); // “power supply load share error”
+            fsm->setBit(FaultStatusMap::INTERLOCK_FAULT);             // “interlock fault”
+            fsm->setBit(FaultStatusMap::TANGENT_LOAD_CELL_FAULT);     // “tangent load cell fault”
+            fsm->setBit(FaultStatusMap::LOSS_OF_TMA_COMM_ON_ENABLE_FAULT); // “loss of TMA comm on ENABLE fault”
+            fsm->setBit(FaultStatusMap::CRIO_COMM_FAULT);             // “cRIO COMM error fault”
+            fsm->setBit(FaultStatusMap::USER_GENERATED_FAULT);        // “user generated fault”
+            fsm->setBit(FaultStatusMap::PARAMETER_FILE_READ_FAULT);   // “configurable parameter file read error fault”
+            _maskFaults = fsm;
+        }
+    }
+    return _maskFaults->_bitmap;
+}
+
+uint64_t FaultStatusMap::getMaskWarn() {
+    if (_maskWarn == nullptr) {
+        FaultStatusMap::Ptr fsm(new FaultStatusMap(0));
+        lock_guard<mutex> lg(faultMaskCreationMtx);
+        if (_maskWarn == nullptr) {
+            // - Warnings Mask - starting clean with all zeroes
+            fsm->setBit(FaultStatusMap::ACTUATOR_LIMIT_OL);       // “actuator limit OL”
+            fsm->setBit(FaultStatusMap::INCLINOMETER_WO_LUT);     // “inclinometer error w/o lut”
+            fsm->setBit(FaultStatusMap::MOTOR_VOLTAGE_WARN);      // “motor voltage error warning”
+            fsm->setBit(FaultStatusMap::COMM_VOLTAGE_WARN);       // “comm voltage error warning”
+            fsm->setBit(FaultStatusMap::SINGLE_BREAKER_TRIP);     // “single breaker trip”
+            fsm->setBit(FaultStatusMap::CRIO_TIMING_WARN);        // “cRIO timing warning”
+            fsm->setBit(FaultStatusMap::DISPLACEMENT_SENSOR_RANGE_ERR); // “displacement sensor range”
+            fsm->setBit(FaultStatusMap::MIRROR_TEMP_SENSOR_WARN); // “mirror temp sensor warning”
+            fsm->setBit(FaultStatusMap::CELL_TEMP_WARN);          // “cell temp warning”
+            fsm->setBit(FaultStatusMap::TEMP_DIFF_WARN);          // “excessive temperature differential warning”
+            fsm->setBit(FaultStatusMap::LOSS_OF_TMA_WARN);        // “loss of TMA comm warning”
+            fsm->setBit(FaultStatusMap::MONITOR_ILC_READ_WARN);   // “monitoring ILC read error warning”
+            _maskWarn = fsm;
+        }
+    }
+    return _maskWarn->_bitmap;
+}
+
+uint64_t FaultStatusMap::getMaskInfo() {
+    if (_maskInfo == nullptr) {
+        FaultStatusMap::Ptr fsm(new FaultStatusMap(0));\
+        lock_guard<mutex> lg(faultMaskCreationMtx);
+        if (_maskInfo == nullptr) {
+           // - Info Mask - starting with all zeroes
+           fsm->setBit(FaultStatusMap::BROADCAST_ERR);    // “broadcast error”
+           fsm->setBit(FaultStatusMap::MOTOR_RELAY);      // “motor relay”
+           fsm->setBit(FaultStatusMap::COMM_RELAY);       // “comm relay”
+           fsm->setBit(FaultStatusMap::HARDWARE_FAULT);   // “hardware fault”
+           fsm->setBit(FaultStatusMap::STALE_DATA_WARN);  // “stale data warning”
+           fsm->setBit(FaultStatusMap::STALE_DATA_FAULT); // “stale data fault”
+           // The LabView code indicates it may unset some values, but doesn't seem to do so.
+           _maskInfo = fsm;
+        }
+    }
+    return _maskInfo->_bitmap;
+}
+
+string FaultStatusMap::getAllSetBitEnums() {
+    string str;
+    uint64_t mask = 1;
+
+    for (int j=0; j<64; ++j) {
+        if (getBitsSetInMask(mask)) {
+            str += getEnumString(j) + ",";
+        }
+         mask <<= 1;
+    }
+    return str;
+}
+
+string FaultStatusMap::getBinaryStr(uint64_t val) {
+    stringstream os;
+    os << std::bitset<64>(val);
+    return os.str();
+}
+
+string FaultStatusMap::getEnumString(int enumVal) {
+    switch(enumVal) {
+    case STALE_DATA_WARN: return "STALE_DATA_WARN " + to_string(enumVal);
+    case STALE_DATA_FAULT: return "STALE_DATA_FAULT " + to_string(enumVal);
+    case BROADCAST_ERR: return "BROADCAST_ERR " + to_string(enumVal);
+    case ACTUATOR_FAULT: return "ACTUATOR_FAULT " + to_string(enumVal);
+    case EXCESSIVE_FORCE: return "EXCESSIVE_FORCE " + to_string(enumVal);
+    case ACTUATOR_LIMIT_OL: return "ACTUATOR_LIMIT_OL " + to_string(enumVal);
+    case ACTUATOR_LIMIT_CL: return "ACTUATOR_LIMIT_CL " + to_string(enumVal);
+    case INCLINOMETER_W_LUT: return "INCLINOMETER_W_LUT " + to_string(enumVal);
+    case INCLINOMETER_WO_LUT: return "INCLINOMETER_WO_LUT " + to_string(enumVal);
+    case MOTOR_VOLTAGE_FAULT: return "MOTOR_VOLTAGE_FAULT " + to_string(enumVal);
+    case MOTOR_VOLTAGE_WARN: return "MOTOR_VOLTAGE_WARN " + to_string(enumVal);
+    case COMM_VOLTAGE_FAULT: return "COMM_VOLTAGE_FAULT " + to_string(enumVal);
+    case COMM_VOLTAGE_WARN: return "COMM_VOLTAGE_WARN " + to_string(enumVal);
+    case MOTOR_OVER_CURRENT: return "MOTOR_OVER_CURRENT " + to_string(enumVal);
+    case COMM_OVER_CURRENT: return "COMM_OVER_CURRENT " + to_string(enumVal);
+    case POWER_RELAY_OPEN_FAULT: return "POWER_RELAY_OPEN_FAULT " + to_string(enumVal);
+    case POWER_HEALTH_FAULT: return "POWER_HEALTH_FAULT " + to_string(enumVal);
+    case COMM_MULTI_BREAKER_FAULT: return "COMM_MULTI_BREAKER_FAULT " + to_string(enumVal);
+    case MOTOR_MULTI_BREAKER_FAULT: return "MOTOR_MULTI_BREAKER_FAULT " + to_string(enumVal);
+    case SINGLE_BREAKER_TRIP: return "SINGLE_BREAKER_TRIP " + to_string(enumVal);
+    case POWER_SUPPLY_LOAD_SHARE_ERR: return "POWER_SUPPLY_LOAD_SHARE_ERR " + to_string(enumVal);
+    case DISPLACEMENT_SENSOR_RANGE_ERR: return "DISPLACEMENT_SENSOR_RANGE_ERR " + to_string(enumVal);
+    case INCLINOMETER_RANGE_ERR: return "INCLINOMETER_RANGE_ERR " + to_string(enumVal);
+    case MIRROR_TEMP_SENSOR_FAULT: return "MIRROR_TEMP_SENSOR_FAULT " + to_string(enumVal);
+    case MIRROR_TEMP_SENSOR_WARN: return "MIRROR_TEMP_SENSOR_WARN " + to_string(enumVal);
+    case CELL_TEMP_WARN: return "CELL_TEMP_WARN " + to_string(enumVal);
+    case AXIAL_ACTUATOR_ENCODER_RANGE_FAULT: return "AXIAL_ACTUATOR_ENCODER_RANGE_FAULT " + to_string(enumVal);
+    case TANGENT_ACTUATOR_ENCODER_RANGE_FAULT: return "TANGENT_ACTUATOR_ENCODER_RANGE_FAULT " + to_string(enumVal);
+    case MOTOR_RELAY: return "MOTOR_RELAY " + to_string(enumVal);
+    case COMM_RELAY: return "COMM_RELAY " + to_string(enumVal);
+    case HARDWARE_FAULT: return "HARDWARE_FAULT " + to_string(enumVal);
+    case INTERLOCK_FAULT: return "INTERLOCK_FAULT " + to_string(enumVal);
+    case TANGENT_LOAD_CELL_FAULT: return "TANGENT_LOAD_CELL_FAULT " + to_string(enumVal);
+    case ELEVATION_ANGLE_DIFF_FAULT: return "ELEVATION_ANGLE_DIFF_FAULT " + to_string(enumVal);
+    case MONITOR_ILC_READ_WARN: return "MONITOR_ILC_READ_WARN " + to_string(enumVal);
+    case PARAMETER_FILE_READ_FAULT: return "PARAMETER_FILE_READ_FAULT " + to_string(enumVal);
+    case ILC_STATE_TRANSITION_FAULT: return "ILC_STATE_TRANSITION_FAULT " + to_string(enumVal);
+    case CRIO_COMM_FAULT: return "CRIO_COMM_FAULT " + to_string(enumVal);
+    case LOSS_OF_TMA_WARN: return "LOSS_OF_TMA_WARN " + to_string(enumVal);
+    case LOSS_OF_TMA_COMM_ON_ENABLE_FAULT: return "LOSS_OF_TMA_COMM_ON_ENABLE_FAULT " + to_string(enumVal);
+    case TEMP_DIFF_WARN: return "TEMP_DIFF_WARN " + to_string(enumVal);
+    case CRIO_TIMING_FAULT: return "CRIO_TIMING_FAULT " + to_string(enumVal);
+    case CRIO_TIMING_WARN: return "CRIO_TIMING_WARN " + to_string(enumVal);
+    case USER_GENERATED_FAULT: return "USER_GENERATED_FAULT " + to_string(enumVal);
+    }
+    return "unknown " + to_string(enumVal);
+}
+
+
+
+}  // namespace control
+}  // namespace m2cellcpp
+}  // namespace LSST

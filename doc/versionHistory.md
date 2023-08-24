@@ -1,5 +1,9 @@
 # Version History
 
+0.3.2
+
+ - Added The FaultStatusMap class.
+
 0.3.1
 
  - Added welcome message and some basic communication. 
