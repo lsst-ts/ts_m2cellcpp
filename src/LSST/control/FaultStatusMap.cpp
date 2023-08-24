@@ -45,9 +45,11 @@ FaultStatusMap::Ptr FaultStatusMap::_maskInfo;
 /// `faultMaskCreationMtx` is only needed during the creation of fault
 /// status masks. There's a slight race condition when creating masks
 /// where more than one thread could get past the if ( == nullptr) latch.
-/// This mutex prevents that from being an issue and it will only be
-/// locked the first time each function is called, so it it should have
-/// no performance penalty.
+/// This mutex prevents that from being an issue. If the pointer has not yet
+/// been set, this mutex is locked and the pointer is checked a second
+/// time. Only if the pointer is still nullptr then the pointer will be set.
+/// Once the pointer is set, there should be no need to ever lock the mutex
+/// again, so it it should have no performance penalty.
 mutex faultMaskCreationMtx;
 
 void FaultStatusMap::setBit64(uint64_t& bitmap, int pos, bool set)  {
@@ -138,7 +140,6 @@ uint64_t FaultStatusMap::getMaskFaults() {
             fsm->setBit(FaultStatusMap::CRIO_COMM_FAULT);             // “cRIO COMM error fault”
             fsm->setBit(FaultStatusMap::USER_GENERATED_FAULT);        // “user generated fault”
             fsm->setBit(FaultStatusMap::PARAMETER_FILE_READ_FAULT);   // “configurable parameter file read error fault”
-            // The LabView code indicates it may unset some values, but doesn't seem to do so.
             _maskFaults = fsm;
         }
     }

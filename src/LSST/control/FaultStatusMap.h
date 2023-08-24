@@ -52,6 +52,7 @@ public:
     virtual ~FaultStatusMap() = default;
 
     /// These enums should match those in SystemControlDefs.lvlib:Faults-WarningsEnum.ctl
+    /// Changing the values of these enums will likely cause hardware problems.
     enum {
         STALE_DATA_WARN=0,                       ///< “stale data warning” = 0
         STALE_DATA_FAULT=1,                      ///< “stale data fault” = 1
@@ -87,7 +88,7 @@ public:
         INTERLOCK_FAULT=31,                      ///< “interlock fault” = 31
         TANGENT_LOAD_CELL_FAULT=32,              ///< “tangent load cell fault” = 32
         ELEVATION_ANGLE_DIFF_FAULT=33,           ///< “elevation angle difference error fault” = 33
-        MONITOR_ILC_READ_WARN=34,///< “monitoring ILC read error warning” = 34
+        MONITOR_ILC_READ_WARN=34,                ///< “monitoring ILC read error warning” = 34
         /// “SPARE_35” = 35
         /// … all SPARE …
         /// “SPARE_54” = 54
@@ -102,11 +103,11 @@ public:
         USER_GENERATED_FAULT=63                  ///< “user generated fault” = 63
     };
 
-    /// Returns a mask that covers the faults allowed for closed loop control, which is none.
+    /// Returns a mask that covers the faults allowed for closed-loop control, which is none.
     /// Should match “closed-loop control mask” found in Faults-Warnings-Info_BitStatus.lvclass:masks.vi
     static uint64_t getMaskClosedLoopControl() { return 0; }
 
-    /// Returns a mask that covers the faults allowed for open loop control, which is fairly small.
+    /// Returns a mask that covers the faults allowed for open-loop control, which is fairly small.
     /// Should match “open-loop control mask” found in Faults-Warnings-Info_BitStatus.lvclass:masks.vi
     static uint64_t getMaskOpenLoopControl();
 
