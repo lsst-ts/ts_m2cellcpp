@@ -26,10 +26,15 @@
 #include <mutex>
 #include <stdint.h>
 #include <string>
+#include <thread>
 #include <vector>
 
 // Project headers
 #include "control/FpgaIo.h"
+#include "control/InputPortBits.h"
+#include "control/OutputPortBits.h"
+#include "simulator/SimPowerSubsystem.h"
+#include "system/clock_defs.h"
 #include "util/Log.h"
 
 #ifndef LSST_M2CELLCPP_SIMULATOR_SIMCORE_H
@@ -65,14 +70,49 @@ namespace simulator {
  *                PSS_State.lvclass:PS_restart.vi - true-on AFTER power set false-off -> state "init" (but don't touch "telem counter")
  *                PSS_State.lvclass:reset_breakers.vi - false-off  -> state "reseting breakers"  (don't touch power or or "telem counter")
  *             The last item, reset_breakers.vi is the only thing to set breakers to false-off.
+ *
+ * Model->Read SystemController.vi
  */
 /// &&&
 /// unit test
 class SimCore {
 public:
+    // &&&M2CellCtrlrTopVI.vi  DiscreteSimulation.vi   search top level vi for text CellSimulation
+    // &&& CellCommSupport->getTelemetry.vi  LTS-346
+
+    SimCore();
+
+    /// The values in `outputPort` will be read by the `_simThread` the
+    /// next time through the loop, thread safe.
+    void writeToOutputPort(control::OutputPortBits outputPort);
+
+    /// Get a copy of the `_readOutputPort`
+    control::OutputPortBits getOutputPort();
+
+    /// &&& doc
+    void start();
+
+    /// &&& doc
+    void stop() {
+        _simLoop = false;
+    }
+
+    /// &&& doc
+    bool join();
 
 private:
     control::FpgaIo _fpgaIo; ///< &&&
+    double _frequencyHz = 40.0; ///< How many times loop should run per second.
+
+    control::OutputPortBits::Ptr _outputPort; ///< doc &&&
+    control::InputPortBits::Ptr _inputPort; ///< doc &&&
+
+    SimPowerSubsystem::Ptr _motorSub; ///< doc &&&
+    SimPowerSubsystem::Ptr _commSub; ///< doc &&&
+
+    void _simRun(); ///< Primary function run inside `_simThread`
+    std::atomic<bool> _simLoop{true}; ///< _simThread will run until this is false.
+    std::thread _simThread; ///< Generate hardware outputs at a specified rate.
 };
 
 

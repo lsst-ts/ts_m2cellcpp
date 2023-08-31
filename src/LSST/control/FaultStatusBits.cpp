@@ -21,9 +21,9 @@
  */
 
 // Class header
-#include "control/FaultStatusMap.h"
+#include "FaultStatusBits.h"
 
-// System headers
+// system headers
 #include <bitset>
 #include <sstream>
 #include <mutex>
@@ -36,11 +36,11 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-FaultStatusMap::Ptr FaultStatusMap::_maskOpenLoopControl;
-FaultStatusMap::Ptr FaultStatusMap::_maskTelemetryOnlyControl;
-FaultStatusMap::Ptr FaultStatusMap::_maskFaults;
-FaultStatusMap::Ptr FaultStatusMap::_maskWarn;
-FaultStatusMap::Ptr FaultStatusMap::_maskInfo;
+FaultStatusBits::Ptr FaultStatusBits::_maskOpenLoopControl;
+FaultStatusBits::Ptr FaultStatusBits::_maskTelemetryOnlyControl;
+FaultStatusBits::Ptr FaultStatusBits::_maskFaults;
+FaultStatusBits::Ptr FaultStatusBits::_maskWarn;
+FaultStatusBits::Ptr FaultStatusBits::_maskInfo;
 
 /// `faultMaskCreationMtx` is only needed during the creation of fault
 /// status masks. There's a slight race condition when creating masks
@@ -52,9 +52,9 @@ FaultStatusMap::Ptr FaultStatusMap::_maskInfo;
 /// again, so it it should have no performance penalty.
 mutex faultMaskCreationMtx;
 
-void FaultStatusMap::setBit64(uint64_t& bitmap, int pos, bool set)  {
+void FaultStatusBits::setBit64(uint64_t& bitmap, int pos, bool set)  {
     if (pos < 0 || pos >= 64 ) {
-        throw std::range_error("setBit out of range pos=" + to_string(pos));
+        throw std::range_error("setBit64 out of range pos=" + to_string(pos));
     }
     uint64_t bit = 1;
     bit <<= pos;
@@ -65,16 +65,43 @@ void FaultStatusMap::setBit64(uint64_t& bitmap, int pos, bool set)  {
     }
 }
 
-void FaultStatusMap::setBit(int pos) {
+void FaultStatusBits::setBit32(uint32_t& bitmap, int pos, bool set)  {
+    if (pos < 0 || pos >= 32 ) {
+        throw std::range_error("setBit32 out of range pos=" + to_string(pos));
+    }
+    uint32_t bit = 1;
+    bit <<= pos;
+    if (set) {
+        bitmap |= bit;
+    } else {
+        bitmap &= ~bit;
+    }
+}
+
+void FaultStatusBits::setBit8(uint8_t& bitmap, int pos, bool set)  {
+    if (pos < 0 || pos >= 8 ) {
+        throw std::range_error("setBit8 out of range pos=" + to_string(pos));
+    }
+    uint8_t bit = 1;
+    bit <<= pos;
+    if (set) {
+        bitmap |= bit;
+    } else {
+        bitmap &= ~bit;
+    }
+}
+
+
+void FaultStatusBits::setBit(int pos) {
     setBit64(_bitmap, pos, true);
 }
 
-void FaultStatusMap::unsetBit(int pos) {
+void FaultStatusBits::unsetBit(int pos) {
     setBit64(_bitmap, pos, false);
 }
 
 
-uint64_t FaultStatusMap::getBit(int pos) {
+uint64_t FaultStatusBits::getBit(int pos) {
     if (pos < 0 || pos >= 64 ) {
         return 0;
     }
@@ -83,9 +110,9 @@ uint64_t FaultStatusMap::getBit(int pos) {
     return getBitsSetInMask(mask);
 }
 
-uint64_t FaultStatusMap::getMaskOpenLoopControl() {
+uint64_t FaultStatusBits::getMaskOpenLoopControl() {
     if (_maskOpenLoopControl == nullptr) {
-        FaultStatusMap::Ptr fsm(new FaultStatusMap(getMaskClosedLoopControl()));
+        FaultStatusBits::Ptr fsm(new FaultStatusBits(getMaskClosedLoopControl()));
         lock_guard<mutex> lg(faultMaskCreationMtx);
         if (_maskOpenLoopControl == nullptr) {
             // - open-loop control mask:
@@ -101,20 +128,20 @@ uint64_t FaultStatusMap::getMaskOpenLoopControl() {
     return  _maskOpenLoopControl->_bitmap;
 }
 
-uint64_t FaultStatusMap::getMaskTelemetryOnlyControl() {
+uint64_t FaultStatusBits::getMaskTelemetryOnlyControl() {
     if (_maskTelemetryOnlyControl == nullptr) {
-        FaultStatusMap::Ptr fsm(new FaultStatusMap(getMaskOpenLoopControl()));
+        FaultStatusBits::Ptr fsm(new FaultStatusBits(getMaskOpenLoopControl()));
         lock_guard<mutex> lg(faultMaskCreationMtx);
         if (_maskTelemetryOnlyControl == nullptr) {
             // - telemetry-only control mask - all of the _maskOpenLoopControl and
-            fsm->setBit(FaultStatusMap::ACTUATOR_FAULT);             // “actuator fault”
-            fsm->setBit(FaultStatusMap::EXCESSIVE_FORCE);            // “excessive force”
-            fsm->setBit(FaultStatusMap::MOTOR_VOLTAGE_FAULT);        // “motor voltage error fault”
-            fsm->setBit(FaultStatusMap::MOTOR_OVER_CURRENT);         // “Motor over current”
-            fsm->setBit(FaultStatusMap::MOTOR_MULTI_BREAKER_FAULT);  // “Motor mult-breaker fault”
-            fsm->setBit(FaultStatusMap::AXIAL_ACTUATOR_ENCODER_RANGE_FAULT); // “Axial actuator encoder range fault”
-            fsm->setBit(FaultStatusMap::TANGENT_ACTUATOR_ENCODER_RANGE_FAULT); // “tangent actuator encoder range fault”
-            fsm->setBit(FaultStatusMap::ILC_STATE_TRANSITION_FAULT); // “ILC state transition error fault”
+            fsm->setBit(FaultStatusBits::ACTUATOR_FAULT);             // “actuator fault”
+            fsm->setBit(FaultStatusBits::EXCESSIVE_FORCE);            // “excessive force”
+            fsm->setBit(FaultStatusBits::MOTOR_VOLTAGE_FAULT);        // “motor voltage error fault”
+            fsm->setBit(FaultStatusBits::MOTOR_OVER_CURRENT);         // “Motor over current”
+            fsm->setBit(FaultStatusBits::MOTOR_MULTI_BREAKER_FAULT);  // “Motor mult-breaker fault”
+            fsm->setBit(FaultStatusBits::AXIAL_ACTUATOR_ENCODER_RANGE_FAULT); // “Axial actuator encoder range fault”
+            fsm->setBit(FaultStatusBits::TANGENT_ACTUATOR_ENCODER_RANGE_FAULT); // “tangent actuator encoder range fault”
+            fsm->setBit(FaultStatusBits::ILC_STATE_TRANSITION_FAULT); // “ILC state transition error fault”
             _maskTelemetryOnlyControl = fsm;
         }
     }
@@ -122,66 +149,66 @@ uint64_t FaultStatusMap::getMaskTelemetryOnlyControl() {
     return _maskTelemetryOnlyControl->_bitmap;
 }
 
-uint64_t FaultStatusMap::getMaskFaults() {
+uint64_t FaultStatusBits::getMaskFaults() {
     if (_maskFaults == nullptr) {
-        FaultStatusMap::Ptr fsm(new FaultStatusMap(getMaskTelemetryOnlyControl()));
+        FaultStatusBits::Ptr fsm(new FaultStatusBits(getMaskTelemetryOnlyControl()));
         lock_guard<mutex> lg(faultMaskCreationMtx);
         if (_maskFaults == nullptr) {
             // - Faults Mask - all of the faults in getMaskTelemetryOnlyControl and the following
-            fsm->setBit(FaultStatusMap::COMM_VOLTAGE_FAULT);          // “comm voltage error fault”
-            fsm->setBit(FaultStatusMap::COMM_OVER_CURRENT);           // “comm over current”
-            fsm->setBit(FaultStatusMap::POWER_RELAY_OPEN_FAULT);      // “power relay open fault”
-            fsm->setBit(FaultStatusMap::POWER_HEALTH_FAULT);          // “power supply health fault”
-            fsm->setBit(FaultStatusMap::COMM_MULTI_BREAKER_FAULT);    // “comm multi-breaker fault”
-            fsm->setBit(FaultStatusMap::POWER_SUPPLY_LOAD_SHARE_ERR); // “power supply load share error”
-            fsm->setBit(FaultStatusMap::INTERLOCK_FAULT);             // “interlock fault”
-            fsm->setBit(FaultStatusMap::TANGENT_LOAD_CELL_FAULT);     // “tangent load cell fault”
-            fsm->setBit(FaultStatusMap::LOSS_OF_TMA_COMM_ON_ENABLE_FAULT); // “loss of TMA comm on ENABLE fault”
-            fsm->setBit(FaultStatusMap::CRIO_COMM_FAULT);             // “cRIO COMM error fault”
-            fsm->setBit(FaultStatusMap::USER_GENERATED_FAULT);        // “user generated fault”
-            fsm->setBit(FaultStatusMap::PARAMETER_FILE_READ_FAULT);   // “configurable parameter file read error fault”
+            fsm->setBit(FaultStatusBits::COMM_VOLTAGE_FAULT);          // “comm voltage error fault”
+            fsm->setBit(FaultStatusBits::COMM_OVER_CURRENT);           // “comm over current”
+            fsm->setBit(FaultStatusBits::POWER_RELAY_OPEN_FAULT);      // “power relay open fault”
+            fsm->setBit(FaultStatusBits::POWER_HEALTH_FAULT);          // “power supply health fault”
+            fsm->setBit(FaultStatusBits::COMM_MULTI_BREAKER_FAULT);    // “comm multi-breaker fault”
+            fsm->setBit(FaultStatusBits::POWER_SUPPLY_LOAD_SHARE_ERR); // “power supply load share error”
+            fsm->setBit(FaultStatusBits::INTERLOCK_FAULT);             // “interlock fault”
+            fsm->setBit(FaultStatusBits::TANGENT_LOAD_CELL_FAULT);     // “tangent load cell fault”
+            fsm->setBit(FaultStatusBits::LOSS_OF_TMA_COMM_ON_ENABLE_FAULT); // “loss of TMA comm on ENABLE fault”
+            fsm->setBit(FaultStatusBits::CRIO_COMM_FAULT);             // “cRIO COMM error fault”
+            fsm->setBit(FaultStatusBits::USER_GENERATED_FAULT);        // “user generated fault”
+            fsm->setBit(FaultStatusBits::PARAMETER_FILE_READ_FAULT);   // “configurable parameter file read error fault”
             _maskFaults = fsm;
         }
     }
     return _maskFaults->_bitmap;
 }
 
-uint64_t FaultStatusMap::getMaskWarn() {
+uint64_t FaultStatusBits::getMaskWarn() {
     if (_maskWarn == nullptr) {
-        FaultStatusMap::Ptr fsm(new FaultStatusMap(0));
+        FaultStatusBits::Ptr fsm(new FaultStatusBits(0));
         lock_guard<mutex> lg(faultMaskCreationMtx);
         if (_maskWarn == nullptr) {
             // - Warnings Mask - starting clean with all zeroes
-            fsm->setBit(FaultStatusMap::ACTUATOR_LIMIT_OL);       // “actuator limit OL”
-            fsm->setBit(FaultStatusMap::INCLINOMETER_WO_LUT);     // “inclinometer error w/o lut”
-            fsm->setBit(FaultStatusMap::MOTOR_VOLTAGE_WARN);      // “motor voltage error warning”
-            fsm->setBit(FaultStatusMap::COMM_VOLTAGE_WARN);       // “comm voltage error warning”
-            fsm->setBit(FaultStatusMap::SINGLE_BREAKER_TRIP);     // “single breaker trip”
-            fsm->setBit(FaultStatusMap::CRIO_TIMING_WARN);        // “cRIO timing warning”
-            fsm->setBit(FaultStatusMap::DISPLACEMENT_SENSOR_RANGE_ERR); // “displacement sensor range”
-            fsm->setBit(FaultStatusMap::MIRROR_TEMP_SENSOR_WARN); // “mirror temp sensor warning”
-            fsm->setBit(FaultStatusMap::CELL_TEMP_WARN);          // “cell temp warning”
-            fsm->setBit(FaultStatusMap::TEMP_DIFF_WARN);          // “excessive temperature differential warning”
-            fsm->setBit(FaultStatusMap::LOSS_OF_TMA_WARN);        // “loss of TMA comm warning”
-            fsm->setBit(FaultStatusMap::MONITOR_ILC_READ_WARN);   // “monitoring ILC read error warning”
+            fsm->setBit(FaultStatusBits::ACTUATOR_LIMIT_OL);       // “actuator limit OL”
+            fsm->setBit(FaultStatusBits::INCLINOMETER_WO_LUT);     // “inclinometer error w/o lut”
+            fsm->setBit(FaultStatusBits::MOTOR_VOLTAGE_WARN);      // “motor voltage error warning”
+            fsm->setBit(FaultStatusBits::COMM_VOLTAGE_WARN);       // “comm voltage error warning”
+            fsm->setBit(FaultStatusBits::SINGLE_BREAKER_TRIP);     // “single breaker trip”
+            fsm->setBit(FaultStatusBits::CRIO_TIMING_WARN);        // “cRIO timing warning”
+            fsm->setBit(FaultStatusBits::DISPLACEMENT_SENSOR_RANGE_ERR); // “displacement sensor range”
+            fsm->setBit(FaultStatusBits::MIRROR_TEMP_SENSOR_WARN); // “mirror temp sensor warning”
+            fsm->setBit(FaultStatusBits::CELL_TEMP_WARN);          // “cell temp warning”
+            fsm->setBit(FaultStatusBits::TEMP_DIFF_WARN);          // “excessive temperature differential warning”
+            fsm->setBit(FaultStatusBits::LOSS_OF_TMA_WARN);        // “loss of TMA comm warning”
+            fsm->setBit(FaultStatusBits::MONITOR_ILC_READ_WARN);   // “monitoring ILC read error warning”
             _maskWarn = fsm;
         }
     }
     return _maskWarn->_bitmap;
 }
 
-uint64_t FaultStatusMap::getMaskInfo() {
+uint64_t FaultStatusBits::getMaskInfo() {
     if (_maskInfo == nullptr) {
-        FaultStatusMap::Ptr fsm(new FaultStatusMap(0));\
+        FaultStatusBits::Ptr fsm(new FaultStatusBits(0));\
         lock_guard<mutex> lg(faultMaskCreationMtx);
         if (_maskInfo == nullptr) {
            // - Info Mask - starting with all zeroes
-           fsm->setBit(FaultStatusMap::BROADCAST_ERR);    // “broadcast error”
-           fsm->setBit(FaultStatusMap::MOTOR_RELAY);      // “motor relay”
-           fsm->setBit(FaultStatusMap::COMM_RELAY);       // “comm relay”
-           fsm->setBit(FaultStatusMap::HARDWARE_FAULT);   // “hardware fault”
-           fsm->setBit(FaultStatusMap::STALE_DATA_WARN);  // “stale data warning”
-           fsm->setBit(FaultStatusMap::STALE_DATA_FAULT); // “stale data fault”
+           fsm->setBit(FaultStatusBits::BROADCAST_ERR);    // “broadcast error”
+           fsm->setBit(FaultStatusBits::MOTOR_RELAY);      // “motor relay”
+           fsm->setBit(FaultStatusBits::COMM_RELAY);       // “comm relay”
+           fsm->setBit(FaultStatusBits::HARDWARE_FAULT);   // “hardware fault”
+           fsm->setBit(FaultStatusBits::STALE_DATA_WARN);  // “stale data warning”
+           fsm->setBit(FaultStatusBits::STALE_DATA_FAULT); // “stale data fault”
            // The LabView code indicates it may unset some values, but doesn't seem to do so.
            _maskInfo = fsm;
         }
@@ -189,7 +216,7 @@ uint64_t FaultStatusMap::getMaskInfo() {
     return _maskInfo->_bitmap;
 }
 
-string FaultStatusMap::getAllSetBitEnums() {
+string FaultStatusBits::getAllSetBitEnums() {
     string str;
     uint64_t mask = 1;
 
@@ -202,13 +229,13 @@ string FaultStatusMap::getAllSetBitEnums() {
     return str;
 }
 
-string FaultStatusMap::getBinaryStr(uint64_t val) {
+string FaultStatusBits::getBinaryStr(uint64_t val) {
     stringstream os;
     os << std::bitset<64>(val);
     return os.str();
 }
 
-string FaultStatusMap::getEnumString(int enumVal) {
+string FaultStatusBits::getEnumString(int enumVal) {
     switch(enumVal) {
     case STALE_DATA_WARN: return "STALE_DATA_WARN " + to_string(enumVal);
     case STALE_DATA_FAULT: return "STALE_DATA_FAULT " + to_string(enumVal);
