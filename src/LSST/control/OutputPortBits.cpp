@@ -48,6 +48,11 @@ void OutputPortBits::unsetBit(int pos) {
     FaultStatusBits::setBit8(_bitmap, pos, false);
 }
 
+void OutputPortBits::writeBit(int pos, bool set) {
+    FaultStatusBits::setBit8(_bitmap, pos, set);
+}
+
+
 
 uint8_t OutputPortBits::getBit(int pos) {
     if (pos < 0 || pos >= 8 ) {

@@ -34,10 +34,10 @@ namespace m2cellcpp {
 namespace simulator {
 
 SimCore::SimCore() {
-    _outputPort = control::OutputPortBits::Ptr(new control::OutputPortBits());
-    _inputPort = control::InputPortBits::Ptr(new control::InputPortBits());
+    _outputPort = control::OutputPortBits();
+    _inputPort = control::InputPortBits();
 
-    /// &&&double frequencyHz = 40.0;
+    const double nominalVoltage = 24.0;
     vector<int> motorInBits = {control::InputPortBits::J1_W9_1_MTR_PWR_BRKR_OK,
             control::InputPortBits::J1_W9_2_MTR_PWR_BRKR_OK,
             control::InputPortBits::J1_W9_3_MTR_PWR_BRKR_OK,
@@ -47,11 +47,12 @@ SimCore::SimCore() {
             control::InputPortBits::J3_W11_1_MTR_PWR_BRKR_OK,
             control::InputPortBits::J3_W11_2_MTR_PWR_BRKR_OK,
             control::InputPortBits::J3_W11_3_MTR_PWR_BRKR_OK};
-    _motorSub = SimPowerSubsystem::Ptr(new SimPowerSubsystem(
+    _motorSub = SimPowerSubsystem::Ptr(nominalVoltage, new SimPowerSubsystem(
             _outputPort, control::OutputPortBits::ILC_MOTOR_POWER_ON,
             _inputPort, motorInBits));
 
     _commSub = SimPowerSubsystem::Ptr(new SimPowerSubsystem(
+            nominalVoltage,
             _outputPort, control::OutputPortBits::ILC_COMM_POWER_ON,
             _inputPort,
             {control::InputPortBits::J1_W12_1_COMM_PWR_BRKR_OK,
@@ -60,6 +61,8 @@ SimCore::SimCore() {
             control::InputPortBits::J2_W13_2_COMM_PWR_BRKR_OK,
             control::InputPortBits::J3_W14_1_COMM_PWR_BRKR_OK,
             control::InputPortBits::J3_W14_2_COMM_PWR_BRKR_OK}));
+
+    _newOutput = _outputPort;
 }
 
 
@@ -89,6 +92,17 @@ bool SimCore::join() {
         return true;
     }
     return false;
+}
+
+void SimCore::writeNewOutputPort(int bit, bool set) {
+    lock_guard<mutex> lg(_mtx);
+    _newOutput.writeBit(bit, set);
+}
+
+
+control::OutputPortBits SimCore::getNewOutputPort() {
+    lock_guard<mutex> lg(_mtx);
+    return _newOutput;
 }
 
 }  // namespace simulator

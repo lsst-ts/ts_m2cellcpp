@@ -35,18 +35,53 @@ namespace simulator {
 
 SimPowerSubsystem::SimPowerSubsystem(control::OutputPortBits::Ptr const& outputPort, int powerOnBitPos,
         control::InputPortBits::Ptr const& inputPort,  std::vector<int> const& breakerBitPositions)
-        : _outputPort(outputPort),  _powerOnBitPos(powerOnBitPos), _inputPort(inputPort), _breakerBitPositions(breakerBitPositions) {
-
+        : _outputPort(outputPort),  _powerOnBitPos(powerOnBitPos),
+          _inputPort(inputPort), _breakerBitPositions(breakerBitPositions) {
 }
 
 
 void SimPowerSubsystem::calcBreakers(system::CLOCK::time_point ts) {
-    //&&&
+    if (!_breakerClosed) {
+        if (_breakerClosedTarg) {
+            double timeDiff = chrono::duration<double, std::ratio<1,1>>(ts - _breakerClosedTargTs).count();
+            if (timeDiff > _breakerCloseTimeSec) {
+                _breakerClosed = true;
+            }
+        }
+    } else {
+        if (!_breakerClosedTarg) {
+            _breakerClosed = false; // assuming breaker opens extremely quickly
+        }
+    }
 }
 
 
 void SimPowerSubsystem::calcVoltageCurrent(system::CLOCK::time_point ts) {
-    // &&&
+    const double timeDiff = chrono::duration<double, std::ratio<1,1>>(ts - _breakerClosedTargTs).count();
+    if (getPowerOn()) {
+        if (_voltage < _voltageNominal) {
+            _voltage += _voltageChangeRate*timeDiff;
+            if (_voltage > _voltageNominal) {
+                _voltage = _voltageNominal;
+            }
+        }
+        if (_voltage > _voltageNominal) {
+            _voltage = _voltageNominal;
+        }
+    } else {
+        double voltageMin = 0.0;
+        if (_voltage > voltageMin) {
+            _voltage -= _voltageChangeRate*timeDiff;
+        }
+        if (_voltage < voltageMin) {
+            _voltage = voltageMin;
+        }
+    }
+    if (_breakerClosed) {
+        _current = _voltage*_currentGain;
+    } else {
+        _current = 0.0;
+    }
 }
 
 

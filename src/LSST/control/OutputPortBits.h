@@ -67,11 +67,16 @@ public:
 
     /// Set the bit in `_bitmap` at `pos`.
     /// @throws range_error.
-    void setBit(int pos);
+    void setBit(int pos); /// &&& delete
 
     /// Unset the bit in `_bitmap` at `pos`.
     /// @throws range_error.
-    void unsetBit(int pos);
+    void unsetBit(int pos);  /// &&& delete
+
+    /// Write the bit in `_bitmap` at `pos` to 1 if `set` is true, or 0
+    /// if `set` is false.
+    /// @throws range_error.
+    void writeBit(int pos, bool set);
 
     /// Return a copy of `_bitmap`.
     uint8_t getBitmap() { return _bitmap; }

@@ -100,12 +100,19 @@ public:
     /// &&& doc
     bool join();
 
+    /// Write the value of `_newOutput` `bit` to 1 if `set` is true or 0
+    /// if `set` is false.
+    void writeNewOutputBit(int bit, bool set);
+
+    /// Return a copy of `_newOutputPort
+    control::OutputPortBits getNewOutputPort();
+
 private:
     control::FpgaIo _fpgaIo; ///< &&&
     double _frequencyHz = 40.0; ///< How many times loop should run per second.
 
-    control::OutputPortBits::Ptr _outputPort; ///< doc &&&
-    control::InputPortBits::Ptr _inputPort; ///< doc &&&
+    control::OutputPortBits _outputPort; ///< doc &&&
+    control::InputPortBits _inputPort; ///< doc &&&
 
     SimPowerSubsystem::Ptr _motorSub; ///< doc &&&
     SimPowerSubsystem::Ptr _commSub; ///< doc &&&
@@ -113,6 +120,11 @@ private:
     void _simRun(); ///< Primary function run inside `_simThread`
     std::atomic<bool> _simLoop{true}; ///< _simThread will run until this is false.
     std::thread _simThread; ///< Generate hardware outputs at a specified rate.
+
+    /// New value for `_outputPort` to be set on next `_simRun()` iteration.
+    control::OutputPortBits _newOutput;
+
+    std::mutex _mtx; ///< protects `_newOutput`
 };
 
 

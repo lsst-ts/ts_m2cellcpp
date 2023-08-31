@@ -39,7 +39,9 @@ namespace m2cellcpp {
 namespace simulator {
 
 
-/// &&&
+/// The purposed for this class is make a reasonable facsimile of power system
+/// to get the software off the ground. If there is time, it would be good to
+/// make a more accurate representation of the hardware.
 /// unit test // need unit tests &&&
 class SimPowerSubsystem {
 public:
@@ -71,14 +73,24 @@ public:
     void calcVoltageCurrent(system::CLOCK::time_point ts);
 
 private:
-    double _voltage = 0.0; ///< &&& doc
-    double _current = 0.0; ///< &&& doc
+    double _voltage = 0.0; ///< current voltage, volts
+    double _current = 0.0; ///< current current, amps
 
-    double _voltageMax = 0.0; ///< &&& doc
+    /// Nominal voltage, volts "output voltage nominal level" 24V
+    /// Both systems use the same value.
+    double _voltageNominal = 24.0;
 
-    double _currentMax = 0.0; ///< &&& doc
+    /// voltage change rate, volts/sec. Once powered on, voltage should reach an acceptable level
+    /// in about 0.5 seconds. See PowerSubsystemCommonConfig.vi
+    double _voltageChangeRate = _voltageNominal/0.40;
+
+    double _currentMax = 20.0; ///< max current, amps. "maximum output current" 20A
+    double _currentGain = 0.75; ///< Current based on `_voltage`, amp/volt.
 
     bool _breakerClosed = true; ///< &&& doc
+    bool _breakerClosedTarg = true; ///< Desired state of `_breakerClosed`
+    system::CLOCK::time_point _breakerClosedTargTs; ///< Time stamp when `_breakerClosedTarg` was set.
+    double _breakerCloseTimeSec = 0.1; ///< Time for the breaker to go from open to close.
 
     system::CLOCK::time_point _lastRead{system::CLOCK::now()}; ///< &&& doc
 
@@ -90,18 +102,8 @@ private:
 };
 
 
-/* &&&
-#include <chrono>
-
-system::CLOCK::time_point begin = system::CLOCK::now();
-std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-
-std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
-std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() << "[ns]" << std::endl;
-&&& */
-
 }  // namespace simulator
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_SIMULATOR_SIMCORE_H
+#endif  // LSST_M2CELLCPP_SIMULATOR_SIMPOWERSUBSYSTEM_H
