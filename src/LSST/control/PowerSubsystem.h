@@ -25,10 +25,10 @@
 #include <string>
 #include <vector>
 
+#include "../util/clock_defs.h"
 // Project headers
 #include "control/InputPortBits.h"
 #include "control/OutputPortBits.h"
-#include "system/clock_defs.h"
 #include "util/Log.h"
 
 #ifndef LSST_M2CELLCPP_CONTROL_POWERSUBSYTEM_H
@@ -85,38 +85,68 @@ namespace control {
 
 /// The motor power system and comm power system are the same except for configuration values. This class
 /// sets configuration values appropriately for each.
+/// Once set, these values are not expected to change.
+/// unit test: test_SimCore.cpp
+/// DM-&&& set the values using a configuration file.
 class PowerSubsystemConfig {
 public:
     using Ptr = std::shared_ptr<PowerSubsystemConfig>;
 
+    enum SystemType {
+        MOTOR = 0,
+        COMM = 1
+    };
+
+    static std::string getPrettyType(SystemType sysT);
+
     PowerSubsystemConfig() = delete;
+    PowerSubsystemConfig(PowerSubsystemConfig const&) = delete;
+    PowerSubsystemConfig operator=(PowerSubsystemConfig const&) = delete;
 
+    ~PowerSubsystemConfig() = default;
 
+    /// Create the appropriate configuration according to `systemType`.
+    PowerSubsystemConfig(SystemType systemType);
 
-    /// &&& doc
-    /// It's unclear which InputPortBits each power system should be concerned with at this point. Hopefully that will become clearer.
-    PowerSubsystem(control::OutputPortBits::Ptr const& outputPort, int powerOnBitPos,
-            control::InputPortBits::Ptr const& inputPort,  std::vector<int> const& breakerBitPositions);
+    /// Returns delay for turning power on, in seconds.
+    double outputOnMaxDelay() const;
 
-    /// &&& doc
-    double getRelayCloseDelay() { return _relayCloseDelay; }
+    /// Returns delay for turning power off.
+    double outputOffMaxDelay() const;
 
-    /// &&& doc  MOTOR
-    double outputOnMaxDelayMOTOR() { return _relayCloseDelay + _breakerOnTime + _interlockOutputOnDelay; }
-    /// &&& doc  COMM
-    double outputOnMaxDelayCOMM() { return _relayCloseDelay + _breakerOnTime; }
+    /// Return `_nominalVoltage` in volts
+    double getNominalVoltage() const { return _nominalVoltage; }
 
-    /// &&& doc MOTOR
-    double outputOffMaxDelayMOTOR() { return _relayOpenDelay + _interlockOutputOffDelay; }
-    /// &&& doc COMM
-    double outputOffMaxDelayCOMM() { return _relayOpenDelay; }
+    /// Return `_maxCurrent` in amps
+    double getMaxCurrentFault() const { return _maxCurrent; }
+
+    /// Return `_breakerOnTime` in seconds.
+    double getBreakerOnTime() const { return _breakerOnTime; }
+
+    /// Return `_minVoltageWarn`
+    double getMinVoltageWarn() const { return _minVoltageWarn; }
+
+    /// Return `_maxVoltageWarn`
+    double getMaxVoltageWarn() const { return _maxVoltageWarn; }
+
+    /// Return `_minVoltageFault`
+    double getMinVoltageFault() const { return _minVoltageFault; }
+
+    /// Return `_maxVoltageFault`
+    double getMaxVoltageFault() const { return _maxVoltageFault; }
+
+    /// Return `_voltageOffLevel`
+    double getVoltageOffLevel() const { return _voltageOffLevel; }
+
 
 private:
+    SystemType _systemType; ///< indicates if this is the MOTOR or COMM system.
+
     /// Set values for the MOTOR subsystem.
     void _setupMotor();
 
     /// Set values for the COMM subsystem.
-    void _setupCOMM();
+    void _setupComm();
 
     /// Setup values calculated from other configuration items.
     void _setupCalculated();

@@ -29,12 +29,12 @@
 #include <thread>
 #include <vector>
 
+#include "../util/clock_defs.h"
 // Project headers
-#include "control/FpgaIo.h"
+//&&& #include "control/FpgaIo.h"
 #include "control/InputPortBits.h"
 #include "control/OutputPortBits.h"
 #include "simulator/SimPowerSubsystem.h"
-#include "system/clock_defs.h"
 #include "util/Log.h"
 
 #ifndef LSST_M2CELLCPP_SIMULATOR_SIMCORE_H
@@ -73,8 +73,28 @@ namespace simulator {
  *
  * Model->Read SystemController.vi
  */
-/// &&&
-/// unit test
+
+/// Copy of revelevant simulation information.
+class SimInfo {
+public:
+    control::OutputPortBits outputPort;
+    control::InputPortBits inputPort;
+    double motorVoltage; ///< volts
+    double motorCurrent; ///< amps
+    bool motorBreakerClosed;
+    double commVoltage; ///< volts
+    double commCurrent; ///< amps
+    bool commBreakerClosed;
+    uint64_t iterations;
+
+    /// Return a log worthy string containing information about this class.
+    std::string dump();
+};
+
+/// &&& doc
+/// output is what would be sent to the FPGA.
+/// input is what would be read from the FPGA.
+/// unit test: test_SimCore.cpp
 class SimCore {
 public:
     // &&&M2CellCtrlrTopVI.vi  DiscreteSimulation.vi   search top level vi for text CellSimulation
@@ -84,10 +104,16 @@ public:
 
     /// The values in `outputPort` will be read by the `_simThread` the
     /// next time through the loop, thread safe.
-    void writeToOutputPort(control::OutputPortBits outputPort);
+    void writeNewOutputPort(int pos, bool set);
 
-    /// Get a copy of the `_readOutputPort`
-    control::OutputPortBits getOutputPort();
+    /// Get a copy of the `_newOutputPort`
+    control::OutputPortBits getNewOutputPort();
+
+    /// &&& doc
+    control::InputPortBits getSentInputPortBits();
+
+    /// Return SimInfo from the most recent iteration.
+    SimInfo getSimInfo();
 
     /// &&& doc
     void start();
@@ -104,15 +130,14 @@ public:
     /// if `set` is false.
     void writeNewOutputBit(int bit, bool set);
 
-    /// Return a copy of `_newOutputPort
-    control::OutputPortBits getNewOutputPort();
-
+    /// Return `_iterations`.
+    uint64_t getIterations() { return _iterations; }
 private:
-    control::FpgaIo _fpgaIo; ///< &&&
+    //control::FpgaIo _fpgaIo; ///< &&&
     double _frequencyHz = 40.0; ///< How many times loop should run per second.
 
-    control::OutputPortBits _outputPort; ///< doc &&&
-    control::InputPortBits _inputPort; ///< doc &&&
+    control::OutputPortBits::Ptr _outputPort; ///< doc &&&
+    control::InputPortBits::Ptr _inputPort; ///< doc &&&
 
     SimPowerSubsystem::Ptr _motorSub; ///< doc &&&
     SimPowerSubsystem::Ptr _commSub; ///< doc &&&
@@ -124,7 +149,13 @@ private:
     /// New value for `_outputPort` to be set on next `_simRun()` iteration.
     control::OutputPortBits _newOutput;
 
+    SimInfo _simInfo; ///< simulation status information.
+
     std::mutex _mtx; ///< protects `_newOutput`
+
+    std::atomic<uint64_t> _iterations{0}; ///< number of times through the `_simRun` loop.
+
+    util::CLOCK::time_point _prevTimeStamp; ///< Last time through the `_simRun` loop.
 };
 
 

@@ -18,8 +18,8 @@
  * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
-#ifndef LSST_M2CELLCPP_SYSTEMCLOCKDEFS_H
-#define LSST_M2CELLCPP_SYSTEMCLOCKDEFS_H
+#ifndef LSST_M2CELLCPP_UTIL_CLOCKDEFS_H
+#define LSST_M2CELLCPP_UTIL_CLOCKDEFS_H
 
 // System headers
 #include <atomic>
@@ -33,10 +33,20 @@
 
 namespace LSST {
 namespace m2cellcpp {
-namespace system {
+namespace util {
 
+/// It's important that the clock used is consistent when calculating time. steady_clock may be a better choice.
 using CLOCK = std::chrono::system_clock;
-using TIMEPOINT = std::chrono::time_point<CLOCK>;
+using TIMEPOINT = CLOCK::time_point;
+
+
+/// Return the time passed between `start` and `end` in seconds.
+inline double timePassedSec(TIMEPOINT const start, TIMEPOINT const end) {
+    // ratio<1,1> is redundant, as the default is seconds. If units other than
+    // seconds are desired, chrono::duration_cast may be the better option.
+    const double timeDiff = std::chrono::duration<double, std::ratio<1,1>>(end - start).count();
+    return timeDiff;
+}
 
 /// RAII class to help track a changing sum through a begin and end time.
 template <typename TType>
@@ -85,9 +95,9 @@ private:
     std::mutex _mtx;
 };
 
-}  // namespace system
+}  // namespace util
 }  // namespace m2cellcpp
 }  // namespace LSST
 
 
-#endif  // LSST_M2CELLCPP_SYSTEM_CLOCKDEFS_H
+#endif  // LSST_M2CELLCPP_UTIL_CLOCKDEFS_H

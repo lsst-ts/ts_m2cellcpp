@@ -109,8 +109,8 @@ public:
     /// Return a string containing the string version of all set bit enums
     std::string getAllSetBitEnums();
 
-    /// Return the bit in `_bitmap` at `pos`, `pos` out of range returns 0.
-    uint32_t getBit(int pos);
+    /// Return the state of bit in `_bitmap` at `pos`, `pos` out of range returns false.
+    bool getBit(int pos);
 
     /// Return all bits that are set in `_bitmap` and in `mask`.
     uint32_t getBitsSetInMask(uint32_t mask) {

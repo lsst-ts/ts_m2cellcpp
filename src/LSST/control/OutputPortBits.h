@@ -78,6 +78,10 @@ public:
     /// @throws range_error.
     void writeBit(int pos, bool set);
 
+    /// To set multiple values atomically, `mask` has ones set a positions that will be
+    /// set/unset, while `values` has 1's at set positions and zeroes elsewhere.
+    void writeMask(uint8_t mask, uint8_t values);
+
     /// Return a copy of `_bitmap`.
     uint8_t getBitmap() { return _bitmap; }
 
@@ -91,7 +95,7 @@ public:
     std::string getAllSetBitEnums();
 
     /// Return the bit in `_bitmap` at `pos`, `pos` out of range returns 0.
-    uint8_t getBit(int pos);
+    bool getBit(int pos);
 
     /// Return all bits that are set in `_bitmap` and in `mask`.
     uint8_t getBitsSetInMask(uint8_t mask) {

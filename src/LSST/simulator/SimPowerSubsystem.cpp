@@ -25,6 +25,7 @@
 // System headers
 
 // Project headers
+#include "util/Bug.h"
 #include "util/Log.h"
 
 using namespace std;
@@ -33,14 +34,45 @@ namespace LSST {
 namespace m2cellcpp {
 namespace simulator {
 
-SimPowerSubsystem::SimPowerSubsystem(control::OutputPortBits::Ptr const& outputPort, int powerOnBitPos,
+SimPowerSubsystem::SimPowerSubsystem(control::PowerSubsystemConfig::SystemType systemType,
+        control::OutputPortBits::Ptr const& outputPort, int powerOnBitPos, int breakerResetPos,
         control::InputPortBits::Ptr const& inputPort,  std::vector<int> const& breakerBitPositions)
-        : _outputPort(outputPort),  _powerOnBitPos(powerOnBitPos),
+        : _systemType(systemType) ,_outputPort(outputPort),  _powerOnBitPos(powerOnBitPos), _breakerResetPos(breakerResetPos),
           _inputPort(inputPort), _breakerBitPositions(breakerBitPositions) {
+    _setup();
+}
+
+void SimPowerSubsystem::_setup() {
+    control::PowerSubsystemConfig psc(_systemType);
+
+    _voltageNominal = psc.getNominalVoltage();
+
+     /// Once powered on, voltage should reach an acceptable level
+     /// before outputOnMaxDelay() time has past. See PowerSubsystemCommonConfig.vi
+     _voltageChangeRateOn = (_voltageNominal/psc.outputOnMaxDelay())*1.3;
+     /// Similar to on change rate
+     _voltageChangeRateOff = (_voltageNominal/psc.outputOffMaxDelay())*1.3;
+
+     _currentMax = psc.getMaxCurrentFault(); ///< max current, amps. "maximum output current" 20A
+
+     /// Current based on `_voltage`, amp/volt. 0.75 as the system shouldn't normally be running at
+     /// maximum current levels.
+     _currentGain = 0.75 * (_currentMax/_voltageNominal);
+
+     /// Assuming "breaker on time" is related to how long it takes for the breaker to close.
+     /// 0.75 as closing the breaker shouldn't normally take the maximum amount of time.
+     _breakerCloseTimeSec = psc.getBreakerOnTime() * 0.75;
 }
 
 
-void SimPowerSubsystem::calcBreakers(system::CLOCK::time_point ts) {
+void SimPowerSubsystem::calcBreakers(util::CLOCK::time_point ts) {
+    // breaker reset opens the breaker.
+    bool newbreakerClosedTarg = !(_outputPort->getBit(_breakerResetPos));
+    if (newbreakerClosedTarg != _breakerClosedTarg) {
+        _breakerClosedTargTs = ts;
+        _breakerClosedTarg = newbreakerClosedTarg;
+    }
+
     if (!_breakerClosed) {
         if (_breakerClosedTarg) {
             double timeDiff = chrono::duration<double, std::ratio<1,1>>(ts - _breakerClosedTargTs).count();
@@ -56,11 +88,11 @@ void SimPowerSubsystem::calcBreakers(system::CLOCK::time_point ts) {
 }
 
 
-void SimPowerSubsystem::calcVoltageCurrent(system::CLOCK::time_point ts) {
-    const double timeDiff = chrono::duration<double, std::ratio<1,1>>(ts - _breakerClosedTargTs).count();
+void SimPowerSubsystem::calcVoltageCurrent(double timeDiff) {
+    //&&& const double timeDiff = chrono::duration<double, std::ratio<1,1>>(ts - _breakerClosedTargTs).count();
     if (getPowerOn()) {
         if (_voltage < _voltageNominal) {
-            _voltage += _voltageChangeRate*timeDiff;
+            _voltage += _voltageChangeRateOn*timeDiff;
             if (_voltage > _voltageNominal) {
                 _voltage = _voltageNominal;
             }
@@ -71,7 +103,7 @@ void SimPowerSubsystem::calcVoltageCurrent(system::CLOCK::time_point ts) {
     } else {
         double voltageMin = 0.0;
         if (_voltage > voltageMin) {
-            _voltage -= _voltageChangeRate*timeDiff;
+            _voltage -= _voltageChangeRateOff*timeDiff;
         }
         if (_voltage < voltageMin) {
             _voltage = voltageMin;
@@ -82,6 +114,7 @@ void SimPowerSubsystem::calcVoltageCurrent(system::CLOCK::time_point ts) {
     } else {
         _current = 0.0;
     }
+    LDEBUG("&&& ", control::PowerSubsystemConfig::getPrettyType(_systemType), " _current=", _current, " _voltage=", _voltage);
 }
 
 

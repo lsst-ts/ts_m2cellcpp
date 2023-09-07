@@ -54,7 +54,7 @@ void OutputPortBits::writeBit(int pos, bool set) {
 
 
 
-uint8_t OutputPortBits::getBit(int pos) {
+bool OutputPortBits::getBit(int pos) {
     if (pos < 0 || pos >= 8 ) {
         return 0;
     }

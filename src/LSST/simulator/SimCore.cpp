@@ -34,11 +34,11 @@ namespace m2cellcpp {
 namespace simulator {
 
 SimCore::SimCore() {
-    _outputPort = control::OutputPortBits();
-    _inputPort = control::InputPortBits();
+    _outputPort = control::OutputPortBits::Ptr(new control::OutputPortBits());
+    _inputPort = control::InputPortBits::Ptr(new control::InputPortBits());
 
-    const double nominalVoltage = 24.0;
-    vector<int> motorInBits = {control::InputPortBits::J1_W9_1_MTR_PWR_BRKR_OK,
+    vector<int> motorInBits = {
+            control::InputPortBits::J1_W9_1_MTR_PWR_BRKR_OK,
             control::InputPortBits::J1_W9_2_MTR_PWR_BRKR_OK,
             control::InputPortBits::J1_W9_3_MTR_PWR_BRKR_OK,
             control::InputPortBits::J2_W10_1_MTR_PWR_BRKR_OK,
@@ -47,41 +47,75 @@ SimCore::SimCore() {
             control::InputPortBits::J3_W11_1_MTR_PWR_BRKR_OK,
             control::InputPortBits::J3_W11_2_MTR_PWR_BRKR_OK,
             control::InputPortBits::J3_W11_3_MTR_PWR_BRKR_OK};
-    _motorSub = SimPowerSubsystem::Ptr(nominalVoltage, new SimPowerSubsystem(
+
+    _motorSub = SimPowerSubsystem::Ptr(new SimPowerSubsystem(
+            control::PowerSubsystemConfig::MOTOR,
             _outputPort, control::OutputPortBits::ILC_MOTOR_POWER_ON,
+            control::OutputPortBits::RESET_MOTOR_BREAKERS,
             _inputPort, motorInBits));
 
-    _commSub = SimPowerSubsystem::Ptr(new SimPowerSubsystem(
-            nominalVoltage,
-            _outputPort, control::OutputPortBits::ILC_COMM_POWER_ON,
-            _inputPort,
-            {control::InputPortBits::J1_W12_1_COMM_PWR_BRKR_OK,
+    vector<int> commInBits = {
+            control::InputPortBits::J1_W12_1_COMM_PWR_BRKR_OK,
             control::InputPortBits::J1_W12_2_COMM_PWR_BRKR_OK,
             control::InputPortBits::J2_W13_1_COMM_PWR_BRKR_OK,
             control::InputPortBits::J2_W13_2_COMM_PWR_BRKR_OK,
             control::InputPortBits::J3_W14_1_COMM_PWR_BRKR_OK,
-            control::InputPortBits::J3_W14_2_COMM_PWR_BRKR_OK}));
+            control::InputPortBits::J3_W14_2_COMM_PWR_BRKR_OK};
 
-    _newOutput = _outputPort;
+    _commSub = SimPowerSubsystem::Ptr(new SimPowerSubsystem(
+            control::PowerSubsystemConfig::COMM,
+            _outputPort, control::OutputPortBits::ILC_COMM_POWER_ON,
+            control::OutputPortBits::RESET_COMM_BREAKERS,
+            _inputPort, commInBits));
+
+    _newOutput = *_outputPort;
 }
 
 
 void SimCore::_simRun() {
-
+    control::OutputPortBits prevOutput = *_outputPort;
     while(_simLoop) {
-        system::CLOCK::time_point timestamp = system::CLOCK::now();
-        // &&& read in new outputPorts set by system.
+        util::CLOCK::time_point timestamp = util::CLOCK::now();
+        // Read in new outputPorts set by system.
+        {
+            lock_guard<mutex> lg(_mtx);
+            *_outputPort = _newOutput;
+        }
+        control::OutputPortBits outputDiff(_outputPort->getBitmap() ^ prevOutput.getBitmap());
+        if (outputDiff.getBitmap() != 0) {
+            LINFO("Simcore output changed diff=", outputDiff.getAllSetBitEnums());
+            LINFO("Simcore _outputPort=", _outputPort->getAllSetBitEnums());
+        }
+        double timeDiff = util::timePassedSec(_prevTimeStamp, timestamp);
         _motorSub->calcBreakers(timestamp);
-        _motorSub->calcVoltageCurrent(timestamp);
+        _motorSub->calcVoltageCurrent(timeDiff);
         _commSub->calcBreakers(timestamp);
-        _commSub->calcVoltageCurrent(timestamp);
+        _commSub->calcVoltageCurrent(timeDiff);
 
-        // &&& send message to system with current input, voltages, currents, and ouputs.
+
+        prevOutput = *_outputPort;
+        {
+            lock_guard<mutex> lg(_mtx);
+            _simInfo.outputPort = *_outputPort;
+            _simInfo.inputPort = *_inputPort;
+            _simInfo.motorVoltage = _motorSub->getVoltage();
+            _simInfo.motorCurrent = _motorSub->getCurrent();
+            _simInfo.motorBreakerClosed = _motorSub->getBreakerClosed();
+            _simInfo.commVoltage = _commSub->getVoltage();
+            _simInfo.commCurrent = _commSub->getCurrent();
+            _simInfo.commBreakerClosed = _commSub->getBreakerClosed();
+            _simInfo.iterations = _iterations;
+            // FUTURE: send message to system with this data.
+        }
+        LDEBUG(_simInfo.dump());
+        ++_iterations;
+        _prevTimeStamp = timestamp;
         this_thread::sleep_for(chrono::duration<double, std::ratio<1,1>>(1.0/_frequencyHz));
     }
 }
 
 void SimCore::start() {
+    _prevTimeStamp = util::CLOCK::now();
     thread thrd(&SimCore::_simRun, this);
     _simThread = std::move(thrd);
 }
@@ -94,15 +128,36 @@ bool SimCore::join() {
     return false;
 }
 
-void SimCore::writeNewOutputPort(int bit, bool set) {
+void SimCore::writeNewOutputPort(int pos, bool set) {
     lock_guard<mutex> lg(_mtx);
-    _newOutput.writeBit(bit, set);
+    _newOutput.writeBit(pos, set);
 }
 
 
 control::OutputPortBits SimCore::getNewOutputPort() {
     lock_guard<mutex> lg(_mtx);
     return _newOutput;
+}
+
+SimInfo SimCore::getSimInfo() {
+    lock_guard<mutex> lg(_mtx);
+    return _simInfo;
+}
+
+
+string SimInfo::dump() {
+    stringstream os;
+    os << "SimInfo"
+            << " outputPort=" << outputPort.getAllSetBitEnums()
+            << " inputPort=" << inputPort.getAllSetBitEnums()
+            << " motorVoltage=" << motorVoltage
+            << " motorCurrent=" << motorCurrent
+            << " motorBreakerClosed=" << motorBreakerClosed
+            << " commVoltage=" << commVoltage
+            << " commCurrent=" << commCurrent
+            << " commBreakerClosed=" << commBreakerClosed
+            << " iterations=" << iterations;
+    return os.str();
 }
 
 }  // namespace simulator

@@ -31,6 +31,7 @@
 #include <string>
 
 // project headers
+#include "util/Bug.h"
 #include "util/Log.h"
 
 
@@ -40,7 +41,30 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-void PowerSubsystemConfig::setupMotor() {
+std::string PowerSubsystemConfig::getPrettyType(SystemType sysT) {
+    switch(sysT) {
+    case MOTOR: return "MOTOR";
+    case COMM: return "COMM";
+    }
+    return "unknown";
+}
+
+
+PowerSubsystemConfig::PowerSubsystemConfig(SystemType systemType) : _systemType(systemType) {
+    switch (_systemType) {
+    case MOTOR:
+        _setupMotor();
+        break;
+    case COMM:
+        _setupComm();
+        break;
+    default:
+        throw util::Bug(ERR_LOC,"unexpected systemType=" + to_string(_systemType));
+    }
+    _setupCalculated();
+}
+
+void PowerSubsystemConfig::_setupMotor() {
     // - U32 output on max delay (ms) (unsigned long [32-bit integer (0 to 4,294,967,295)])  =
     //   “relay close delay” (50ms) + “breaker on time” (500ms) + “interlock output on delay”(50ms)= 600ms
     _relayCloseDelay = 0.050; ///< "relay close delay" 50ms, in seconds
@@ -79,7 +103,7 @@ void PowerSubsystemConfig::setupMotor() {
 }
 
 
-void PowerSubsystemConfig::setupCOMM() {
+void PowerSubsystemConfig::_setupComm() {
     // - Comm Power Subsystem Configuration Information (typedef 'PowerSubsystem (cluster of 11 elements)
     //   Values found in “PowerSubsystemCommonConfig.vi”  and “CommPowerBusConfigurationParameters.vi”
     // - U32 output on max delay (ms) (unsigned long [32-bit integer (0 to 4,294,967,295)])
@@ -118,7 +142,7 @@ void PowerSubsystemConfig::setupCOMM() {
     _maxCurrent = 10.0; ///< maximum output current 10A, in amps.
 }
 
-void PowerSubsystemConfig::setupCalculated() {
+void PowerSubsystemConfig::_setupCalculated() {
     //  Based on “output voltage nominal level” * x%   x=”output voltage warning threshold level(%)”= 5%
     //   - DBL Minimum (double [64-bit real (~15 digit precision)])  = 24V * 0.95 = 22.8
     //   - DBL Maximum (double [64-bit real (~15 digit precision)])  = 24V * 1.05 = 25.2
@@ -131,6 +155,19 @@ void PowerSubsystemConfig::setupCalculated() {
     //    - DBL Maximum (double [64-bit real (~15 digit precision)])  = 24V * 1.10 = 26.4
     _minVoltageFault = _nominalVoltage * 0.90; ///< minimum voltage fault level in volts.
     _maxVoltageFault = _nominalVoltage * 1.10; ///< maximum voltage fault level in volts.
+}
+
+double PowerSubsystemConfig::outputOnMaxDelay() const {
+    if (_systemType == MOTOR) return _relayCloseDelay + _breakerOnTime + _interlockOutputOnDelay;
+    if (_systemType == COMM) return _relayCloseDelay + _breakerOnTime;;
+    throw util::Bug(ERR_LOC, "PowerSubsystemConfig unexpected _systemType=" + to_string(_systemType));
+}
+
+
+double PowerSubsystemConfig::outputOffMaxDelay() const {
+    if (_systemType == MOTOR) return _relayOpenDelay + _interlockOutputOffDelay;
+    if (_systemType == COMM) return _relayOpenDelay;
+    throw util::Bug(ERR_LOC, "PowerSubsystemConfig unexpected _systemType=" + to_string(_systemType));
 }
 
 }  // namespace control

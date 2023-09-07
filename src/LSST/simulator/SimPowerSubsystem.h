@@ -25,10 +25,11 @@
 #include <string>
 #include <vector>
 
+#include "../util/clock_defs.h"
 // Project headers
 #include "control/InputPortBits.h"
 #include "control/OutputPortBits.h"
-#include "system/clock_defs.h"
+#include "control/PowerSubsystem.h"
 #include "util/Log.h"
 
 #ifndef LSST_M2CELLCPP_SIMULATOR_SIMPOWERSUBSYTEM_H
@@ -51,51 +52,65 @@ public:
 
     /// &&& doc
     /// It's unclear which InputPortBits each power system should be concerned with at this point. Hopefully that will become clearer.
-    SimPowerSubsystem(control::OutputPortBits::Ptr const& outputPort, int powerOnBitPos,
+    SimPowerSubsystem(control::PowerSubsystemConfig::SystemType systemType,
+            control::OutputPortBits::Ptr const& outputPort, int powerOnBitPos, int breakerResetPos,
             control::InputPortBits::Ptr const& inputPort,  std::vector<int> const& breakerBitPositions);
 
     /// &&& doc
     bool getPowerOn() { return _outputPort->getBit(_powerOnBitPos); }
 
     /// &&& doc
+    double getVoltage() { return _voltage; }
+
+    /// &&& doc
+    double getCurrent() { return _current; }
+
+    /// &&& doc
     void setPowerOn(bool on) {
-        if (on) {
-            _outputPort->setBit(_powerOnBitPos);
-        } else {
-            _outputPort->unsetBit(_powerOnBitPos);
-        }
+        _outputPort->writeBit(_powerOnBitPos, on);
     }
 
     /// &&& doc
-    void calcBreakers(system::CLOCK::time_point ts);
+    bool getBreakerClosed() { return _breakerClosed; }
+
 
     /// &&& doc
-    void calcVoltageCurrent(system::CLOCK::time_point ts);
+    void calcBreakers(util::CLOCK::time_point ts);
+
+    /// &&& doc
+    void calcVoltageCurrent(double timeDiff);
+
 
 private:
+    void _setup(); ///< Setup according to `_systemType`.
+
+    control::PowerSubsystemConfig::SystemType _systemType; ///< MOTOR or COMM.
+
     double _voltage = 0.0; ///< current voltage, volts
     double _current = 0.0; ///< current current, amps
 
-    /// Nominal voltage, volts "output voltage nominal level" 24V
-    /// Both systems use the same value.
-    double _voltageNominal = 24.0;
+    /// Nominal voltage, volts "output voltage nominal level"
+    double _voltageNominal;
 
-    /// voltage change rate, volts/sec. Once powered on, voltage should reach an acceptable level
-    /// in about 0.5 seconds. See PowerSubsystemCommonConfig.vi
-    double _voltageChangeRate = _voltageNominal/0.40;
+    /// voltage change rate powering on, volts/sec. See PowerSubsystemCommonConfig.vi
+    double _voltageChangeRateOn;
 
-    double _currentMax = 20.0; ///< max current, amps. "maximum output current" 20A
-    double _currentGain = 0.75; ///< Current based on `_voltage`, amp/volt.
+    /// voltage change rate powering off, volts/sec. See PowerSubsystemCommonConfig.vi
+    double _voltageChangeRateOff;
+
+    double _currentMax; ///< max current, amps. "maximum output current"
+    double _currentGain; ///< Current based on `_voltage`, amp/volt.
 
     bool _breakerClosed = true; ///< &&& doc
-    bool _breakerClosedTarg = true; ///< Desired state of `_breakerClosed`
-    system::CLOCK::time_point _breakerClosedTargTs; ///< Time stamp when `_breakerClosedTarg` was set.
-    double _breakerCloseTimeSec = 0.1; ///< Time for the breaker to go from open to close.
+    bool _breakerClosedTarg = true; ///< Target state of `_breakerClosed`
+    util::CLOCK::time_point _breakerClosedTargTs; ///< Time stamp when `_breakerClosedTarg` was set.
+    double _breakerCloseTimeSec; ///< Time for the breaker to go from open to close.
 
-    system::CLOCK::time_point _lastRead{system::CLOCK::now()}; ///< &&& doc
+    util::CLOCK::time_point _lastRead{util::CLOCK::now()}; ///< &&& doc
 
     control::OutputPortBits::Ptr _outputPort; ///< &&& doc
     int _powerOnBitPos; ///< &&& doc
+    int _breakerResetPos; ///< &&& doc
 
     control::InputPortBits::Ptr _inputPort; ///< &&& doc
     std::vector<int>  _breakerBitPositions; ///< &&& doc

@@ -50,7 +50,7 @@ void InputPortBits::unsetBit(int pos) {
 }
 
 
-uint32_t InputPortBits::getBit(int pos) {
+bool InputPortBits::getBit(int pos) {
     if (pos < 0 || pos >= 32 ) {
         return 0;
     }
