@@ -34,7 +34,7 @@ namespace m2cellcpp {
 namespace control {
 
 /// Class representation of the output port bits as seen in create_output_port_bits_masks.vi.
-/// Unit tests in test_FpgaIo.cpp.  // need unit tests &&&
+/// Unit tests in test_SimCore.cpp.
 class OutputPortBits {
 public:
     using Ptr = std::shared_ptr<OutputPortBits>;
@@ -64,14 +64,6 @@ public:
 
     /// Returns the output port bit mask, which is all bits in the vi
     static uint8_t getOuputPortMask() { return ~0; }
-
-    /// Set the bit in `_bitmap` at `pos`.
-    /// @throws range_error.
-    void setBit(int pos); /// &&& delete
-
-    /// Unset the bit in `_bitmap` at `pos`.
-    /// @throws range_error.
-    void unsetBit(int pos);  /// &&& delete
 
     /// Write the bit in `_bitmap` at `pos` to 1 if `set` is true, or 0
     /// if `set` is false.

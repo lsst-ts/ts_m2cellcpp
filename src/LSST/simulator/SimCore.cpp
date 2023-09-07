@@ -37,7 +37,7 @@ SimCore::SimCore() {
     _outputPort = control::OutputPortBits::Ptr(new control::OutputPortBits());
     _inputPort = control::InputPortBits::Ptr(new control::InputPortBits());
 
-    vector<int> motorInBits = {
+    vector<int> motorBreakerInBits = {
             control::InputPortBits::J1_W9_1_MTR_PWR_BRKR_OK,
             control::InputPortBits::J1_W9_2_MTR_PWR_BRKR_OK,
             control::InputPortBits::J1_W9_3_MTR_PWR_BRKR_OK,
@@ -52,9 +52,9 @@ SimCore::SimCore() {
             control::PowerSubsystemConfig::MOTOR,
             _outputPort, control::OutputPortBits::ILC_MOTOR_POWER_ON,
             control::OutputPortBits::RESET_MOTOR_BREAKERS,
-            _inputPort, motorInBits));
+            _inputPort, motorBreakerInBits));
 
-    vector<int> commInBits = {
+    vector<int> commBreakerInBits = {
             control::InputPortBits::J1_W12_1_COMM_PWR_BRKR_OK,
             control::InputPortBits::J1_W12_2_COMM_PWR_BRKR_OK,
             control::InputPortBits::J2_W13_1_COMM_PWR_BRKR_OK,
@@ -66,7 +66,7 @@ SimCore::SimCore() {
             control::PowerSubsystemConfig::COMM,
             _outputPort, control::OutputPortBits::ILC_COMM_POWER_ON,
             control::OutputPortBits::RESET_COMM_BREAKERS,
-            _inputPort, commInBits));
+            _inputPort, commBreakerInBits));
 
     _newOutput = *_outputPort;
 }

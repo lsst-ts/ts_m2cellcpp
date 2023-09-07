@@ -31,7 +31,6 @@
 
 #include "../util/clock_defs.h"
 // Project headers
-//&&& #include "control/FpgaIo.h"
 #include "control/InputPortBits.h"
 #include "control/OutputPortBits.h"
 #include "simulator/SimPowerSubsystem.h"
@@ -43,36 +42,6 @@
 namespace LSST {
 namespace m2cellcpp {
 namespace simulator {
-
-/* &&& what does this need to do???  (Start this thing up with everything wrong and have system init fix it.)
- * 2 power systems, very similar Motor and Comm
- * Motor has interlocks, comm does not
- * Both have breakers
- * Output we need to worry about:
- *  - read/write control - "ILC_Motor_Power_On" - set to true during powering on
- *  - read/write control - "ILC_Comm_Power_On" - set to true during powering on
- *      - All instances:
- *                BasePowerSubsystem.lvclass:power_on.vi - true-on
- *                PS_Init.lvclass:PS_start.vi -  false-off
- *                PS_Powered_On.lvclass:PS_turn_power_off.vi -  false-off
- *                PS_Powering_On.lvclass:PS_turn_power_off.vi - false-off
- *                PS_Resettting_Breakers.lvclass:PS_turn_power_off.vi - - false-off
- *                PSS_State.lvclass:goto_powering_off.vi - false-off
- *                PSS_State.lvclass:restart.vi - false-off
- *  - read/write control - "Reset_Motor_Power_Breakers"  - set to true during powering on
- *  - read/write control - "Reset_Comm_Power_Breakers"   - set to true during powering on
- *      - All instances:
- *                BasePowerSubsystem.lvclass:power_on.vi - true-on  AFTER power set true-on -> state "powering on"
- *                PS_Init.lvclass:PS_start.vi - true-on AFTER power set false-off   -> state "powered off"
- *                PS_Resettting_Breakers.lvclass:PS_process_telemery.vi - true-on        -> state "powered on"   (so, set to true once done with "powering on")
- *                PS_Resettting_Breakers.lvclass:PS_turn_power_off.vi - true-on AFTER power set false-off -> state "powering off"  (set "telem counter"=0)
- *                PSS_State.lvclass:goto_powering_off.vi - true-on AFTER power set false-off -> state "powering off"   (but don't touch "telem counter")
- *                PSS_State.lvclass:PS_restart.vi - true-on AFTER power set false-off -> state "init" (but don't touch "telem counter")
- *                PSS_State.lvclass:reset_breakers.vi - false-off  -> state "reseting breakers"  (don't touch power or or "telem counter")
- *             The last item, reset_breakers.vi is the only thing to set breakers to false-off.
- *
- * Model->Read SystemController.vi
- */
 
 /// Copy of revelevant simulation information.
 class SimInfo {
@@ -91,15 +60,15 @@ public:
     std::string dump();
 };
 
-/// &&& doc
+/// A basic simulator for the hardware. At this point it is limited to power systems.
+/// Breaker values can only be read while voltage is above a certain level, which
+/// implies that breakers only have effect on the current. There are time delays
+/// between outputs being set and other values changing.
 /// output is what would be sent to the FPGA.
 /// input is what would be read from the FPGA.
 /// unit test: test_SimCore.cpp
 class SimCore {
 public:
-    // &&&M2CellCtrlrTopVI.vi  DiscreteSimulation.vi   search top level vi for text CellSimulation
-    // &&& CellCommSupport->getTelemetry.vi  LTS-346
-
     SimCore();
 
     /// The values in `outputPort` will be read by the `_simThread` the
@@ -109,21 +78,18 @@ public:
     /// Get a copy of the `_newOutputPort`
     control::OutputPortBits getNewOutputPort();
 
-    /// &&& doc
-    control::InputPortBits getSentInputPortBits();
-
     /// Return SimInfo from the most recent iteration.
     SimInfo getSimInfo();
 
-    /// &&& doc
+    /// Start the simulation thread
     void start();
 
-    /// &&& doc
+    /// Stop the simulation thread.
     void stop() {
         _simLoop = false;
     }
 
-    /// &&& doc
+    /// Join the simulation thread.
     bool join();
 
     /// Write the value of `_newOutput` `bit` to 1 if `set` is true or 0
@@ -132,15 +98,18 @@ public:
 
     /// Return `_iterations`.
     uint64_t getIterations() { return _iterations; }
+
 private:
-    //control::FpgaIo _fpgaIo; ///< &&&
     double _frequencyHz = 40.0; ///< How many times loop should run per second.
 
-    control::OutputPortBits::Ptr _outputPort; ///< doc &&&
-    control::InputPortBits::Ptr _inputPort; ///< doc &&&
+    /// OutputPort value used for determine simulation actions.
+    control::OutputPortBits::Ptr _outputPort;
 
-    SimPowerSubsystem::Ptr _motorSub; ///< doc &&&
-    SimPowerSubsystem::Ptr _commSub; ///< doc &&&
+    /// Contains system status as determined by the simulation.
+    control::InputPortBits::Ptr _inputPort;
+
+    SimPowerSubsystem::Ptr _motorSub; ///< Motor power simulation
+    SimPowerSubsystem::Ptr _commSub; ///< Comm power simulation.
 
     void _simRun(); ///< Primary function run inside `_simThread`
     std::atomic<bool> _simLoop{true}; ///< _simThread will run until this is false.

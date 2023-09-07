@@ -128,13 +128,13 @@ public:
     static uint64_t getMaskInfo();
 
     /// Set (when `set` == true) or unset (when `set` == false) the bit at `pos` in `bitmap`
-    static void setBit64(uint64_t& bitmap, int pos, bool set); // &&& move
+    static void setBit64(uint64_t& bitmap, int pos, bool set);
 
     /// Set (when `set` == true) or unset (when `set` == false) the bit at `pos` in `bitmap`
-    static void setBit32(uint32_t& bitmap, int pos, bool set); // &&& move
+    static void setBit32(uint32_t& bitmap, int pos, bool set);
 
     /// Set (when `set` == true) or unset (when `set` == false) the bit at `pos` in `bitmap`
-    static void setBit8(uint8_t& bitmap, int pos, bool set); // &&& move
+    static void setBit8(uint8_t& bitmap, int pos, bool set);
 
     /// Set the bit in `_bitmap` at `pos`.
     /// @throws range_error.

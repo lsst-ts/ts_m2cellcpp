@@ -34,7 +34,7 @@ namespace m2cellcpp {
 namespace control {
 
 /// Class representation of the Input port bits as seen in create_Input_port_bits_masks.vi.
-/// Unit tests in test_FpgaIo.cpp. // need unit tests &&&
+/// Unit tests in test_SimCore.cpp.
 class InputPortBits {
 public:
     using Ptr = std::shared_ptr<InputPortBits>;
@@ -89,13 +89,10 @@ public:
     /// Returns the input port bit mask, which, in the vi, is all bits.
     static uint32_t getInputPortMask() { return ~0; }
 
-    /// Set the bit in `_bitmap` at `pos`.
+    /// Write the bit in `_bitmap` at `pos` to 1 if `set` is true, or 0
+    /// if `set` is false.
     /// @throws range_error.
-    void setBit(int pos);
-
-    /// Unset the bit in `_bitmap` at `pos`.
-    /// @throws range_error.
-    void unsetBit(int pos);
+    void writeBit(int pos, bool set);
 
     /// Return a copy of `_bitmap`.
     uint32_t getBitmap() { return _bitmap; }
@@ -132,48 +129,5 @@ private:
 }  // namespace control
 }  // namespace m2cellcpp
 }  // namespace LSST
-
-/* &&&
-create_input_port_bits_masks.vi
-Input Port Bit Masks
-“Redundancy OK” = 0
-“Load Distribution OK” = 1
-“Power Suppy #2 DC OK” = 2  <sic>
-“Power Supply #1 DC OK” = 3
-“Power Supply #2 Current OK” = 4
-“Power Supply #1 Current OK” = 5
-“J1-W9-1-MtrPwrBrkr OK” = 6
-“J1-W9-2-MtrPwrBrkr OK” = 7
-“J1-W9-3-MtrPwrBrkr OK” = 8
-“J2-W10-1-MtrPwrBrkr OK” = 9
-“J2-W10-2-MtrPwrBrkr OK” = 10
-“J2-W10-3-MtrPwrBrkr OK” = 11
-“J3-W11-1-MtrPwrBrkr OK” = 12
-“J3-W11-2-MtrPwrBrkr OK” = 13
-“J3-W11-3-MtrPwrBrkr OK” = 14
-“J1-W12-1-CommPwrBrkr OK” = 15
-“Spare_D16” = 16
-…
-“Spare_D23” = 23
-“J1-W12-2-CommPwrBrkr OK” = 24
-“J2-W13-1-CommPwrBrkr OK” = 25
-“J2-W13-2-CommPwrBrkr OK” = 26
-“J3-W14-1-CommPwrBrkr OK” = 27
-“J3-W14-2-CommPwrBrkr OK” = 28
-“Spare_D29” = 29
-“Spare_D30” = 30
-“Interlock Power Relay On” = 31
-
-
-create_output_port_bits_masks.vi
-“ILC Motor Power On” = 0
-“ILC Comm Power On” = 1
-“cRIO Interlock Enable” = 2
-“Reset Motor Power Breakers” = 3
-“Reset Comm Power Breakers” = 4
-“Spare D05” = 5
-“Spare D06” = 6
-“Spare D07” = 7
-&&& */
 
 #endif  // LSST_M2CELLCPP_CONTROL_INPUTPORTBITS_H

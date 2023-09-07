@@ -85,11 +85,15 @@ void SimPowerSubsystem::calcBreakers(util::CLOCK::time_point ts) {
             _breakerClosed = false; // assuming breaker opens extremely quickly
         }
     }
+
+    for (auto const& bPos : _breakerBitPositions) {
+        /// Bits indicate breaker ok with active high.
+        _inputPort->writeBit(bPos, _breakerClosed);
+    }
 }
 
 
 void SimPowerSubsystem::calcVoltageCurrent(double timeDiff) {
-    //&&& const double timeDiff = chrono::duration<double, std::ratio<1,1>>(ts - _breakerClosedTargTs).count();
     if (getPowerOn()) {
         if (_voltage < _voltageNominal) {
             _voltage += _voltageChangeRateOn*timeDiff;
@@ -114,7 +118,9 @@ void SimPowerSubsystem::calcVoltageCurrent(double timeDiff) {
     } else {
         _current = 0.0;
     }
-    LDEBUG("&&& ", control::PowerSubsystemConfig::getPrettyType(_systemType), " _current=", _current, " _voltage=", _voltage);
+
+    LTRACE(control::PowerSubsystemConfig::getPrettyType(_systemType),
+           " _current=", _current, " _voltage=", _voltage);
 }
 
 

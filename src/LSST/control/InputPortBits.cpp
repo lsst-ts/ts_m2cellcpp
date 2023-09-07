@@ -41,12 +41,8 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-void InputPortBits::setBit(int pos) {
-    FaultStatusBits::setBit32(_bitmap, pos, true);
-}
-
-void InputPortBits::unsetBit(int pos) {
-    FaultStatusBits::setBit32(_bitmap, pos, false);
+void InputPortBits::writeBit(int pos, bool set) {
+    FaultStatusBits::setBit32(_bitmap, pos, set);
 }
 
 
