@@ -19,8 +19,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_CONTROL_FAULTSTATUSMAP_H
-#define LSST_M2CELLCPP_CONTROL_FAULTSTATUSMAP_H
+#ifndef LSST_M2CELLCPP_CONTROL_FAULTSTATUSBITS_H
+#define LSST_M2CELLCPP_CONTROL_FAULTSTATUSBITS_H
 
 // System headers
 #include <functional>
@@ -37,19 +37,19 @@ namespace control {
 /// representing the status of several system items.
 /// Aside from the static mask functions, this class is not thread safe.
 /// Unit tests in test_FpgaIo.cpp.
-class FaultStatusMap {
+class FaultStatusBits {
 public:
-    using Ptr = std::shared_ptr<FaultStatusMap>;
+    using Ptr = std::shared_ptr<FaultStatusBits>;
 
     /// Create a FaultStatusMap with a blank _bitmap
-    FaultStatusMap() = default;
+    FaultStatusBits() = default;
 
     /// Create a FaultStatusMap with a `_bitmap` set to `bitmap`.
-    FaultStatusMap(uint64_t bitmap) : _bitmap(bitmap) {}
+    FaultStatusBits(uint64_t bitmap) : _bitmap(bitmap) {}
 
-    FaultStatusMap(FaultStatusMap const&) = default;
-    FaultStatusMap& operator=(FaultStatusMap const&) = default;
-    virtual ~FaultStatusMap() = default;
+    FaultStatusBits(FaultStatusBits const&) = default;
+    FaultStatusBits& operator=(FaultStatusBits const&) = default;
+    virtual ~FaultStatusBits() = default;
 
     /// These enums should match those in SystemControlDefs.lvlib:Faults-WarningsEnum.ctl
     /// Changing the values of these enums will likely cause hardware problems.
@@ -130,6 +130,12 @@ public:
     /// Set (when `set` == true) or unset (when `set` == false) the bit at `pos` in `bitmap`
     static void setBit64(uint64_t& bitmap, int pos, bool set);
 
+    /// Set (when `set` == true) or unset (when `set` == false) the bit at `pos` in `bitmap`
+    static void setBit32(uint32_t& bitmap, int pos, bool set);
+
+    /// Set (when `set` == true) or unset (when `set` == false) the bit at `pos` in `bitmap`
+    static void setBit8(uint8_t& bitmap, int pos, bool set);
+
     /// Set the bit in `_bitmap` at `pos`.
     /// @throws range_error.
     void setBit(int pos);
@@ -180,4 +186,4 @@ private:
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_CONTROL_FAULTSTATUSMAP_H
+#endif  // LSST_M2CELLCPP_CONTROL_FAULTSTATUSBITS_H

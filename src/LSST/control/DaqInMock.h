@@ -186,7 +186,7 @@ private:
 
 /// Mock class to store a boolean value to write to the FPGA.
 /// This class can be setup to write its value to other Daq Mock objects,
-/// includeing DaqBoolInMock and DaqOutMock.
+/// including DaqBoolInMock and DaqOutMock.
 /// Unit test in test_FpgaIo.cpp.
 class DaqBoolOutMock : public DaqBase {
 public:

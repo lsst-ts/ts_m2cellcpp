@@ -20,6 +20,9 @@ class Ilc
 class AllIlc
 class FaultStateMap
 
+class InputPortBits
+class OutputPortBits
+class PowerSubsystemConfig
 
 DaqIn : theoretical, unimplemented
 DaqInReal : theoretical, unimplemented

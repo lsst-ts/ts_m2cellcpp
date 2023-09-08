@@ -30,7 +30,7 @@
 #include <catch2/catch_session.hpp>
 
 // Project headers
-#include "control/FaultStatusMap.h"
+#include "control/FaultStatusBits.h"
 #include "control/FpgaIo.h"
 #include "system/Config.h"
 #include "util/Log.h"
@@ -201,18 +201,18 @@ TEST_CASE("Test FaultStatusMap", "[FaultStatusMap]") {
     string cfgPath = LSST::m2cellcpp::system::Config::getEnvironmentCfgPath("../configs");
 
     {
-        FaultStatusMap fsm;
+        FaultStatusBits fsm;
         REQUIRE(fsm.getBitmap() == 0);
 
-        uint64_t closedLoop = FaultStatusMap::getMaskClosedLoopControl();
-        uint64_t openLoop = FaultStatusMap::getMaskOpenLoopControl();
-        uint64_t telemetry = FaultStatusMap::getMaskTelemetryOnlyControl();
-        uint64_t faults = FaultStatusMap::getMaskFaults();
-        uint64_t faultsOther = FaultStatusMap::getMaskFaults();
-        uint64_t warn = FaultStatusMap::getMaskWarn();
-        uint64_t warnOther = FaultStatusMap::getMaskWarn();
-        uint64_t info = FaultStatusMap::getMaskInfo();
-        uint64_t infoOther = FaultStatusMap::getMaskInfo();
+        uint64_t closedLoop = FaultStatusBits::getMaskClosedLoopControl();
+        uint64_t openLoop = FaultStatusBits::getMaskOpenLoopControl();
+        uint64_t telemetry = FaultStatusBits::getMaskTelemetryOnlyControl();
+        uint64_t faults = FaultStatusBits::getMaskFaults();
+        uint64_t faultsOther = FaultStatusBits::getMaskFaults();
+        uint64_t warn = FaultStatusBits::getMaskWarn();
+        uint64_t warnOther = FaultStatusBits::getMaskWarn();
+        uint64_t info = FaultStatusBits::getMaskInfo();
+        uint64_t infoOther = FaultStatusBits::getMaskInfo();
 
         REQUIRE(closedLoop == 0);
         REQUIRE(faults == faultsOther);
@@ -222,28 +222,28 @@ TEST_CASE("Test FaultStatusMap", "[FaultStatusMap]") {
         REQUIRE(info == infoOther);
         REQUIRE(info != 0);
 
-        fsm.setBit(FaultStatusMap::CRIO_TIMING_FAULT);
-        REQUIRE(fsm.getBit(FaultStatusMap::CRIO_TIMING_FAULT) != 0);
+        fsm.setBit(FaultStatusBits::CRIO_TIMING_FAULT);
+        REQUIRE(fsm.getBit(FaultStatusBits::CRIO_TIMING_FAULT) != 0);
 
-        fsm.setBit(FaultStatusMap::BROADCAST_ERR); // = 2
-        REQUIRE(fsm.getBit(FaultStatusMap::CRIO_TIMING_FAULT) != 0);
-        REQUIRE(fsm.getBit(FaultStatusMap::BROADCAST_ERR) == 4);
+        fsm.setBit(FaultStatusBits::BROADCAST_ERR); // = 2
+        REQUIRE(fsm.getBit(FaultStatusBits::CRIO_TIMING_FAULT) != 0);
+        REQUIRE(fsm.getBit(FaultStatusBits::BROADCAST_ERR) == 4);
 
-        fsm.unsetBit(FaultStatusMap::CRIO_TIMING_FAULT);
-        REQUIRE(fsm.getBit(FaultStatusMap::CRIO_TIMING_FAULT) == 0);
-        REQUIRE(fsm.getBit(FaultStatusMap::BROADCAST_ERR) == 4);
+        fsm.unsetBit(FaultStatusBits::CRIO_TIMING_FAULT);
+        REQUIRE(fsm.getBit(FaultStatusBits::CRIO_TIMING_FAULT) == 0);
+        REQUIRE(fsm.getBit(FaultStatusBits::BROADCAST_ERR) == 4);
 
         fsm.setBitmap(openLoop);
-        LDEBUG("telemetry=", FaultStatusMap::getBinaryStr(telemetry));
-        LDEBUG("openLoop=", FaultStatusMap::getBinaryStr(openLoop));
-        FaultStatusMap diff(fsm.getBitsSetOutOfMask(telemetry));
-        LDEBUG("diff a=", FaultStatusMap::getBinaryStr(diff.getBitmap()), " ", diff.getAllSetBitEnums());
+        LDEBUG("telemetry=", FaultStatusBits::getBinaryStr(telemetry));
+        LDEBUG("openLoop=", FaultStatusBits::getBinaryStr(openLoop));
+        FaultStatusBits diff(fsm.getBitsSetOutOfMask(telemetry));
+        LDEBUG("diff a=", FaultStatusBits::getBinaryStr(diff.getBitmap()), " ", diff.getAllSetBitEnums());
         REQUIRE(diff.getBitmap() == 0);
         REQUIRE(fsm.getBitsSetInMask(openLoop) != 0);
 
         fsm.setBitmap(telemetry);
         diff.setBitmap(fsm.getBitsSetOutOfMask(telemetry));
-        LDEBUG("diff b=", FaultStatusMap::getBinaryStr(diff.getBitmap()), " ", diff.getAllSetBitEnums());
+        LDEBUG("diff b=", FaultStatusBits::getBinaryStr(diff.getBitmap()), " ", diff.getAllSetBitEnums());
 
         REQUIRE_THROWS(fsm.setBit(64));
         REQUIRE_THROWS(fsm.setBit(-1));

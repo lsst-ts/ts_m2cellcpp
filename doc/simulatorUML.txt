@@ -1,0 +1,17 @@
+# Copy and paste the following into http://www.plantuml.com/plantuml/uml/
+
+@startuml
+
+class SimCore
+
+class InputPortBits
+class OutputPortBits
+class PowerSubsystemConfig
+class SimPowerSubsystem
+
+SimCore *-- SimPowerSubsystem
+SimPowerSubsystem *-- InputPortBits
+SimPowerSubsystem *-- OutputPortBits
+SimCore *-- PowerSubsystemConfig
+
+@enduml

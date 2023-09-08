@@ -1,5 +1,9 @@
 # Version History
 
+0.3.3
+ 
+  - Added the simulator.
+
 0.3.2
 
  - Added The FaultStatusMap class.
