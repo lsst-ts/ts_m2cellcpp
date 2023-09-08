@@ -43,7 +43,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace simulator {
 
-/// Copy of revelevant simulation information.
+/// Copy of relevant simulation information.
 class SimInfo {
 public:
     control::OutputPortBits outputPort;

@@ -34,6 +34,7 @@ namespace m2cellcpp {
 namespace control {
 
 /// Class representation of the Input port bits as seen in create_Input_port_bits_masks.vi.
+/// This class contains enums for all bit positions in the input port.
 /// Unit tests in test_SimCore.cpp.
 class InputPortBits {
 public:

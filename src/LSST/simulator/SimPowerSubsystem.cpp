@@ -86,6 +86,9 @@ void SimPowerSubsystem::calcBreakers(util::CLOCK::time_point ts) {
         }
     }
 
+    // This is more for testing purposes so that something affects the `_inputPort`.
+    // there's no evidence this logic exists in the hardware. The next ticket
+    // will probably use `_inputPort` to trigger PowerSubsystem faults.
     for (auto const& bPos : _breakerBitPositions) {
         /// Bits indicate breaker ok with active high.
         _inputPort->writeBit(bPos, _breakerClosed);

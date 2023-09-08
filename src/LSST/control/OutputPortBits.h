@@ -34,6 +34,7 @@ namespace m2cellcpp {
 namespace control {
 
 /// Class representation of the output port bits as seen in create_output_port_bits_masks.vi.
+/// This class contains enums for the position of all bits for the output port.
 /// Unit tests in test_SimCore.cpp.
 class OutputPortBits {
 public:

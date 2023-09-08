@@ -87,7 +87,7 @@ namespace control {
 /// sets configuration values appropriately for each.
 /// Once set, these values are not expected to change.
 /// unit test: test_SimCore.cpp
-/// DM-&&& set the values using a configuration file.
+/// FUTURE: DM-40694 set the values using a configuration file.
 class PowerSubsystemConfig {
 public:
     using Ptr = std::shared_ptr<PowerSubsystemConfig>;
@@ -177,8 +177,6 @@ private:
 
     double _maxCurrent; ///< maximum output current in amps.
 
-
-private:
 };
 
 
