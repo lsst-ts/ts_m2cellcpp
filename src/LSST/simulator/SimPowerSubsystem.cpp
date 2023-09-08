@@ -47,21 +47,26 @@ void SimPowerSubsystem::_setup() {
 
     _voltageNominal = psc.getNominalVoltage();
 
-     /// Once powered on, voltage should reach an acceptable level
-     /// before outputOnMaxDelay() time has past. See PowerSubsystemCommonConfig.vi
-     _voltageChangeRateOn = (_voltageNominal/psc.outputOnMaxDelay())*1.3;
-     /// Similar to on change rate
-     _voltageChangeRateOff = (_voltageNominal/psc.outputOffMaxDelay())*1.3;
+    /// The voltage in the simulator needs to rise fast enough so that
+    /// it doesn't trip the safety checks. This value should be large
+    /// enough to prevent problems.
+    const double rateIncrease = 1.3;
 
-     _currentMax = psc.getMaxCurrentFault(); ///< max current, amps. "maximum output current" 20A
+    /// Once powered on, voltage should reach an acceptable level
+    /// before outputOnMaxDelay() time has past. See PowerSubsystemCommonConfig.vi
+    _voltageChangeRateOn = (_voltageNominal/psc.outputOnMaxDelay())*rateIncrease;
+    /// Similar to on change rate
+    _voltageChangeRateOff = (_voltageNominal/psc.outputOffMaxDelay())*rateIncrease;
 
-     /// Current based on `_voltage`, amp/volt. 0.75 as the system shouldn't normally be running at
-     /// maximum current levels.
-     _currentGain = 0.75 * (_currentMax/_voltageNominal);
+    _currentMax = psc.getMaxCurrentFault(); ///< max current, amps. "maximum output current" 20A
 
-     /// Assuming "breaker on time" is related to how long it takes for the breaker to close.
-     /// 0.75 as closing the breaker shouldn't normally take the maximum amount of time.
-     _breakerCloseTimeSec = psc.getBreakerOnTime() * 0.75;
+    /// Current based on `_voltage`, amp/volt. 0.75 as the system shouldn't normally be running at
+    /// maximum current levels.
+    _currentGain = 0.75 * (_currentMax/_voltageNominal);
+
+    /// Assuming "breaker on time" is related to how long it takes for the breaker to close.
+    /// 0.75 as closing the breaker shouldn't normally take the maximum amount of time.
+    _breakerCloseTimeSec = psc.getBreakerOnTime() * 0.75;
 }
 
 

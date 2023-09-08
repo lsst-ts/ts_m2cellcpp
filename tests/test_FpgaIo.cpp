@@ -30,7 +30,7 @@
 #include <catch2/catch_session.hpp>
 
 // Project headers
-#include "../src/LSST/control/FaultStatusBits.h"
+#include "control/FaultStatusBits.h"
 #include "control/FpgaIo.h"
 #include "system/Config.h"
 #include "util/Log.h"

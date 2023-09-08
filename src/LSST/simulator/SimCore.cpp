@@ -50,7 +50,7 @@ SimCore::SimCore() {
 
     _motorSub = SimPowerSubsystem::Ptr(new SimPowerSubsystem(
             control::PowerSubsystemConfig::MOTOR,
-            _outputPort, control::OutputPortBits::ILC_MOTOR_POWER_ON,
+            _outputPort, control::OutputPortBits::MOTOR_POWER_ON,
             control::OutputPortBits::RESET_MOTOR_BREAKERS,
             _inputPort, motorBreakerInBits));
 
@@ -76,7 +76,7 @@ void SimCore::_simRun() {
     control::OutputPortBits prevOutput = *_outputPort;
     while(_simLoop) {
         util::CLOCK::time_point timestamp = util::CLOCK::now();
-        // Read in new outputPorts set by system.
+        // Read in new outputPorts set elsewhere. Keep the lock short.
         {
             lock_guard<mutex> lg(_mtx);
             *_outputPort = _newOutput;

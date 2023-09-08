@@ -77,7 +77,7 @@ string OutputPortBits::getBinaryStr(uint8_t val) {
 
 string OutputPortBits::getEnumString(int enumVal) {
     switch(enumVal) {
-    case ILC_MOTOR_POWER_ON: return "ILC_MOTOR_POWER_ON " + to_string(enumVal);
+    case MOTOR_POWER_ON: return "MOTOR_POWER_ON " + to_string(enumVal);
     case ILC_COMM_POWER_ON: return "ILC_COMM_POWER_ON " + to_string(enumVal);
     case CRIO_INTERLOCK_ENABLE: return "CRIO_INTERLOCK_ENABLE " + to_string(enumVal);
     case RESET_MOTOR_BREAKERS: return "RESET_MOTOR_BREAKERS " + to_string(enumVal);

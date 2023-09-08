@@ -40,7 +40,7 @@ namespace m2cellcpp {
 namespace simulator {
 
 
-/// The purposed for this class is make a reasonable facsimile of power system
+/// The purpose for this class is make a reasonable facsimile of power system
 /// to get the software off the ground. If there is time, it would be good to
 /// make a more accurate representation of the hardware.
 /// unit test: test_SimCore.cpp

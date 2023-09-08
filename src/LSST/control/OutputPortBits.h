@@ -53,7 +53,7 @@ public:
     /// These enums should match those in create_output_port_bits_masks.vi
     /// Changing the values of these enums will likely cause hardware problems.
     enum {
-        ILC_MOTOR_POWER_ON = 0,    ///< “ILC Motor Power On” = 0
+        MOTOR_POWER_ON = 0,        ///< “ILC Motor Power On” = 0
         ILC_COMM_POWER_ON = 1,     ///< “ILC Comm Power On” = 1
         CRIO_INTERLOCK_ENABLE = 2, ///< “cRIO Interlock Enable” = 2
         RESET_MOTOR_BREAKERS = 3,  ///< “Reset Motor Power Breakers” = 3
@@ -63,7 +63,8 @@ public:
         SPARE_D07 = 7,             ///< “Spare D07” = 7
     };
 
-    /// Returns the output port bit mask, which is all bits in the vi
+    /// Returns the output port bit mask, which is all bits set. This
+    /// is from the LabView code and kept as reference.
     static uint8_t getOuputPortMask() { return ~0; }
 
     /// Write the bit in `_bitmap` at `pos` to 1 if `set` is true, or 0
@@ -71,8 +72,8 @@ public:
     /// @throws range_error.
     void writeBit(int pos, bool set);
 
-    /// To set multiple values atomically, `mask` has ones set a positions that will be
-    /// set/unset, while `values` has 1's at set positions and zeroes elsewhere.
+    /// To set multiple values atomically, `mask` has ones set at positions that
+    /// will be set/unset, while `values` has 1's at set positions and 0's elsewhere.
     void writeMask(uint8_t mask, uint8_t values);
 
     /// Return a copy of `_bitmap`.

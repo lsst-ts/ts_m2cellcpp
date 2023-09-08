@@ -87,7 +87,9 @@ public:
         INTERLOCK_POWER_RELAY = 31, ///< “Interlock Power Relay On” = 31
     };
 
-    /// Returns the input port bit mask, which, in the vi, is all bits.
+    /// Returns the input port bit mask, which is all bits. This is from the
+    /// vi in the LabView code and is mainly kept for reference as having a
+    /// mask with all of the bits set is strange.
     static uint32_t getInputPortMask() { return ~0; }
 
     /// Write the bit in `_bitmap` at `pos` to 1 if `set` is true, or 0

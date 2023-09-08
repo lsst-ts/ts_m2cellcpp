@@ -87,11 +87,11 @@ bool motorPowerOnTest(SimCore& simCore, PowerSubsystemConfig const& motorCfg) {
     bool done = false;
     while (!done) {
         auto info = simCore.getSimInfo();
-        if (info.outputPort.getBit(OutputPortBits::ILC_MOTOR_POWER_ON) == false) {
+        if (info.outputPort.getBit(OutputPortBits::MOTOR_POWER_ON) == false) {
             LDEBUG("motor power not on");
         }
         testPowerOn(motorCfg, info.motorVoltage, info.motorCurrent, "motor", success, done);
-        checkTimeout(tStart, motorCfg.outputOnMaxDelay(), done, "motor");
+        checkTimeout(tStart, motorCfg.outputOnMaxDelay(), done, "motor"); // Sets done = true on timeout.
         this_thread::sleep_for(0.04s);
     }
     return success;
@@ -107,7 +107,7 @@ bool commPowerOnTest(SimCore& simCore, PowerSubsystemConfig const& commCfg) {
             LDEBUG("comm power not on");
         }
         testPowerOn(commCfg, info.commVoltage, info.commCurrent, "comm", success, done);
-        checkTimeout(tStart, commCfg.outputOnMaxDelay(), done, "comm");
+        checkTimeout(tStart, commCfg.outputOnMaxDelay(), done, "comm"); // Sets done = true on timeout.
         this_thread::sleep_for(0.04s);
     }
     return success;
@@ -119,7 +119,7 @@ bool motorPowerOffTest(SimCore& simCore, PowerSubsystemConfig const& motorCfg) {
     bool done = false;
     while (!done) {
         auto info = simCore.getSimInfo();
-        if (info.outputPort.getBit(OutputPortBits::ILC_MOTOR_POWER_ON) != 0) {
+        if (info.outputPort.getBit(OutputPortBits::MOTOR_POWER_ON) != 0) {
             LDEBUG("motorPowerOff motor power is on");
         }
         if (info.outputPort.getBit(OutputPortBits::RESET_MOTOR_BREAKERS) != 0) {
@@ -128,7 +128,7 @@ bool motorPowerOffTest(SimCore& simCore, PowerSubsystemConfig const& motorCfg) {
         testPowerOff(motorCfg, info.motorVoltage, "motor", success, done);
         // outputOffMaxDelay() is too short for the simulator to finish a single loop
         // given the expected frequency of updates from the configuration.
-        checkTimeout(tStart, motorCfg.outputOffMaxDelay()*5.0, done, "motor");
+        checkTimeout(tStart, motorCfg.outputOffMaxDelay()*5.0, done, "motor"); // Sets done = true on timeout.
         this_thread::sleep_for(0.04s);
     }
     return success;
@@ -149,7 +149,7 @@ bool commPowerOffTest(SimCore& simCore, PowerSubsystemConfig const& commCfg) {
         testPowerOff(commCfg, info.commVoltage, "comm", success, done);
         // outputOffMaxDelay() is too short for the simulator to finish a single loop
         // given the expected frequency of updates from the configuration.
-        checkTimeout(tStart, commCfg.outputOffMaxDelay()*5.0, done, "comm");
+        checkTimeout(tStart, commCfg.outputOffMaxDelay()*5.0, done, "comm"); // Sets done = true on timeout.
         this_thread::sleep_for(0.04s);
     }
     return success;
@@ -181,14 +181,14 @@ TEST_CASE("Test SimCore", "[SimCore]") {
     REQUIRE(info.commVoltage < 1);
     REQUIRE(info.motorCurrent < 1);
     REQUIRE(info.motorVoltage < 1);
-    REQUIRE(info.outputPort.getBit(OutputPortBits::ILC_MOTOR_POWER_ON) == 0);
+    REQUIRE(info.outputPort.getBit(OutputPortBits::MOTOR_POWER_ON) == 0);
     REQUIRE(info.outputPort.getBit(OutputPortBits::ILC_COMM_POWER_ON) == 0);
     REQUIRE(info.outputPort.getBit(OutputPortBits::CRIO_INTERLOCK_ENABLE) == 0);
     REQUIRE(info.outputPort.getBit(OutputPortBits::RESET_MOTOR_BREAKERS) == 0);
     REQUIRE(info.outputPort.getBit(OutputPortBits::RESET_COMM_BREAKERS) == 0);
 
     // motor power on test
-    simCore.writeNewOutputPort(OutputPortBits::ILC_MOTOR_POWER_ON, true);
+    simCore.writeNewOutputPort(OutputPortBits::MOTOR_POWER_ON, true);
     REQUIRE(motorPowerOnTest(simCore, motorCfg));
 
     // comm power on test
@@ -226,7 +226,7 @@ TEST_CASE("Test SimCore", "[SimCore]") {
     REQUIRE(info.inputPort.getBit(control::InputPortBits::J2_W13_2_COMM_PWR_BRKR_OK));
 
     // motor power off test
-    simCore.writeNewOutputPort(OutputPortBits::ILC_MOTOR_POWER_ON, false);
+    simCore.writeNewOutputPort(OutputPortBits::MOTOR_POWER_ON, false);
     REQUIRE(motorPowerOffTest(simCore, motorCfg));
 
     // comm power off test
