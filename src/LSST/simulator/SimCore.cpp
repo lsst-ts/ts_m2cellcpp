@@ -49,7 +49,7 @@ SimCore::SimCore() {
             control::InputPortBits::J3_W11_3_MTR_PWR_BRKR_OK};
 
     _motorSub = SimPowerSubsystem::Ptr(new SimPowerSubsystem(
-            control::PowerSubsystemConfig::MOTOR,
+            control::MOTOR,
             _outputPort, control::OutputPortBits::MOTOR_POWER_ON,
             control::OutputPortBits::RESET_MOTOR_BREAKERS,
             _inputPort, motorBreakerInBits));
@@ -63,7 +63,7 @@ SimCore::SimCore() {
             control::InputPortBits::J3_W14_2_COMM_PWR_BRKR_OK};
 
     _commSub = SimPowerSubsystem::Ptr(new SimPowerSubsystem(
-            control::PowerSubsystemConfig::COMM,
+            control::COMM,
             _outputPort, control::OutputPortBits::ILC_COMM_POWER_ON,
             control::OutputPortBits::RESET_COMM_BREAKERS,
             _inputPort, commBreakerInBits));
@@ -139,26 +139,12 @@ control::OutputPortBits SimCore::getNewOutputPort() {
     return _newOutput;
 }
 
-SimInfo SimCore::getSimInfo() {
+
+control::SysInfo SimCore::getSysInfo() {
     lock_guard<mutex> lg(_mtx);
     return _simInfo;
 }
 
-
-string SimInfo::dump() {
-    stringstream os;
-    os << "SimInfo"
-            << " outputPort=" << outputPort.getAllSetBitEnums()
-            << " inputPort=" << inputPort.getAllSetBitEnums()
-            << " motorVoltage=" << motorVoltage
-            << " motorCurrent=" << motorCurrent
-            << " motorBreakerClosed=" << motorBreakerClosed
-            << " commVoltage=" << commVoltage
-            << " commCurrent=" << commCurrent
-            << " commBreakerClosed=" << commBreakerClosed
-            << " iterations=" << iterations;
-    return os.str();
-}
 
 }  // namespace simulator
 }  // namespace m2cellcpp

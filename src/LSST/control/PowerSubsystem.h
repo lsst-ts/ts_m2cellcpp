@@ -19,20 +19,25 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+
+#ifndef LSST_M2CELLCPP_CONTROL_POWERSUBSYTEM_H
+#define LSST_M2CELLCPP_CONTROL_POWERSUBSYTEM_H
+
 // System headers
 #include <memory>
 #include <stdint.h>
 #include <string>
 #include <vector>
 
-#include "../util/clock_defs.h"
+
 // Project headers
+#include "control/control_defs.h"
 #include "control/InputPortBits.h"
 #include "control/OutputPortBits.h"
+#include "control/SysInfo.h"
+#include "util/clock_defs.h"
 #include "util/Log.h"
 
-#ifndef LSST_M2CELLCPP_CONTROL_POWERSUBSYTEM_H
-#define LSST_M2CELLCPP_CONTROL_POWERSUBSYTEM_H
 
 namespace LSST {
 namespace m2cellcpp {
@@ -83,6 +88,60 @@ namespace control {
          - DBL maximum output current (double [64-bit real (~15 digit precision)] [A])  = 10A
 */
 
+
+/// Each PowerSubsystem has a group of breaker hardware inputs that indicate if the power supply
+/// is working correctly. The individual bit inputs are kind of a mystery, but fault and warning
+/// conditions are defined.
+class BreakerFeedGroup {
+public:
+    using Ptr = std::shared_ptr<BreakerFeedGroup>;
+
+    /// Each breaker group contains three feeds, which each have three binary inputs that are read from
+    /// InputPortBits.
+    class Feed {
+    public:
+        using Ptr = std::shared_ptr<Feed>;
+
+        Feed() = delete;
+        Feed(int bit0Pos, int bit1Pos, int bit2Pos) : _bit0Pos(bit0Pos), _bit1Pos(bit1Pos), _bit2Pos(bit2Pos) {}
+
+        /// All of the associated bits for the breaker in `input` should be 1.
+        /// @return GOOD - if all three bits are 1.
+        ///         WARN - if only 2 of the 3 bits are 1.
+        ///         FAULT - if less than 2 bits of the 3 are 1
+        ///       and a string containing the names of the problem bits.
+        std::tuple<control::SysStatus, std::string> checkBreakers(InputPortBits const& input);
+
+    private:
+        uint8_t _feedBitmap = 0; /// Representation of imported bits.
+
+        int _bit0Pos; /// InputPortBits bit position for bit 0 of `_feedBitmap`, active high.
+        int _bit1Pos; /// InputPortBits bit position for bit 1 of `_feedBitmap`, active high.
+        int _bit2Pos; /// InputPortBits bit position for bit 2 of `_feedBitmap`, active high.
+    };
+
+    BreakerFeedGroup(Feed::Ptr const& feed1, Feed::Ptr const& feed2, Feed::Ptr const& feed3);
+    BreakerFeedGroup() = delete;
+    BreakerFeedGroup(BreakerFeedGroup const&) = delete;
+    BreakerFeedGroup& operator=(BreakerFeedGroup const&) = delete;
+
+    ~BreakerFeedGroup() = default;
+
+    /// Check the status of the breakers.
+    /// @return - SysStatus of the worst Feed checked and a string
+    ///     containing the names of the problem Feed input bits as defined in InputPortBits.
+    //&&&std::tuple<util::SysStatus, std::string> checkBreakers(InputPortBits const& input);
+    std::tuple<control::SysStatus, std::string> checkBreakers(control::SysInfo const& info);
+
+private:
+    Feed::Ptr _feed1; /// First set of breaker inputs.
+    Feed::Ptr _feed2; /// Second set of breaker inputs.
+    Feed::Ptr _feed3; /// Third set of breaker inputs.
+
+    std::vector<Feed::Ptr> _feeds; ///< vector containing all 3 breaker feeds.
+};
+
+
 /// The motor power system and comm power system are the same except for configuration values. This class
 /// sets configuration values appropriately for each.
 /// Once set, these values are not expected to change.
@@ -92,12 +151,6 @@ class PowerSubsystemConfig {
 public:
     using Ptr = std::shared_ptr<PowerSubsystemConfig>;
 
-    enum SystemType {
-        MOTOR = 0,
-        COMM = 1
-    };
-
-    static std::string getPrettyType(SystemType sysT);
 
     PowerSubsystemConfig() = delete;
     PowerSubsystemConfig(PowerSubsystemConfig const&) = delete;
@@ -106,7 +159,7 @@ public:
     ~PowerSubsystemConfig() = default;
 
     /// Create the appropriate configuration according to `systemType`.
-    PowerSubsystemConfig(SystemType systemType);
+    PowerSubsystemConfig(PowerSystemType systemType);
 
     /// Returns delay for turning power on, in seconds.
     double outputOnMaxDelay() const;
@@ -140,7 +193,7 @@ public:
 
 
 private:
-    SystemType _systemType; ///< indicates if this is the MOTOR or COMM system.
+    PowerSystemType _systemType; ///< indicates if this is the MOTOR or COMM system.
 
     /// Set values for the MOTOR subsystem.
     void _setupMotor();
@@ -177,6 +230,30 @@ private:
 
     double _maxCurrent; ///< maximum output current in amps.
 
+    BreakerFeedGroup::Ptr _breakerFeedGroup;
+
+};
+
+
+/// doc &&&  Class for MOTOR and COMM power systems.
+/// unit tests: &&&
+class PowerSubsystem {
+public:
+
+
+
+
+    /// &&& doc     Based on PowerSubsystem->process_DAQ_telemetry.vi
+    SysStatus processDAQ(SysInfo const& info);
+
+private:
+    PowerSystemType _systemType; ///< indicates if this is the MOTOR or COMM system.
+
+    PowerSubsystemConfig _psCfg; ///< Configuration values for this PowerSubsystem.
+
+    BreakerFeedGroup _breakerFeeds; ///< Contains all breaker feeds for this power susbsystem.
+
+    bool _targPowerOn = false; ///< true when the user desires to have the power on.
 };
 
 

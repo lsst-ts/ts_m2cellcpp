@@ -34,7 +34,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace simulator {
 
-SimPowerSubsystem::SimPowerSubsystem(control::PowerSubsystemConfig::SystemType systemType,
+SimPowerSubsystem::SimPowerSubsystem(control::PowerSystemType systemType,
         control::OutputPortBits::Ptr const& outputPort, int powerOnBitPos, int breakerResetPos,
         control::InputPortBits::Ptr const& inputPort,  std::vector<int> const& breakerBitPositions)
         : _systemType(systemType) ,_outputPort(outputPort),  _powerOnBitPos(powerOnBitPos), _breakerResetPos(breakerResetPos),
@@ -127,7 +127,7 @@ void SimPowerSubsystem::calcVoltageCurrent(double timeDiff) {
         _current = 0.0;
     }
 
-    LTRACE(control::PowerSubsystemConfig::getPrettyType(_systemType),
+    LTRACE(control::getPowerSystemTypeStr(_systemType),
            " _current=", _current, " _voltage=", _voltage);
 }
 

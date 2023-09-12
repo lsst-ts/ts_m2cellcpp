@@ -19,6 +19,9 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+#ifndef LSST_M2CELLCPP_SIMULATOR_SIMCORE_H
+#define LSST_M2CELLCPP_SIMULATOR_SIMCORE_H
+
 // System headers
 #include <chrono>
 #include <map>
@@ -29,36 +32,20 @@
 #include <thread>
 #include <vector>
 
-#include "../util/clock_defs.h"
+
 // Project headers
 #include "control/InputPortBits.h"
 #include "control/OutputPortBits.h"
+#include "control/SysInfo.h"
 #include "simulator/SimPowerSubsystem.h"
+#include "util/clock_defs.h"
 #include "util/Log.h"
-
-#ifndef LSST_M2CELLCPP_SIMULATOR_SIMCORE_H
-#define LSST_M2CELLCPP_SIMULATOR_SIMCORE_H
 
 namespace LSST {
 namespace m2cellcpp {
 namespace simulator {
 
-/// Copy of relevant simulation information.
-class SimInfo {
-public:
-    control::OutputPortBits outputPort;
-    control::InputPortBits inputPort;
-    double motorVoltage; ///< volts
-    double motorCurrent; ///< amps
-    bool motorBreakerClosed;
-    double commVoltage; ///< volts
-    double commCurrent; ///< amps
-    bool commBreakerClosed;
-    uint64_t iterations;
 
-    /// Return a log worthy string containing information about this class.
-    std::string dump();
-};
 
 /// A basic simulator for the hardware. At this point it is limited to power systems.
 /// Breaker values can only be read while voltage is above a certain level, which
@@ -78,8 +65,8 @@ public:
     /// Get a copy of the `_newOutputPort`
     control::OutputPortBits getNewOutputPort();
 
-    /// Return SimInfo from the most recent iteration.
-    SimInfo getSimInfo();
+    /// Return SysInfo from the most recent iteration.
+    control::SysInfo getSysInfo();
 
     /// Start the simulation thread
     void start();
@@ -118,7 +105,7 @@ private:
     /// New value for `_outputPort` to be set on next `_simRun()` iteration.
     control::OutputPortBits _newOutput;
 
-    SimInfo _simInfo; ///< simulation status information.
+    control::SysInfo _simInfo; ///< simulation status information.
 
     std::mutex _mtx; ///< protects `_newOutput`
 

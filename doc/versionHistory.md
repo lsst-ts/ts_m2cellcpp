@@ -1,5 +1,9 @@
 # Version History
 
+0.3.4
+
+ - Added power up, power down, and power system tests
+
 0.3.3
  
   - Added the simulator.

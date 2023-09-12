@@ -1,269 +1,41 @@
 /*
- * This file is part of LSST ts_m2cellcpp test suite.
+ *  This file is part of LSST M2 support system package.
  *
- * Developed for the Vera C. Rubin Observatory Telescope & Site Software Systems.
- * This product includes software developed by the Vera C.Rubin Observatory Project
- * (https://www.lsst.org). See the COPYRIGHT file at the top-level directory of
- * this distribution for details of code ownership.
+ * This product includes software developed by the
+ * LSST Project (http://www.lsst.org/).
  *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the Free
- * Software Foundation, either version 3 of the License, or (at your option)
- * any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
- * more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program. If not, see <https://www.gnu.org/licenses/>.
+ * You should have received a copy of the LSST License Statement and
+ * the GNU General Public License along with this program.  If not,
+ * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-// Class header
+#ifndef LSST_M2CELLCPP_CONTROL_POWERSYTEM_H
+#define LSST_M2CELLCPP_CONTROL_POWERSYTEM_H
+
+// System headers
+#include <memory>
+#include <stdint.h>
+#include <string>
+#include <vector>
+
+// Project headers
+#include "control/InputPortBits.h"
 #include "control/PowerSubsystem.h"
 
-// system headers
-#include <bitset>
-#include <sstream>
-#include <mutex>
-#include <stdexcept>
-#include <string>
-
-// project headers
-#include "util/Bug.h"
-#include "util/Log.h"
-
-
-using namespace std;
 
 namespace LSST {
 namespace m2cellcpp {
 namespace control {
-
-BreakerFeedGroup::BreakerFeedGroup(Feed::Ptr const& feed1, Feed::Ptr const& feed2, Feed::Ptr const& feed3)
-        : _feed1(feed1), _feed2(feed2), _feed3(feed3){
-    _feeds.push_back(_feed1);
-    _feeds.push_back(_feed2);
-    _feeds.push_back(_feed3);
-}
-
-
-tuple<SysStatus, string> BreakerFeedGroup::checkBreakers(SysInfo const& info) {
-    SysStatus result = GOOD;
-    string inactiveInputs = "";
-
-    for (auto& feed:_feeds) {
-        auto [status, str] = feed->checkBreakers(info.inputPort);
-        inactiveInputs += str;
-        /// Result should contain the worst SysStatus found.
-        if (status > result) {
-            result = status;
-        }
-    }
-
-    // Breakers only matter (and have correct input) when voltage is
-    // above `_breakerOperatingVoltage`, there's been time for them
-    // to stabilize, and `_targPowerOn` is true.
-    // &&& NEED code
-    return make_tuple(result, inactiveInputs);
-}
-
-
-tuple<SysStatus, string> BreakerFeedGroup::Feed::checkBreakers(InputPortBits const& input) {
-    bool bit0 = input.getBit(_bit0Pos);
-    bool bit1 = input.getBit(_bit1Pos);
-    bool bit2 = input.getBit(_bit2Pos);
-
-    // All 3 bits should be high
-    int count = 0;
-    uint8_t bitmap = 0;
-    string inactiveStr = "";
-    if (bit0) {
-        ++count;
-        bitmap |= 0b001;
-    } else {
-        inactiveStr += InputPortBits::getEnumString(_bit0Pos) + ",";
-    }
-    if (bit1) {
-        ++count;
-        bitmap |= 0b010;
-    } else {
-        inactiveStr += InputPortBits::getEnumString(_bit1Pos) + ",";
-    }
-    if (bit2) {
-        ++count;
-        bitmap |= 0b100;
-    } else {
-        inactiveStr += InputPortBits::getEnumString(_bit2Pos);
-    }
-
-    SysStatus breakerStatus = FAULT;
-    if (count == 3) breakerStatus = GOOD;
-    if (count == 2) breakerStatus = WARN;
-    if (bitmap != _feedBitmap) {
-        LDEBUG("BreakerStatus change to ", bitmap, " from ", _feedBitmap,
-              " status=", sysStatusStr(breakerStatus), " low inputs=", inactiveStr);
-    }
-    _feedBitmap = bitmap;
-
-    return make_tuple(breakerStatus, inactiveStr);
-}
-
-
-
-PowerSubsystemConfig::PowerSubsystemConfig(PowerSystemType systemType) : _systemType(systemType) {
-    switch (_systemType) {
-    case MOTOR:
-        _setupMotor();
-        break;
-    case COMM:
-        _setupComm();
-        break;
-    default:
-        throw util::Bug(ERR_LOC,"unexpected systemType=" + to_string(_systemType));
-    }
-    _setupCalculated();
-}
-
-void PowerSubsystemConfig::_setupMotor() {
-    // - U32 output on max delay (ms) (unsigned long [32-bit integer (0 to 4,294,967,295)])  =
-    //   “relay close delay” (50ms) + “breaker on time” (500ms) + “interlock output on delay”(50ms)= 600ms
-    _relayCloseDelay = 0.050; ///< "relay close delay" 50ms, in seconds
-    _breakerOnTime = 0.5; ///< “breaker on time” (500ms), in seconds
-    _interlockOutputOnDelay = 0.050; ///< “interlock output on delay”(50ms), in seconds
-
-    // - U32 output off max delay (ms) (unsigned long [32-bit integer (0 to 4,294,967,295)])
-    //   “relay open delay” (30ms) + “interlock output off delay”(50ms) = 80ms
-    _relayOpenDelay = 0.030; ///< “relay open delay” (30ms), in seconds
-    _interlockOutputOffDelay = 0.050; ///< “interlock output off delay”(50ms), in seconds
-
-    // - U32 reset breaker pulse width (ms) (unsigned long [32-bit integer (0 to 4,294,967,295)])  = 400ms
-    _resetBreakerPulseWidth = 0.400; ///< "reset breaker pulse width" (400ms), in seconds
-
-    // - DBL breaker operating voltage (double [64-bit real (~15 digit precision)] [V])  = 19V
-    _breakerOperatingVoltage = 19.0; ///< breaker operating voltage 19V, in volts.
-
-    // - CLUSTER output voltage warning level (volts) (cluster of 2 elements) = output voltage nominal level = 24V
-    _nominalVoltage = 24.0; ///< "output voltage nominal level" = 24V, in volts.
-
-    // - U32 breaker operating voltage rise time (ms) (unsigned long [32-bit integer (0 to 4,294,967,295)])  = 85ms
-    _breakerOperatingVoltageRiseTime = 0.085; ///< breaker operating voltage rise time (85ms), in seconds.
-
-    // - U32 output voltage settling time (ms) (unsigned long [32-bit integer (0 to 4,294,967,295)])  = 20ms
-    _voltageSettlingTime = 0.020; ///< output voltage settling time (20ms), in seconds
-
-    // - U32 output voltage fall time (ms) (unsigned long [32-bit integer (0 to 4,294,967,295)])  = 300ms
-    _voltageFallTime = 0.3; ///< output voltage fall time (300ms), in seconds
-
-    // - DBL output voltage off level (double [64-bit real (~15 digit precision)] [V])  = 12V
-    _voltageOffLevel = 12.0; ///< output voltage off level 12V, in volts
-
-    // - DBL maximum output current (double [64-bit real (~15 digit precision)] [A])  = 20A
-    _maxCurrent = 20.0; ///< maximum output current 20A, in amps.
-
-    BreakerFeedGroup::Feed::Ptr motorFeed1 = make_shared<BreakerFeedGroup::Feed>(
-        InputPortBits::J1_W9_1_MTR_PWR_BRKR_OK, InputPortBits::J1_W9_2_MTR_PWR_BRKR_OK,
-        InputPortBits::J1_W9_3_MTR_PWR_BRKR_OK);
-    BreakerFeedGroup::Feed::Ptr motorFeed2 = make_shared<BreakerFeedGroup::Feed>(
-        InputPortBits::J2_W10_1_MTR_PWR_BRKR_OK, InputPortBits::J2_W10_2_MTR_PWR_BRKR_OK,
-        InputPortBits::J2_W10_3_MTR_PWR_BRKR_OK);
-    BreakerFeedGroup::Feed::Ptr motorFeed3 = make_shared<BreakerFeedGroup::Feed>(
-        InputPortBits::J3_W11_1_MTR_PWR_BRKR_OK, InputPortBits::J3_W11_2_MTR_PWR_BRKR_OK,
-        InputPortBits::J3_W11_3_MTR_PWR_BRKR_OK);
-
-    _breakerFeedGroup = make_shared<BreakerFeedGroup>(motorFeed1, motorFeed2, motorFeed3);
-}
-
-
-void PowerSubsystemConfig::_setupComm() {
-    // - Comm Power Subsystem Configuration Information (typedef 'PowerSubsystem (cluster of 11 elements)
-    //   Values found in “PowerSubsystemCommonConfig.vi”  and “CommPowerBusConfigurationParameters.vi”
-    // - U32 output on max delay (ms) (unsigned long [32-bit integer (0 to 4,294,967,295)])
-    //   “relay close delay” (50ms) + “breaker on time” (500ms) = 550ms
-    _relayCloseDelay = 0.050; ///< "relay close delay" 50ms, in seconds
-    _breakerOnTime = 0.5; ///< “breaker on time” (500ms), in seconds
-    _interlockOutputOnDelay = 0.000; ///< “interlock output on delay”(ms), in seconds, not used in COMM
-
-    // - U32 output off max delay (ms) (unsigned long [32-bit integer (0 to 4,294,967,295)])
-    //   “relay open delay” (30ms) = 30ms
-    _relayOpenDelay = 0.030; ///< “relay open delay” (30ms), in seconds
-    _interlockOutputOffDelay = 0.0; ///< “interlock output off delay”(ms), in seconds, not used in COMM
-
-    // - U32 reset breaker pulse width (ms) (unsigned long [32-bit integer (0 to 4,294,967,295)])  = 400ms
-    _resetBreakerPulseWidth = 0.400; ///< "reset breaker pulse width" (400ms), in seconds
-
-    // - DBL breaker operating voltage (double [64-bit real (~15 digit precision)] [V])  = 19V
-    _breakerOperatingVoltage = 19.0; ///< breaker operating voltage 19V, in volts.
-
-    // - CLUSTER output voltage warning level (volts) (cluster of 2 elements)  = “output voltage nominal level” = 24V
-    _nominalVoltage = 24.0; ///< "output voltage nominal level" = 24V, in volts.
-
-    // - U32 breaker operating voltage rise time (ms) (unsigned long [32-bit integer (0 to 4,294,967,295)])  = 30ms
-    _breakerOperatingVoltageRiseTime = 0.030; ///< breaker operating voltage rise time (30ms), in seconds.
-
-    // - U32 output voltage settling time (ms) (unsigned long [32-bit integer (0 to 4,294,967,295)])  = 10ms
-    _voltageSettlingTime = 0.020; ///< output voltage settling time (20ms), in seconds
-
-    // - U32 output voltage fall time (ms) (unsigned long [32-bit integer (0 to 4,294,967,295)])  = 50ms
-    _voltageFallTime = 0.050; ///< output voltage fall time (50ms), in seconds
-
-    // - DBL output voltage off level (double [64-bit real (~15 digit precision)] [V])  = 12V
-    _voltageOffLevel = 12.0; ///< output voltage off level 12V, in volts
-
-    // - DBL maximum output current (double [64-bit real (~15 digit precision)] [A])  = 10A
-    _maxCurrent = 10.0; ///< maximum output current 10A, in amps.
-
-    BreakerFeedGroup::Feed::Ptr commFeed1 = make_shared<BreakerFeedGroup::Feed>(
-        InputPortBits::J1_W12_1_COMM_PWR_BRKR_OK, InputPortBits::J1_W12_2_COMM_PWR_BRKR_OK,
-        InputPortBits::ALWAYS_HIGH);
-    BreakerFeedGroup::Feed::Ptr commFeed2 = make_shared<BreakerFeedGroup::Feed>(
-        InputPortBits::J2_W13_1_COMM_PWR_BRKR_OK, InputPortBits::J2_W13_2_COMM_PWR_BRKR_OK,
-        InputPortBits::ALWAYS_HIGH);
-    BreakerFeedGroup::Feed::Ptr commFeed3 = make_shared<BreakerFeedGroup::Feed>(
-        InputPortBits::J3_W14_1_COMM_PWR_BRKR_OK, InputPortBits::J3_W14_2_COMM_PWR_BRKR_OK,
-        InputPortBits::ALWAYS_HIGH);
-    _breakerFeedGroup = make_shared<BreakerFeedGroup>(commFeed1, commFeed2, commFeed3);
-}
-
-void PowerSubsystemConfig::_setupCalculated() {
-    //  Based on “output voltage nominal level” * x%   x=”output voltage warning threshold level(%)”= 5%
-    //   - DBL Minimum (double [64-bit real (~15 digit precision)])  = 24V * 0.95 = 22.8
-    //   - DBL Maximum (double [64-bit real (~15 digit precision)])  = 24V * 1.05 = 25.2
-    _minVoltageWarn = _nominalVoltage * 0.95; ///< minimum voltage warning level in volts.
-    _maxVoltageWarn = _nominalVoltage * 1.05; ///< maximum voltage warning level in volts.
-
-    // -  CLUSTER output voltage fault level (volts) (cluster of 2 elements)
-    //   Based on “output voltage nominal level” * x%   x=”output voltage fault threshold level(%)”= 10%
-    //    - DBL Minimum (double [64-bit real (~15 digit precision)])  = 24V * 0.90 = 21.6
-    //    - DBL Maximum (double [64-bit real (~15 digit precision)])  = 24V * 1.10 = 26.4
-    _minVoltageFault = _nominalVoltage * 0.90; ///< minimum voltage fault level in volts.
-    _maxVoltageFault = _nominalVoltage * 1.10; ///< maximum voltage fault level in volts.
-}
-
-double PowerSubsystemConfig::outputOnMaxDelay() const {
-    if (_systemType == MOTOR) return _relayCloseDelay + _breakerOnTime + _interlockOutputOnDelay;
-    if (_systemType == COMM) return _relayCloseDelay + _breakerOnTime;;
-    throw util::Bug(ERR_LOC, "PowerSubsystemConfig unexpected _systemType=" + to_string(_systemType));
-}
-
-
-double PowerSubsystemConfig::outputOffMaxDelay() const {
-    if (_systemType == MOTOR) return _relayOpenDelay + _interlockOutputOffDelay;
-    if (_systemType == COMM) return _relayOpenDelay;
-    throw util::Bug(ERR_LOC, "PowerSubsystemConfig unexpected _systemType=" + to_string(_systemType));
-}
-
-
-SysStatus PowerSubsystem::processDAQ(SysInfo const& info) {
-
-    auto [breakerStatus, inactiveInputs] = _breakerFeeds.checkBreakers(info);
-    if (breakerStatus < GOOD) {
-        /// &&& NEED fault code to turn power off
-    }
-
-    return FAULT;
-}
 
 /* &&&
 
@@ -478,6 +250,29 @@ SysStatus PowerSubsystem::processDAQ(SysInfo const& info) {
                     &&& */
 
 
+
+/// doc &&&  Class to contain both MOTOR and COMM PowerSubsystems.
+/// unit tests: &&&
+class PowerSystem {
+public:
+
+
+
+
+
+    /// &&& doc     Based on PowerSubsystem->process_DAQ_telemetry.vi
+    void processDAQ(SysInfo info);
+
+private:
+    PowerSubsystem _motor; ///< &&& doc
+
+    PowerSubsystem _comm; ///< &&& doc
+
+};
+
+
 }  // namespace control
 }  // namespace m2cellcpp
 }  // namespace LSST
+
+#endif  // LSST_M2CELLCPP_CONTROL_POWERSYSTEM_H

@@ -19,21 +19,24 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+#ifndef LSST_M2CELLCPP_SIMULATOR_SIMPOWERSUBSYTEM_H
+#define LSST_M2CELLCPP_SIMULATOR_SIMPOWERSUBSYTEM_H
+
 // System headers
 #include <memory>
 #include <stdint.h>
 #include <string>
 #include <vector>
 
-#include "../util/clock_defs.h"
+
 // Project headers
+#include "control/control_defs.h"
 #include "control/InputPortBits.h"
 #include "control/OutputPortBits.h"
 #include "control/PowerSubsystem.h"
+#include "util/clock_defs.h"
 #include "util/Log.h"
 
-#ifndef LSST_M2CELLCPP_SIMULATOR_SIMPOWERSUBSYTEM_H
-#define LSST_M2CELLCPP_SIMULATOR_SIMPOWERSUBSYTEM_H
 
 namespace LSST {
 namespace m2cellcpp {
@@ -59,7 +62,7 @@ public:
     /// @param `breakerBitPositions` list of bits affected by breaker status.
     /// It's unclear which InputPortBits each power system should be concerned
     /// with at this point. Hopefully that will become clearer.
-    SimPowerSubsystem(control::PowerSubsystemConfig::SystemType systemType,
+    SimPowerSubsystem(control::PowerSystemType systemType,
             control::OutputPortBits::Ptr const& outputPort, int powerOnBitPos, int breakerResetPos,
             control::InputPortBits::Ptr const& inputPort,  std::vector<int> const& breakerBitPositions);
 
@@ -89,7 +92,7 @@ public:
 private:
     void _setup(); ///< Setup according to `_systemType`.
 
-    control::PowerSubsystemConfig::SystemType _systemType; ///< MOTOR or COMM.
+    control::PowerSystemType _systemType; ///< MOTOR or COMM.
 
     double _voltage = 0.0; ///< current voltage, volts
     double _current = 0.0; ///< current current, amps
