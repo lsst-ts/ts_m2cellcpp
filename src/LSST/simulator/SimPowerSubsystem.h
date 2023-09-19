@@ -67,7 +67,7 @@ public:
             control::InputPortBits::Ptr const& inputPort,  std::vector<int> const& breakerBitPositions);
 
     /// Return true if outputPort has set the power on.
-    bool getPowerOn() { return _outputPort->getBit(_powerOnBitPos); }
+    bool getPowerOn() { return _outputPort->getBitAtPos(_powerOnBitPos); }
 
     /// Return the simulated `_voltage`.
     double getVoltage() { return _voltage; }

@@ -19,8 +19,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_CONTROL_FAULTSTATUSBITS_H
-#define LSST_M2CELLCPP_CONTROL_FAULTSTATUSBITS_H
+#ifndef LSST_M2CELLCPP_FAULTMGR_FAULTSTATUSBITS_H
+#define LSST_M2CELLCPP_FAULTMGR_FAULTSTATUSBITS_H
 
 // System headers
 #include <functional>
@@ -28,10 +28,11 @@
 #include <memory>
 
 // Project headers
+#include "control/control_defs.h"
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace faultmgr {
 
 /// Class representation of the "Fault Status", which is a bitmap
 /// representing the status of several system items.
@@ -127,6 +128,11 @@ public:
     /// Should match "Info Mask" found in Faults-Warnings-Info_BitStatus.lvclass:masks.vi
     static uint64_t getMaskInfo();
 
+    /// Returns a mask of the faults for the COMM or MOTOR power subsystem, depending on
+    /// the value of `sysType`.
+    /// Should match "subsystem fault mask" maps found in BasePowerSubsystem.lvclass:set_fault_masks.vi
+    static uint64_t getMaskPowerSubsystemFaults(control::PowerSystemType sysType);
+
     /// Set (when `set` == true) or unset (when `set` == false) the bit at `pos` in `bitmap`
     static void setBit64(uint64_t& bitmap, int pos, bool set);
 
@@ -145,7 +151,7 @@ public:
     void unsetBit(int pos);
 
     /// Return a copy of `_bitmap`.
-    uint64_t getBitmap() { return _bitmap; }
+    uint64_t getBitmap() const { return _bitmap; }
 
     /// Set `_bitmap` to `bitmap`.
     void setBitmap(uint64_t bitmap) { _bitmap = bitmap; }
@@ -180,10 +186,14 @@ private:
     static Ptr _maskFaults; ///< Stored "Fault Mask".
     static Ptr _maskWarn; ///< Stored "Warnings Mask".
     static Ptr _maskInfo; ///< Stored "Info Mask".
+
+    static Ptr _maskSubsystemCommFault; ///< Stored "subsystem fault mask" for COMM.
+    static Ptr _maskSubsystemMotorFault; ///< Stored "subsystem fault mask" for MOTOR.
 };
 
-}  // namespace control
+
+}  // namespace faultmgr
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_CONTROL_FAULTSTATUSBITS_H
+#endif  // LSST_M2CELLCPP_FAULTMGR_FAULTSTATUSBITS_H

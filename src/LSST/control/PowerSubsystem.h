@@ -35,13 +35,17 @@
 #include "control/InputPortBits.h"
 #include "control/OutputPortBits.h"
 #include "control/SysInfo.h"
+#include "faultmgr/FaultStatusBits.h"
 #include "util/clock_defs.h"
 #include "util/Log.h"
+#include "util/VMutex.h"
 
 
 namespace LSST {
 namespace m2cellcpp {
 namespace control {
+
+class FpgaIo;
 
 /* PowerSubsystemConfig values based on this.
       - Motor Power Subsystem Configuration Information (typedef 'PowerSubsystem (cluster of 11 elements)
@@ -191,6 +195,50 @@ public:
     /// Return `_voltageOffLevel`
     double getVoltageOffLevel() const { return _voltageOffLevel; }
 
+    /// Return minimum voltage where breaker outputs function in volts.
+    double getBreakerOperatingVoltage() const { return _breakerOperatingVoltage; }
+
+    /// Return `_breakerOperatingVoltageRiseTime` in seconds.
+    double getBreakerOperatingVoltageRiseTime() const { return _breakerOperatingVoltageRiseTime; }
+
+    /// Return `_voltageSettlingTime` in seconds.
+    double getVoltageSettlingTime() const { return _voltageSettlingTime; }
+
+    /// Return `_resetBreakerPulseWidth` in seconds.
+    double getResetBreakerPulseWidth() const { return _resetBreakerPulseWidth; }
+
+    /// Return `_outputPowerOnBitPos`
+    int getOutputPowerOnBitPos() const { return _outputPowerOnBitPos; }
+
+    /// Return `_outputBreakerBitPos`
+    int getOutputBreakerBitPos() const { return _outputBreakerBitPos; }
+
+    /// Return a copy of `_subsystemFaultMask`
+    faultmgr::FaultStatusBits getSubsystemFaultMask() const { return _subsystemFaultMask; }
+
+    /// Return a copy of `_subsytemName`
+    std::string get_subsytemName() const { return _subsytemName; }
+
+    /// Return `_voltageFault`.
+    int getVoltageFault() const { return _voltageFault; }
+
+    /// Return `_voltageWarn`.
+    int getVoltageWarn() const { return _voltageWarn; }
+
+    /// Return `_excessiveCurrent`.
+    int getExcessiveCurrent() const { return _excessiveCurrent; }
+
+    /// Return `_relayFault`.
+    int getRelayFault() const { return _relayFault; }
+
+    /// Return `_breakerFault`.
+    int getBreakerFault() const { return _breakerFault; }
+
+    /// Return `_breakerWarn`.
+    int getBreakerWarn() const { return _breakerWarn; }
+
+    /// Return `_relayInUse`.
+    int getRelayInUse() const { return _relayInUse; }
 
 private:
     PowerSystemType _systemType; ///< indicates if this is the MOTOR or COMM system.
@@ -221,7 +269,6 @@ private:
     double _maxVoltageFault; ///< "maximum voltage fault level" in volts.
 
     double _breakerOperatingVoltageRiseTime; ///< "breaker operating voltage rise time" in seconds.
-
     double _voltageSettlingTime; ///< output voltage settling time in seconds
 
     double _voltageFallTime; ///< output voltage fall time in seconds
@@ -232,6 +279,20 @@ private:
 
     BreakerFeedGroup::Ptr _breakerFeedGroup;
 
+    int _outputPowerOnBitPos; ///< Output bit that turns power on/off for this subsystem, active high.
+    int _outputBreakerBitPos; ///< Output bit that will reset breaker for this subsystem when low/high???.
+
+    faultmgr::FaultStatusBits _subsystemFaultMask; ///< Mask for bits
+
+    // Values from BasePowerSubsystem.lvclass:configure_subsystem.vi
+    std::string _subsytemName; ///< string name of the subsytem
+    int _voltageFault;         ///< "voltage fault"
+    int _voltageWarn;          ///< "voltage warning"
+    int _excessiveCurrent;     ///< "excessive current"
+    int _relayFault;           ///< "relay fault"
+    int _breakerFault;         ///< "breaker fault"
+    int _breakerWarn;          ///< "breaker warning"
+    int _relayInUse;           ///< "relay in use"
 };
 
 
@@ -240,20 +301,112 @@ private:
 class PowerSubsystem {
 public:
 
+    enum PowerState {
+        ON,
+        TURNING_ON,
+        TURNING_OFF,
+        OFF,
+        RESET,
+        UNKNOWN
+    };
 
+    static std::string getPowerStateStr(PowerState powerState);
 
+    PowerSubsystem() = delete;
+
+    /// &&& doc
+    PowerSubsystem(PowerSystemType sysType);
+
+    /// Return the name of the class and systemType string.
+    std::string getClassName() { return "PowerSubsystem " + getPowerSystemTypeStr(_systemType); }
+
+    /// Return subsytem voltage in volts.
+    double getVoltage();
+
+    /// Return subsystem current in amps.
+    double getCurrent();
+
+    /// doc &&&
+    void setPowerOn();
+
+    /// doc &&&
+    void setPowerOff();
 
     /// &&& doc     Based on PowerSubsystem->process_DAQ_telemetry.vi
     SysStatus processDAQ(SysInfo const& info);
 
 private:
+    /// doc &&&
+    void _setPowerOn();
+
+    /// doc &&&
+    void _setPowerOff();
+
+    /// Go through the sequence of events required when `_targPowerState` is ON,
+    /// `_powerStateMtx` must be locked before calling.
+    void _processPowerOn();
+
+    /// Go through the sequence of events required when `_targPowerState` is OFF,
+    /// `_powerStateMtx` must be locked before calling.
+    void _processPowerOff();
+
+    /// Return “Relay Control Output On”.  &&& doc
+    bool _getRelayControlOutputOn() const;
+
+    /// Return “cRIO Ready Output On”. &&& doc
+    bool _getCrioReadyOutputOn() const;
+
+    /// Return ”Interlock Relay Control Output On”. &&& doc
+    bool _getInterlockRelayControlOutputOn() const;
+
+    /// Return true if the OutputPort is has the correct bits to turn on this power system.
+    /// Sets "interlock fault" if the interlock is preventing power on.
+    bool _powerShouldBeOn();
+
+    /// Return true if there are any breaker faults. Breaker faults can only
+    /// be reported if the voltage is over `_breakerOperatingVoltage`.
+    /// Faults and warnings will be sent to the FaultMgr.
+    /// Faults will result in `_setPowerOff()` being called.
+    bool _checkForPowerOnBreakerFault(double voltage);
+
+    /// Set power off and send the FaultMgr low voltage warnings and faults.
+    void _sendBreakerVoltageFault();
+
+    /// PLACEHOLDER to register an error with the fault manager.
+    void _sendFaultMgrError();
+
+    /// PLACEHOLDER to register an error with the fault manager.
+    void _sendFaultMgrError(int errId, std::string note);
+
+    /// PLACEHOLDER to register a warning with the fault manager.
+    void _sendFaultMgrWarn();
+
+    /// PLACEHOLDER to set a bit in the FaulMgr FaultStatusBits.
+    void _sendFaultMgrSetBit(int bitPos);
+
+    /// Return true if the FaultMgr has any faults that affect this PowerSubsystem.
+    bool _checkForFaults();
+
+
     PowerSystemType _systemType; ///< indicates if this is the MOTOR or COMM system.
 
     PowerSubsystemConfig _psCfg; ///< Configuration values for this PowerSubsystem.
 
-    BreakerFeedGroup _breakerFeeds; ///< Contains all breaker feeds for this power susbsystem.
+    SysInfo _sysInfo; ///< last value of SysInfo read by processDAQ.
 
-    bool _targPowerOn = false; ///< true when the user desires to have the power on.
+    util::TIMEPOINT _powerOnStart; ///< Time `_targPowerState` was set to ON.
+    util::TIMEPOINT _powerOffStart; ///< Time `_targPowerState` was set to OFF.
+    int _phase = 1; ///< Current phase of power up or power off. Initialize to powering off.
+    util::TIMEPOINT _phaseStartTime; ///< Time the current `_phase` started.
+    int _telemCounter = 0; ///< For unexplained reasons, power on `_phase` 1 lasts 10 telemetry reads.
+
+    PowerState _targPowerState = OFF; ///< Target power state, valid values are ON, OFF, and RESET.
+    PowerState _actualPowerState = UNKNOWN; ///< Actual state of this PowerSubsystem.
+    util::VMutex _powerStateMtx; ///< Protects `_targPowerState` and `_actualPowerState`.
+
+    BreakerFeedGroup::Ptr _breakerFeeds; ///< Contains all breaker feeds for this power susbsystem.
+
+    std::shared_ptr<FpgaIo> _fpgaIo; ///< pointer to the global FpgaIo instance.
 };
 
 

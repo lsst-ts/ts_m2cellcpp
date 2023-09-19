@@ -88,9 +88,6 @@ bool Globals::getTcpIpConnected() const {
     return (_tcpIpConnectedCount > 0);
 }
 
-
-
-
 }  // namespace system
 }  // namespace m2cellcpp
 }  // namespace LSST

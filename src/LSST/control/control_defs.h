@@ -66,7 +66,7 @@ inline std::string getPowerSystemTypeStr(PowerSystemType sysT) {
     case MOTOR: return "MOTOR";
     case COMM: return "COMM";
     }
-    return "unknown";
+    return "unknown ";
 }
 
 }  // namespace control

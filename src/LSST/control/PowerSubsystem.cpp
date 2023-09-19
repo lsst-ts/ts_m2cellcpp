@@ -31,8 +31,12 @@
 #include <string>
 
 // project headers
+
+#include "control/FpgaIo.h"
 #include "util/Bug.h"
 #include "util/Log.h"
+
+#include "faultmgr/FaultMgr.h"
 
 
 using namespace std;
@@ -62,18 +66,14 @@ tuple<SysStatus, string> BreakerFeedGroup::checkBreakers(SysInfo const& info) {
         }
     }
 
-    // Breakers only matter (and have correct input) when voltage is
-    // above `_breakerOperatingVoltage`, there's been time for them
-    // to stabilize, and `_targPowerOn` is true.
-    // &&& NEED code
     return make_tuple(result, inactiveInputs);
 }
 
 
 tuple<SysStatus, string> BreakerFeedGroup::Feed::checkBreakers(InputPortBits const& input) {
-    bool bit0 = input.getBit(_bit0Pos);
-    bool bit1 = input.getBit(_bit1Pos);
-    bool bit2 = input.getBit(_bit2Pos);
+    bool bit0 = input.getBitAtPos(_bit0Pos);
+    bool bit1 = input.getBitAtPos(_bit1Pos);
+    bool bit2 = input.getBitAtPos(_bit2Pos);
 
     // All 3 bits should be high
     int count = 0;
@@ -111,8 +111,24 @@ tuple<SysStatus, string> BreakerFeedGroup::Feed::checkBreakers(InputPortBits con
 }
 
 
+std::string PowerSubsystem::getPowerStateStr(PowerState powerState) {
+    int val = powerState;
+    string valStr = string(" ") + to_string(val);
+    switch (powerState) {
+    case ON: return "ON" + valStr;
+    case TURNING_ON: return "TURNING_ON" + valStr;
+    case TURNING_OFF: return "TURNING_OFF" + valStr;
+    case OFF: return "OFF" + valStr;
+    case RESET: return "RESET" + valStr;
+    case UNKNOWN: return "UNKNOWN" + valStr;
+    }
+    return "unknown" + valStr;
+};
 
-PowerSubsystemConfig::PowerSubsystemConfig(PowerSystemType systemType) : _systemType(systemType) {
+
+
+PowerSubsystemConfig::PowerSubsystemConfig(PowerSystemType systemType) : _systemType(systemType),
+        _subsystemFaultMask(faultmgr::FaultStatusBits::getMaskPowerSubsystemFaults(_systemType)) {
     switch (_systemType) {
     case MOTOR:
         _setupMotor();
@@ -173,6 +189,19 @@ void PowerSubsystemConfig::_setupMotor() {
         InputPortBits::J3_W11_3_MTR_PWR_BRKR_OK);
 
     _breakerFeedGroup = make_shared<BreakerFeedGroup>(motorFeed1, motorFeed2, motorFeed3);
+
+    _outputPowerOnBitPos = OutputPortBits::MOTOR_POWER_ON;
+    _outputBreakerBitPos = OutputPortBits::RESET_MOTOR_BREAKERS;
+
+    // Values from BasePowerSubsystem.lvclass:configure_subsystem.vi
+    _subsytemName = "motor";
+    _voltageFault = faultmgr::FaultStatusBits::MOTOR_VOLTAGE_FAULT;
+    _voltageWarn = faultmgr::FaultStatusBits::MOTOR_VOLTAGE_WARN;
+    _excessiveCurrent = faultmgr::FaultStatusBits::MOTOR_OVER_CURRENT;
+    _relayFault = faultmgr::FaultStatusBits::POWER_RELAY_OPEN_FAULT;
+    _breakerFault = faultmgr::FaultStatusBits::MOTOR_MULTI_BREAKER_FAULT;
+    _breakerWarn = faultmgr::FaultStatusBits::SINGLE_BREAKER_TRIP;
+    _relayInUse = faultmgr::FaultStatusBits::MOTOR_RELAY;
 }
 
 
@@ -224,6 +253,20 @@ void PowerSubsystemConfig::_setupComm() {
         InputPortBits::J3_W14_1_COMM_PWR_BRKR_OK, InputPortBits::J3_W14_2_COMM_PWR_BRKR_OK,
         InputPortBits::ALWAYS_HIGH);
     _breakerFeedGroup = make_shared<BreakerFeedGroup>(commFeed1, commFeed2, commFeed3);
+
+    _outputPowerOnBitPos = OutputPortBits::ILC_COMM_POWER_ON;
+    _outputBreakerBitPos = OutputPortBits::RESET_COMM_BREAKERS;
+
+    // Values from BasePowerSubsystem.lvclass:configure_subsystem.vi
+    _subsytemName = "comm";
+    _voltageFault = faultmgr::FaultStatusBits::COMM_VOLTAGE_FAULT;
+    _voltageWarn = faultmgr::FaultStatusBits::COMM_VOLTAGE_WARN;
+    _excessiveCurrent = faultmgr::FaultStatusBits::COMM_OVER_CURRENT;
+    _relayFault = faultmgr::FaultStatusBits::POWER_RELAY_OPEN_FAULT;
+    _breakerFault = faultmgr::FaultStatusBits::COMM_MULTI_BREAKER_FAULT;
+    _breakerWarn = faultmgr::FaultStatusBits::SINGLE_BREAKER_TRIP;
+    _relayInUse = faultmgr::FaultStatusBits::COMM_RELAY;
+
 }
 
 void PowerSubsystemConfig::_setupCalculated() {
@@ -255,15 +298,481 @@ double PowerSubsystemConfig::outputOffMaxDelay() const {
 }
 
 
-SysStatus PowerSubsystem::processDAQ(SysInfo const& info) {
+PowerSubsystem::PowerSubsystem(PowerSystemType sysType) : _systemType(sysType), _psCfg(_systemType),
+        _fpgaIo(FpgaIo::getPtr()) {
 
-    auto [breakerStatus, inactiveInputs] = _breakerFeeds.checkBreakers(info);
-    if (breakerStatus < GOOD) {
-        /// &&& NEED fault code to turn power off
+}
+
+double PowerSubsystem::getVoltage() {
+    switch (_systemType) {
+    case MOTOR: return _sysInfo.motorVoltage;
+    case COMM: return _sysInfo.commVoltage;
     }
+    LERROR(getClassName(), " getVoltage unexpected _systemType=", _systemType, " ", getPowerSystemTypeStr(_systemType));
+    return 0.0;
+}
+
+double PowerSubsystem::getCurrent() {
+    switch (_systemType) {
+    case MOTOR: return _sysInfo.motorCurrent;
+    case COMM: return _sysInfo.commCurrent;
+    }
+    LERROR(getClassName(), " getCurrent unexpected _systemType=", _systemType, " ", getPowerSystemTypeStr(_systemType));
+    return 0.0;
+}
+
+
+bool PowerSubsystem::_getRelayControlOutputOn() const {
+    /// “Relay Control Output On”
+    bool relayControlOutputOn = false;
+    switch(_systemType) {
+    case MOTOR:
+        // DAQ_to_motor_telemetry.vi
+        relayControlOutputOn = _sysInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON);
+        return relayControlOutputOn;
+    case COMM:
+        // DAQ_to_comm_telemetry.vi
+        relayControlOutputOn = _sysInfo.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON);
+        return relayControlOutputOn;
+    }
+    throw util::Bug(ERR_LOC, string(__func__) + " unexpected systemType");
+}
+
+
+bool PowerSubsystem::_getCrioReadyOutputOn() const {
+    // “cRIO Ready Output On”
+    bool crioReadyOutputOn = false;
+    switch(_systemType) {
+    case MOTOR:
+        // DAQ_to_motor_telemetry.vi
+        crioReadyOutputOn = _sysInfo.outputPort.getBitAtPos(OutputPortBits::CRIO_INTERLOCK_ENABLE);
+        return  crioReadyOutputOn;
+    case COMM:
+        // DAQ_to_comm_telemetry.vi
+        return true;
+    }
+    throw util::Bug(ERR_LOC, string(__func__) + " unexpected systemType");
+}
+
+
+bool PowerSubsystem::_getInterlockRelayControlOutputOn() const {
+    // ”Interlock Relay Control Output On”
+    bool interlockRelayControlOutputOn = false;
+    switch(_systemType) {
+    case MOTOR:
+        // DAQ_to_motor_telemetry.vi
+        interlockRelayControlOutputOn = _sysInfo.inputPort.getBitAtPos(InputPortBits::INTERLOCK_POWER_RELAY);
+        return interlockRelayControlOutputOn;
+    case COMM:
+        // DAQ_to_comm_telemetry.vi
+        return true;
+        break;
+    }
+    throw util::Bug(ERR_LOC, string(__func__) + " unexpected systemType");
+}
+
+
+bool PowerSubsystem::_powerShouldBeOn() {
+    if (_getRelayControlOutputOn() && _getCrioReadyOutputOn()) {
+        if (_getInterlockRelayControlOutputOn()) {
+            return true;
+        } else {
+            // Set "Fault Status" "interlock fault"
+            _sendFaultMgrSetBit(faultmgr::FaultStatusBits::INTERLOCK_FAULT);
+        }
+    }
+    return false;
+}
+
+
+void PowerSubsystem::setPowerOn() {
+    VMUTEX_NOT_HELD(_powerStateMtx);
+    auto outputPort = _fpgaIo->getOutputPort();
+    lock_guard<util::VMutex> lg(_powerStateMtx);
+    _setPowerOn();
+}
+
+void PowerSubsystem::_setPowerOn() {
+    VMUTEX_HELD(_powerStateMtx);
+    // &&& NEED code
+    if (_checkForFaults()) {
+        LERROR(getClassName(), " _setPowerOn cannot turn on due to faults");
+        _sendFaultMgrError(500003, "Internal ERROR: Faults preventing operation to proceed");
+        _setPowerOff();
+        return;
+    }
+
+    LINFO(getClassName(), " Turning power on");
+    _fpgaIo->writeOutputPortBitPos(_psCfg.getOutputBreakerBitPos(), true);
+    _fpgaIo->writeOutputPortBitPos(_psCfg.getOutputPowerOnBitPos(), true);
+    _targPowerState = ON;
+    _phase = 1;
+    _powerOnStart = util::CLOCK::now();
+    _phaseStartTime = _powerOnStart;
+    _telemCounter = 0;
+}
+
+
+void PowerSubsystem::setPowerOff() {
+    VMUTEX_NOT_HELD(_powerStateMtx);
+    lock_guard<util::VMutex> lg(_powerStateMtx);
+    _setPowerOff();
+}
+
+void PowerSubsystem::_setPowerOff() {
+    VMUTEX_HELD(_powerStateMtx);
+
+    LINFO(getClassName(), " Turning power off");
+    _fpgaIo->writeOutputPortBitPos(_psCfg.getOutputBreakerBitPos(), true);
+    _fpgaIo->writeOutputPortBitPos(_psCfg.getOutputPowerOnBitPos(), false);
+    if (_targPowerState != OFF) {
+        _targPowerState = OFF;
+        _phase = 1;
+        _powerOffStart = util::CLOCK::now();
+        _phaseStartTime = _powerOffStart;
+    }
+}
+
+
+SysStatus PowerSubsystem::processDAQ(SysInfo const& info) {
+    _sysInfo = info;
+
+    // Check for faults
+    bool systemFaults = _checkForFaults();
+    if (systemFaults) {
+        _setPowerOff();
+    }
+
+    // Breakers only matter (and have correct input) when voltage is
+    // above `_breakerOperatingVoltage`, there's been time for them
+    // to stabilize, and `_targPowerOn` is true.
+    lock_guard<util::VMutex> lg(_powerStateMtx);
+    switch (_targPowerState) {
+    case  ON:
+        _processPowerOn();
+        break;
+    case RESET: [[fallthrough]]; // invalid case
+    case TURNING_ON: [[fallthrough]]; // invalid case
+    case TURNING_OFF: [[fallthrough]]; // invalid case
+    case UNKNOWN: // invalid case
+        LERROR(getClassName() ," unexpected _targPowerState=", getPowerStateStr(_targPowerState), "turning off");
+        _setPowerOff();
+        [[fallthrough]];
+    case OFF: [[fallthrough]]; // OFF is the default.
+    default:
+        _processPowerOff();
+    }
+
 
     return FAULT;
 }
+
+/* &&&
+               - MotorPowerSubsystem used with MST in call to BasePowerSubsystem->process_telemetry.vi
+                 - Calls PSS_State.lvclass:PS_process_telemetry.vi   It has versions for these states: ***LB015***
+                   - PS_Powered_On.lvclass:PS_process_telemetry.vi
+                     See below NOTE: Powering on comment from “PS_Powered_On.lvclass:PS_Process_telemetry.vi”
+                     - get output for BasePowerOutput->output_should_be_on.vi (values from MST or CST above)  ***LB011***
+                         return (“Relay Control Output On” && “cRIO Ready Output On” && ”Interlock Relay Control Output On”)
+                                   Also if 
+                                      (“Relay Control Output On” && “cRIO Ready Output On”) && !”Interlock Relay Control Output On” 
+                                      then set the “Fault Status” “interlock fault” bit
+                        - If that returned false - call “PSS_State.lvclass.goto_powering_off.vi”  ***LB012***
+                            - BasePowerSubsystem->set_breaker_output.vi (TRUE)  (see LB004)
+                            - BasePowerSubsystem->set_relay_output.vi (FALSE) (see LB003)
+                            - BasePowerSubsystem->set_state.vi (“powering off”) and exit vi
+                        - if that returned true 
+                           - If the substate == “phase 1”
+                               - then call “BasePowerSubsystem->output_voltage_is_stable.vi  (it just returns true if enough time has passed) 
+                                   Return (“starting time (msecs)” 
+                                                + “Subsystem Configuration Information.output voltage settling time (ms)” 
+                                                - “Subsystem Configuration Information.breaker operating voltage rise time (ms)”
+                                               ) > now                            NOTE: it does NOT check the voltage.
+                                   - if that returned true, then substate is set to “phase_2” and “starting time (msecs)” is set to now.
+                           - If the substate == “phase 2”
+                               - then call “BasePowerSubsystem->breaker_status_is_active.vi  ***LB013***
+                                  Return (“Output Voltage” >= “Subsystem Configuration Information.breaker operating voltage”)
+                                   - If that was false [voltage was too low change to powering off]
+                                       - “BasePowerSubsystem->signal_voltage_hardware_fault.vi”  ***LB014***
+                                           - “BasePowerSubsystem->signal_voltage_fault.vi”   ***LB009***
+                                               - set “voltage fault” bit of “Fault Status”
+                                           - “BasePowerSubsystem->signal_hardware_fault.vi
+                                               - set “hardware fault” bit of “Fault Status”
+                                       - call “PSS_State.lvclass.goto_powering_off.vi” to set state to “powering off” and exit vi  (see LB012)
+                                   - If that was true [voltage was ok] then make further checks on power
+                                      - “BasePowerSubsystem->check_output_for_faults_and_warnings.vi
+                                         - “BasePowerSubsystem->check_for_output_current_fault.vi  ***LB008***
+                                            -if (“Output Current” >
+                                                 “Subsystem Configuration Information.maximum output current”) then 
+                                               - [current too high]
+                                                -“BasePowerSubsystem->signal_current_fault.vi”
+                                                   - set “excessive current” bit of “Fault Status”
+                                                - “BasePowerSubsytem->turn_power_off.vi” and exit this vi 
+                                                        [why not  “PSS_State.lvclass.goto_powering_off.vi”???, or why don’t the others call this???]
+                             - PS_Powered_On.lvclass:PS_turn_power_off.vi
+                                                        - turn off power for this system, set “telemetry counter” =0, 
+                                                             set state to “powering off”, “phase_1”, “starting time (msecs)” = now 
+                                               - [current too ok] - continue on
+                               - everything ok so far, call BasePowerSubsystem->check_output_conditions_for_faults_and_warnings.vi
+                                   - “BasePowerSubsystem->check_for_output_current_fault.vi  (see LB008 above)
+                                   - “BasePowerSubsystem->check_for_output_voltage_faults_and_warnings.vi 
+                                      - if (“Output Voltage” > “Subsystem Configuration Information.output voltage fault level (volts).Minimum”
+                                            && “Output Voltage” > “Subsystem Configuration Information.output voltage fault level (volts).Maximum”)
+                                           - FALSE (voltage fault) -  
+                                             - “BasePowerSubsystem->signal_voltage_fault.vi”   (see LB009 above)
+                                             - “BasePowerSubsystem->turn_power_off.vi”   (see LB010 above)
+                                           - TRUE (voltage ok, check for warning) -
+                                      - if (“Output Voltage” > “Subsystem Configuration Information.output voltage warning level (volts).Minimum”
+                                            && “Output Voltage” > “Subsystem Configuration Information.output voltage warning level
+                                                    (volts).Maximum”)
+                                           - FALSE (voltage warning) -
+                                              -  “BasePowerSubsystem->signal_voltage_warning.vi”, set “voltage warning” bit of “Fault Status”
+                                           - TRUE (voltage good) -
+&&& */
+
+bool PowerSubsystem::_checkForPowerOnBreakerFault(double voltage) {
+    // Is the voltage high enough to to check the breakers? breaker_status_is_Active.vi
+    if (voltage >= _psCfg.getBreakerOperatingVoltage()) {
+        auto [breakerStatus, inactiveInputs] = _breakerFeeds->checkBreakers(_sysInfo);
+        if (breakerStatus == GOOD) {
+            return true;
+        } else {
+            if (breakerStatus == FAULT) {
+                _sendFaultMgrSetBit(_psCfg.getBreakerFault()); //"breaker fault"
+                _setPowerOff();
+            } else {
+                _sendFaultMgrSetBit(_psCfg.getBreakerWarn()); //"breaker warning"
+            }
+        }
+    } else {
+        // The power should be on and stable.
+        _sendBreakerVoltageFault();
+    }
+    return false;
+}
+
+void PowerSubsystem::_sendBreakerVoltageFault() {
+    _sendFaultMgrSetBit(_psCfg.getVoltageFault()); // "voltage fault"
+    _sendFaultMgrSetBit(faultmgr::FaultStatusBits::HARDWARE_FAULT); // "hardware fault"
+    _setPowerOff();
+}
+
+
+void PowerSubsystem::_processPowerOn() {
+    VMUTEX_HELD(_powerStateMtx);
+
+
+    // Check that the outputs are appropriate for turning power on
+    // BasePowerOutput->output_should_be_on.vi
+    bool outputIsOn = _powerShouldBeOn();
+
+    double voltage = getVoltage();
+    if (voltage > _psCfg.getMaxVoltageFault()) {
+        LERROR(getClassName(), " voltage(", voltage, ") is too high, turning off");
+        _sendFaultMgrError();
+        _setPowerOff();
+        return;
+    }
+    if (voltage > _psCfg.getMaxVoltageWarn()) {
+        LWARN(getClassName(), " voltage(", voltage, ") above warning level ", _psCfg.getMaxVoltageWarn());
+        _sendFaultMgrWarn();
+    }
+
+    util::TIMEPOINT now = util::CLOCK::now();
+    switch (_actualPowerState) {
+    case ON:
+    {
+        if (!outputIsOn) {
+            _setPowerOff();
+            return;
+            if (_phase <= 1) {
+                // ouput_voltage_is_stable.vi
+                double timeSincePhaseStartInSec = util::timePassedSec(_phaseStartTime, now);
+                double minTimeToStablize = _psCfg.getVoltageSettlingTime() - _psCfg.getBreakerOperatingVoltageRiseTime();
+                if (_checkForPowerOnBreakerFault(voltage)) {
+                    LERROR("Breaker fault while _actualPowerState == ON");
+                    return;
+                }
+                if(timeSincePhaseStartInSec > minTimeToStablize) {
+                    _phase = 2;
+                    _phaseStartTime = util::CLOCK::now();
+                }
+            } else if (_phase == 2) {
+                if (voltage < _psCfg.getMinVoltageWarn()) {
+                    LWARN(getClassName(), " voltage(", voltage, ") below warning level ", _psCfg.getMinVoltageWarn());
+                    _sendFaultMgrWarn();
+                }
+                if (voltage < _psCfg.getMinVoltageFault()) {
+                    LWARN(getClassName(), " voltage(", voltage, ") below fault level ", _psCfg.getMinVoltageFault());
+                    _sendFaultMgrError();
+                    _setPowerOff();
+                }
+            }
+        }
+        break;
+    }
+    case OFF: [[fallthrough]];
+    case TURNING_OFF:
+        _actualPowerState = TURNING_ON;
+        _phase = 1;
+        _phaseStartTime = now;
+        [[fallthrough]];
+    case TURNING_ON:
+    {
+        if (_phase == 1) {
+            // Presumably, waiting for the signal to stabilize.
+            ++_telemCounter;
+            // Value of 10 comes from telemetry_is_stable.vi, no explanation.
+            if (_telemCounter >= 10) {
+                _phase = 2;
+                _phaseStartTime = now;
+            }
+        }
+
+        if (_phase > 1 && !outputIsOn) {
+            // At this point, the power output bits should be on. If they
+            // aren't, give up and turn off power.
+            if (!outputIsOn) {
+                _setPowerOff();
+                return;
+            }
+        }
+
+        if (_phase == 2) {
+            double timeSincePhaseStartInSec = util::timePassedSec(_phaseStartTime, now);
+            if (timeSincePhaseStartInSec > _psCfg.outputOnMaxDelay()) {
+                _phase = 3;
+                _phaseStartTime = now;
+            } else {
+                return;
+            }
+        }
+
+        if (_phase == 3) {
+            // If the voltage isn't high enough to read the breakers, give up, turn power off
+            if (voltage < _psCfg.getBreakerOperatingVoltage()) {
+                _sendBreakerVoltageFault(); // calls _setPowerOff()
+                return;
+            }
+            // If the breakers have any faults or warnings, try to reset them.
+            auto [breakerStatus, inactiveInputs] = _breakerFeeds->checkBreakers(_sysInfo);
+            if (breakerStatus == GOOD) {
+                _actualPowerState = ON;
+                _phaseStartTime = now;
+                LINFO(getClassName(), " is now ON");
+                return;
+            } else {
+                _actualPowerState = RESET;
+                _phaseStartTime = now;
+                _phase = 1;
+                LINFO(getClassName(), " reset needed");
+                // Start resetting the breakers by setting the output low.
+                _fpgaIo->writeOutputPortBitPos(_psCfg.getOutputBreakerBitPos(), false);
+            }
+
+        }
+        break;
+    }
+    case RESET:
+    {
+        // Trying to reset the breakers, this can only be done while trying to turn power on.
+        if (!outputIsOn) {
+            // Something happened, give up.
+            _fpgaIo->writeOutputPortBitPos(_psCfg.getOutputBreakerBitPos(), true);
+            _setPowerOff();
+            return;
+        }
+        if (voltage < _psCfg.getBreakerOperatingVoltage()) {
+            _sendBreakerVoltageFault(); // calls _setPowerOff()
+            return;
+        }
+        double timeSincePhaseStartInSec = util::timePassedSec(_phaseStartTime, now);
+        if (timeSincePhaseStartInSec > _psCfg.getResetBreakerPulseWidth()) {
+            // Enough time passed, restore breaker the output
+            _fpgaIo->writeOutputPortBitPos(_psCfg.getOutputBreakerBitPos(), true);
+            // Check breakers again (failure sets power to off).
+            if (_checkForPowerOnBreakerFault(voltage)) {
+                LERROR("Breaker fault while _actualPowerState == RESET");
+                return;
+            }
+            // It worked, set power on.
+            _actualPowerState = ON;
+            _phaseStartTime = now;
+            LINFO(getClassName(), " reset success");
+            return;
+        }
+        break;
+    }
+    default:
+        LERROR(getClassName(), " unexpected _actualPowerState=", getPowerStateStr(_actualPowerState));
+        _setPowerOff();
+    }
+}
+
+
+void PowerSubsystem::_processPowerOff() {
+    VMUTEX_HELD(_powerStateMtx);
+
+    bool powerOn = _getRelayControlOutputOn();
+    if (powerOn) {
+        _setPowerOff();
+        return;
+    }
+
+    util::TIMEPOINT now = util::CLOCK::now();
+    double voltage = getVoltage();
+    switch (_actualPowerState) {
+    case UNKNOWN: [[fallthrough]];
+    case RESET: [[fallthrough]];
+    case ON: [[fallthrough]];
+    case TURNING_ON:
+        _setPowerOff();
+        _phaseStartTime = now;
+        [[fallthrough]];
+    case TURNING_OFF:
+    {
+        if (voltage < _psCfg.getVoltageOffLevel()) {
+            _actualPowerState = OFF;
+            _phaseStartTime = now;
+            LINFO(getClassName(), " is now OFF");
+            return;
+        } else {
+            double timeInPhaseSec = util::timePassedSec(_phaseStartTime, now);
+            if (timeInPhaseSec > _psCfg.outputOffMaxDelay()) {
+                _sendFaultMgrSetBit(_psCfg.getRelayFault()); // "relay fault"
+                _sendFaultMgrSetBit(_psCfg.getRelayInUse()); // "relay in use"
+                _setPowerOff();
+            }
+        }
+        break;
+    }
+    case OFF:
+        // do nothing
+        if (voltage > _psCfg.getVoltageOffLevel()) {
+            LWARN(getClassName(), " voltage high for OFF state voltage=", voltage);
+        }
+    }
+
+}
+
+/* &&&
+void PowerSubsystem::_sendFaultMgrError() {
+    LERROR(getClassName(), " _sendFaultMgrError &&& NEEDS CODE");
+}
+
+void PowerSubsystem::_sendFaultMgrError(int errId, string note) {
+    LERROR(getClassName(), " _sendFaultMgrError &&& NEEDS CODE ", errId, note);
+}
+
+void PowerSubsystem::_sendFaultMgrWarn() {
+    LERROR(getClassName(), " _sendFaultMgrWarn &&& NEEDS CODE");
+}
+*/
+
+bool PowerSubsystem::_checkForFaults() {
+    return faultmgr::FaultMgr::get().checkForPowerSubsystemFaults(_psCfg.getSubsystemFaultMask());
+}
+
 
 /* &&&
 
@@ -477,6 +986,22 @@ SysStatus PowerSubsystem::processDAQ(SysInfo const& info) {
                     - “Fault Status” set bit “power supply health fault”
                     &&& */
 
+void PowerSubsystem::_sendFaultMgrError() {
+    LERROR("PowerSubsystem::", __func__, " PLACEHOLDER NEEDS CODE");
+}
+
+
+void PowerSubsystem::_sendFaultMgrError(int errId, std::string note) {
+    LERROR("PowerSubsystem::", __func__, " PLACEHOLDER NEEDS CODE");
+}
+
+void PowerSubsystem::_sendFaultMgrWarn() {
+    LERROR("PowerSubsystem::", __func__, " PLACEHOLDER NEEDS CODE");
+}
+
+void PowerSubsystem::_sendFaultMgrSetBit(int bitPos) {
+    LERROR("PowerSubsystem::", __func__, " PLACEHOLDER NEEDS CODE");
+}
 
 }  // namespace control
 }  // namespace m2cellcpp

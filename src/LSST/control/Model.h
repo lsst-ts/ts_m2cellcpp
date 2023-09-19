@@ -31,8 +31,10 @@
 
 namespace LSST {
 namespace m2cellcpp {
+
 namespace control {
 
+class FpgaIo;
 class State;
 
 /// Most of the higher level systems information is contained in this class.
@@ -44,6 +46,9 @@ public:
     Model(Model const&) = delete;
     Model& operator=(Model const&) = delete;
     virtual ~Model() = default;
+
+    /// Return a pointer to the FpgaIo instance.
+    std::shared_ptr<FpgaIo> getFpgaIo() { return _fpgaIo; }
 
     /// Change the current state to `newState`, taking rquired actions.
     /// @return false in `newState` is invalid.
@@ -139,14 +144,17 @@ private:
     /// This memeber serves a similar purpose to the LabView `_commandFactory` and `_state`.
     StateMap _stateMap;
 
+    // _cellCommRT_FIFO // systemElement VI-PH
+    // _deltaForceRT_FIFO // systemElement VI-PH
+    std::shared_ptr<FpgaIo> _fpgaIo; ///< The FpgaIo instance for communicating with hardware.
+
     // The LabView implementation of Model has the folowing systemElements that need to
     // acounted for in the C++ version.
     // applicationElements seems to be a container for all of these. it can probably be skipped by using the
     // appropriate Accessor VI
     // _userEvents // systemElement VI-PH
     // _systemController // systemElement VI-PH
-    // _cellCommRT_FIFO // systemElement VI-PH
-    // _deltaForceRT_FIFO // systemElement VI-PH
+
     // _cellCommRef // systemElement VI-PH
     // _powerStatus // systemElement  _commPowerOn, _motorPowerOn VI-PH
 };

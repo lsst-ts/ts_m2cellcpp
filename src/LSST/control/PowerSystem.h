@@ -29,6 +29,7 @@
 #include <vector>
 
 // Project headers
+#include "control/FpgaIo.h"
 #include "control/InputPortBits.h"
 #include "control/PowerSubsystem.h"
 
@@ -52,17 +53,17 @@ namespace control {
                  AND with “Output Port Bit Masks.cRIO Interlock Enable Bit” -> convert to bool (true if != 0) -> “MST.cRIO Ready Output On”
              - “Power Control/Status Telemetry.Digital Inputs” (active low)
                   AND with “Input Port Bit Masks.Interlocal Power Relay On Bit” - > convert to bool (true if == 0) -> “MST.Interlock Relay Control Output On”
-              - Assemble vi output “MST.Breaker Power Feed Status” (shortening to MST.BPFS here)
-                - “Power Control/Status Telemetry.Digital Inputs”
-                   -  AND with “Input Port Bit Masks.J1-WE9-1-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b001 of “MST.BPFS.Feed 1”
-                   -  AND with “Input Port Bit Masks.J1-WE9-2-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b010 of “MST.BPFS.Feed 1”
-                   -  AND with “Input Port Bit Masks.J1-WE9-3-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b100 of “MST.BPFS.Feed 1”
-                   -  AND with “Input Port Bit Masks.J2-WE10-1-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b001 of “MST.BPFS.Feed 2”
-                   -  AND with “Input Port Bit Masks.J2-WE10-2-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b010 of “MST.BPFS.Feed 2”
-                   -  AND with “Input Port Bit Masks.J2-WE10-3-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b100 of “MST.BPFS.Feed 2”
-                   -  AND with “Input Port Bit Masks.J3-WE11-1-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b001 of “MST.BPFS.Feed 3”
-                   -  AND with “Input Port Bit Masks.J3-WE11-2-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b010 of “MST.BPFS.Feed 3”
-                   -  AND with “Input Port Bit Masks.J3-WE11-3-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b100 of “MST.BPFS.Feed 3”
+              -x Assemble vi output “MST.Breaker Power Feed Status” (shortening to MST.BPFS here)
+                -x “Power Control/Status Telemetry.Digital Inputs”
+                   -x  AND with “Input Port Bit Masks.J1-WE9-1-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b001 of “MST.BPFS.Feed 1”
+                   -x  AND with “Input Port Bit Masks.J1-WE9-2-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b010 of “MST.BPFS.Feed 1”
+                   -x  AND with “Input Port Bit Masks.J1-WE9-3-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b100 of “MST.BPFS.Feed 1”
+                   -x  AND with “Input Port Bit Masks.J2-WE10-1-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b001 of “MST.BPFS.Feed 2”
+                   -x  AND with “Input Port Bit Masks.J2-WE10-2-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b010 of “MST.BPFS.Feed 2”
+                   -x  AND with “Input Port Bit Masks.J2-WE10-3-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b100 of “MST.BPFS.Feed 2”
+                   -x  AND with “Input Port Bit Masks.J3-WE11-1-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b001 of “MST.BPFS.Feed 3”
+                   -x  AND with “Input Port Bit Masks.J3-WE11-2-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b010 of “MST.BPFS.Feed 3”
+                   -x  AND with “Input Port Bit Masks.J3-WE11-3-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b100 of “MST.BPFS.Feed 3”
             - DAQ_to_comm_telemetry.vi - Assemble vi output “Comm Subsystem Telemetry” (shortening to CST here)
               - “Power Control/Status Telemetry.Processed Comm Voltage” -> sets units as “V” -> “CST.Output Voltage”
               - “Power Control/Status Telemetry.Processed Motor Current” -> sets units as “A” -> “CST.Output Current”
@@ -70,17 +71,17 @@ namespace control {
                  AND with “Output Port Bit Masks.ILC Comm Power On Bit” -> convert to bool (true if != 0) -> “CST.Relay Control Output On”
               - always set to TRUE -> “CST.cRIO Ready Output On”
               - always set to TRUE -> “CST.Interlock Relay Control Output On”
-              - Assemble vi output “CST.Breaker Power Feed Status” (shortening to CST.BPFS here)
-                - “Power Control/Status Telemetry.Digital Inputs”
-                   -  AND with “Input Port Bit Masks.J1-WE12-1-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b001 of “CST.BPFS.Feed 1”
-                   -  AND with “Input Port Bit Masks.J1-WE12-2-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b010 of “CST.BPFS.Feed 1”
-                   -  always set bit 0b100 of “CST.BPFS.Feed 1”
-                   -  AND with “Input Port Bit Masks.J2-WE13-1-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b001 of “CST.BPFS.Feed 2”
-                   -  AND with “Input Port Bit Masks.J2-WE13-2-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b010 of “CST.BPFS.Feed 2”
-                   -  always set bit 0b100 of “CST.BPFS.Feed 2”
-                   -  AND with “Input Port Bit Masks.J3-WE14-1-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b001 of “CST.BPFS.Feed 3”
-                   -  AND with “Input Port Bit Masks.J3-WE14-2-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b010 of “CST.BPFS.Feed 3”
-                   -  always set bit 0b100 of “CST.BPFS.Feed 3”
+              -x Assemble vi output “CST.Breaker Power Feed Status” (shortening to CST.BPFS here)
+                -x “Power Control/Status Telemetry.Digital Inputs”
+                   -x  AND with “Input Port Bit Masks.J1-WE12-1-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b001 of “CST.BPFS.Feed 1”
+                   -x  AND with “Input Port Bit Masks.J1-WE12-2-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b010 of “CST.BPFS.Feed 1”
+                   -x  always set bit 0b100 of “CST.BPFS.Feed 1”
+                   -x  AND with “Input Port Bit Masks.J2-WE13-1-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b001 of “CST.BPFS.Feed 2”
+                   -x  AND with “Input Port Bit Masks.J2-WE13-2-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b010 of “CST.BPFS.Feed 2”
+                   -x  always set bit 0b100 of “CST.BPFS.Feed 2”
+                   -x  AND with “Input Port Bit Masks.J3-WE14-1-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b001 of “CST.BPFS.Feed 3”
+                   -x  AND with “Input Port Bit Masks.J3-WE14-2-MtrPwrBrkr OK Bit” -> if !=0 set bit 0b010 of “CST.BPFS.Feed 3”
+                   -x  always set bit 0b100 of “CST.BPFS.Feed 3”
             - DAQ_to_PS_health_telemetry.vi - assemble vi output “Power Subsystem Common Telemetry” (shortening to PSCT)
               - “Power Control/Status Telemetry.Digital Inputs”
                 - AND with “Input Port Bit Masks.RedundancyOK Bit” (active high)
@@ -256,18 +257,19 @@ namespace control {
 class PowerSystem {
 public:
 
-
-
-
+    PowerSystem() = delete;
+    PowerSystem(FpgaIo::Ptr const& fpgaIo);
 
     /// &&& doc     Based on PowerSubsystem->process_DAQ_telemetry.vi
     void processDAQ(SysInfo info);
 
 private:
+    FpgaIo::Ptr _fpgaIo; ///< &&& doc
     PowerSubsystem _motor; ///< &&& doc
-
     PowerSubsystem _comm; ///< &&& doc
 
+    SysStatus _motorStatusPrev = SysStatus::WAITING; // Previous motor status
+    SysStatus _commStatusPrev = SysStatus::WAITING; // Previous comm status
 };
 
 

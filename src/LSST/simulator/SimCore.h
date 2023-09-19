@@ -56,6 +56,8 @@ namespace simulator {
 /// unit test: test_SimCore.cpp
 class SimCore {
 public:
+    using Ptr = std::shared_ptr<SimCore>;
+
     SimCore();
 
     /// The values in `outputPort` will be read by the `_simThread` the

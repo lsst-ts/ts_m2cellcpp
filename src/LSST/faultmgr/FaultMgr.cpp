@@ -21,7 +21,7 @@
  */
 
 // Class header
-#include "control/FpgaIo.h"
+#include "faultmgr/FaultMgr.h"
 
 #include <bitset>
 #include <sstream>
@@ -38,46 +38,51 @@ using namespace std;
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace faultmgr {
 
-FpgaIo::Ptr FpgaIo::_thisPtr;
-std::mutex FpgaIo::_thisPtrMtx;
+FaultMgr::Ptr FaultMgr::_thisPtr;
+std::mutex FaultMgr::_thisPtrMtx;
 
-void FpgaIo::setup(std::shared_ptr<simulator::SimCore> const& simCore) {
+void FaultMgr::setup() {
     lock_guard<mutex> lock(_thisPtrMtx);
     if (_thisPtr) {
-        LERROR("FpgaIo already setup");
+        LERROR("FaultMgr already setup");
         return;
     }
-    _thisPtr = Ptr(new FpgaIo(simCore));
+    _thisPtr = Ptr(new FaultMgr());
 }
 
 
-FpgaIo::Ptr FpgaIo::getPtr() {
+FaultMgr::Ptr FaultMgr::getPtr() {
     if (_thisPtr == nullptr) {
-        throw system::ConfigException(ERR_LOC, "FpgaIo has not been setup.");
+        throw system::ConfigException(ERR_LOC, "FaultMgr has not been setup.");
     }
     return _thisPtr;
 }
 
-FpgaIo& FpgaIo::get() {
+FaultMgr& FaultMgr::get() {
     if (_thisPtr == nullptr) {
-        throw system::ConfigException(ERR_LOC, "FpgaIo has not been setup.");
+        throw system::ConfigException(ERR_LOC, "FaultMgr has not been setup.");
     }
     return *_thisPtr;
 }
 
 
-FpgaIo::FpgaIo(std::shared_ptr<simulator::SimCore> const& simCore) : _simCore(simCore) {
+
+bool FaultMgr::checkForPowerSubsystemFaults(FaultStatusBits const& subsystemMask) {
+    /// &&& see PowerSubsystem->set_motor_power.vi and BasicFaultManager->read_faults.vi
+    FaultStatusBits faultBitmap(subsystemMask.getBitmap()
+            & _faultEnableMask.getBitmap() & _currentFaults.getBitmap());
+    if (faultBitmap.getBitmap() != 0) {
+        LERROR("checkForPowerSubsystemFaults has faults for ", faultBitmap.getAllSetBitEnums());
+    }
+    return false;
 }
 
-void FpgaIo::writeOutputPortBitPos(int pos, bool set) {
-    lock_guard<util::VMutex> lg(_portMtx);
-    _outputPort.writeBit(pos, set);
+FaultMgr::FaultMgr()   {
 }
 
-}  // namespace control
+}  // namespace faultmgr
 }  // namespace m2cellcpp
 }  // namespace LSST
-
 

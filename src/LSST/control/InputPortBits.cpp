@@ -31,7 +31,7 @@
 #include <string>
 
 // project headers
-#include "control/FaultStatusBits.h"
+#include "faultmgr/FaultStatusBits.h"
 
 
 
@@ -42,11 +42,11 @@ namespace m2cellcpp {
 namespace control {
 
 void InputPortBits::writeBit(int pos, bool set) {
-    FaultStatusBits::setBit32(_bitmap, pos, set);
+    faultmgr::FaultStatusBits::setBit32(_bitmap, pos, set);
 }
 
 
-bool InputPortBits::getBit(int pos) const {
+bool InputPortBits::getBitAtPos(int pos) const {
     if (pos < 0 || pos >= 32 ) {
         if (pos == InputPortBits::ALWAYS_HIGH) {
             return 1;

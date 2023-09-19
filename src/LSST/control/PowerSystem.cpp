@@ -36,14 +36,19 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
+PowerSystem::PowerSystem(FpgaIo::Ptr const& fpgaIo) : _fpgaIo(fpgaIo), _motor(MOTOR), _comm(COMM) {
+}
 
 void PowerSystem::processDAQ(SysInfo info) {
-    // Motor system values
     SysStatus motorStat = _motor.processDAQ(info);
-
     SysStatus commStat = _comm.processDAQ(info);
 
-    //&&& NEED code
+    if (_motorStatusPrev != motorStat || _commStatusPrev != commStat) {
+        LINFO("Power status change motor:now=", motorStat, " prev=", _motorStatusPrev,
+                " comm=", commStat, " prev=", _commStatusPrev);
+        _motorStatusPrev = motorStat;
+        _commStatusPrev = commStat;
+    }
 }
 
 

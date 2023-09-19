@@ -20,11 +20,7 @@
  */
 
 // Class header
-#include "control/FpgaIo.h"
-
-// System headers
-
-// Project headers
+#include "FpgaIoOld.h"
 #include "system/Config.h"
 #include "util/Bug.h"
 #include "util/Log.h"

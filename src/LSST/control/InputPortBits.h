@@ -118,7 +118,7 @@ public:
     /// Return the state of bit in `_bitmap` at `pos`, `pos` out of range returns false,
     /// except for ALWAYS_HIGH, which returns true.
     /// ALWAYS_HIGH is used in cases where missing bits are forced high.
-    bool getBit(int pos) const;
+    bool getBitAtPos(int pos) const;
 
     /// Return all bits that are set in `_bitmap` and in `mask`.
     uint32_t getBitsSetInMask(uint32_t mask) const {

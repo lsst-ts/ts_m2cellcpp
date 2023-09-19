@@ -72,7 +72,7 @@ void SimPowerSubsystem::_setup() {
 
 void SimPowerSubsystem::calcBreakers(util::CLOCK::time_point ts) {
     // breaker reset opens the breaker.
-    bool newbreakerClosedTarg = !(_outputPort->getBit(_breakerResetPos));
+    bool newbreakerClosedTarg = !(_outputPort->getBitAtPos(_breakerResetPos));
     if (newbreakerClosedTarg != _breakerClosedTarg) {
         _breakerClosedTargTs = ts;
         _breakerClosedTarg = newbreakerClosedTarg;
