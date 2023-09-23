@@ -29,8 +29,9 @@
 #include <vector>
 
 // Project headers
-#include "control/OutputPortBits.h"
 #include "control/InputPortBits.h"
+#include "control/OutputPortBits.h"
+#include "control/SysInfo.h"
 #include "util/Log.h"
 #include "util/VMutex.h"
 
@@ -46,6 +47,8 @@ class SimCore;
 
 namespace control {
 
+class PowerSystem;
+
 // &&& doc
 class FpgaIo {
 public:
@@ -55,6 +58,9 @@ public:
     /// this is a simulation.
     static void setup(std::shared_ptr<simulator::SimCore> const& simCore);
 
+    /// Stop and join `_fpgaIoThrd`
+    ~FpgaIo();
+
     /// Return a reference to the global FpgaIo instance.
     /// @throws `ConfigException` if `setup` has not already been called.
     static FpgaIo& get();
@@ -63,15 +69,37 @@ public:
     /// @throws `ConfigException` if `setup` has not already been called.
     static Ptr getPtr();
 
+    /// Return a copy of the current system information.
+    SysInfo getSysInfo() const;
+
     /// Return `_outputPort`
-    OutputPortBits getOutputPort() const { return _outputPort; }
+    OutputPortBits getOutputPort() const;
 
     /// &&& doc
     void writeOutputPortBitPos(int pos, bool set);
 
+    /// Register `powerSys` with the FpgaIo instance so it can be notified of updates.
+    void registerPowerSys(std::shared_ptr<PowerSystem> const& powerSys);
+
+    /// Set the loop sleep time in seconds.
+    void setLoopSleepSecs(double seconds) { _loopSleepSecs = seconds; }
+
 private:
     static Ptr _thisPtr; ///< Pointer to the global instance of FpgaIo.
     static std::mutex _thisPtrMtx; ///< Protects `_thisPtr`.
+
+    /// Turn off all power bits in _outputPort as something is unsafe
+    /// and the PowerSystem is not available.
+    void _emergencyTurnOffAllPower();
+
+    SysInfo _sysInfo; ///< Last information read from the FPGA.
+
+    void _readWriteFpga(); ///< Reads/writes to the FPGA/simulator.
+    std::thread _fpgaIoThrd; ///< Thread that runs `_readWriteFpga()`
+    std::atomic<bool> _loop{true}; ///< Set false to stop `_fpgaIoThrd`.
+
+    /// Sleep this long after each loop, in seconds.
+    std::atomic<double> _loopSleepSecs{0.05};
 
     /// Private constructor to force call to `setup`.
     FpgaIo(std::shared_ptr<simulator::SimCore> const& simCore);
@@ -80,9 +108,11 @@ private:
 
     OutputPortBits _outputPort; ///< Output to be written to the output port.
     InputPortBits _inputPort; ///< Input to be read from to the input port.
-    util::VMutex _portMtx; ///< Protects `_outputPort` and `_inputPort`.
+    mutable util::VMutex _portMtx; ///< Protects `_outputPort` and `_inputPort`.
 
     std::shared_ptr<simulator::SimCore> _simCore; ///< simulator
+
+    std::weak_ptr<PowerSystem> _powerSys; ///< Pointer to the `PowerSystem`.
 };
 
 

@@ -102,6 +102,7 @@ void SimPowerSubsystem::calcBreakers(util::CLOCK::time_point ts) {
 
 
 void SimPowerSubsystem::calcVoltageCurrent(double timeDiff) {
+    double startingVoltage = _voltage;
     if (getPowerOn()) {
         if (_voltage < _voltageNominal) {
             _voltage += _voltageChangeRateOn*timeDiff;
@@ -127,8 +128,10 @@ void SimPowerSubsystem::calcVoltageCurrent(double timeDiff) {
         _current = 0.0;
     }
 
-    LTRACE(control::getPowerSystemTypeStr(_systemType),
+    if (_voltage != startingVoltage) {
+        LINFO(control::getPowerSystemTypeStr(_systemType),
            " _current=", _current, " _voltage=", _voltage);
+    }
 }
 
 

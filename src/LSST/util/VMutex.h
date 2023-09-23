@@ -87,6 +87,7 @@ private:
     std::mutex _mutex;
 };
 
+
 }  // namespace util
 }  // namespace m2cellcpp
 }  // namespace LSST

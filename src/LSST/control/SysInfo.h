@@ -28,6 +28,7 @@
 // Project headers
 #include "control/InputPortBits.h"
 #include "control/OutputPortBits.h"
+#include "util/clock_defs.h"
 
 namespace LSST {
 namespace m2cellcpp {
@@ -46,9 +47,10 @@ public:
     double commCurrent; ///< amps
     bool commBreakerClosed;
     uint64_t iterations;
+    util::TIMEPOINT timestamp; ///< clock time this was updated.
 
     /// Return a log worthy string containing information about this class.
-    std::string dump();
+    std::string dump() const;
 };
 
 }  // namespace control

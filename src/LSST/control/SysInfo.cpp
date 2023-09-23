@@ -33,7 +33,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-string SysInfo::dump() {
+string SysInfo::dump() const {
     stringstream os;
     os << "SysInfo"
             << " outputPort=" << outputPort.getAllSetBitEnums()

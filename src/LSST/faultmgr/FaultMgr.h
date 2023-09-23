@@ -55,7 +55,12 @@ public:
     static Ptr getPtr();
 
     /// Return true if there are any faults that the subsystem cares about.
-    bool checkForPowerSubsystemFaults(FaultStatusBits const& subsystemMask);
+    /// @param subsystemMask - mask of bits for the specific subsystem.
+    /// @param note - identifier for calling class and/or function.
+    bool checkForPowerSubsystemFaults(FaultStatusBits const& subsystemMask, std::string const& note);
+
+    /// PLACEHOLDER set a fault until the appropriate way to handle it is determined.
+    void setFault(std::string const& faultNote);
 
 private:
     static Ptr _thisPtr; ///< pointer to the global instance of FaultMgr.

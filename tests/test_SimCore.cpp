@@ -188,23 +188,23 @@ TEST_CASE("Test SimCore", "[SimCore]") {
     REQUIRE(info.outputPort.getBitAtPos(OutputPortBits::RESET_COMM_BREAKERS) == 0);
 
     // motor power on test
-    simCore.writeNewOutputPort(OutputPortBits::MOTOR_POWER_ON, true);
+    simCore.writeNewOutputPortBit(OutputPortBits::MOTOR_POWER_ON, true);
     REQUIRE(motorPowerOnTest(simCore, motorCfg));
 
     // comm power on test
     info = simCore.getSysInfo();
     REQUIRE(info.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON) == 0);
-    simCore.writeNewOutputPort(OutputPortBits::ILC_COMM_POWER_ON, true);
+    simCore.writeNewOutputPortBit(OutputPortBits::ILC_COMM_POWER_ON, true);
     REQUIRE(commPowerOnTest(simCore, commCfg));
 
     // motor breaker test
-    simCore.writeNewOutputPort(OutputPortBits::RESET_MOTOR_BREAKERS, true);
+    simCore.writeNewOutputPortBit(OutputPortBits::RESET_MOTOR_BREAKERS, true);
     this_thread::sleep_for(0.2s);
     info = simCore.getSysInfo();
     REQUIRE(info.motorCurrent < 1.0);
     REQUIRE(info.inputPort.getBitAtPos(control::InputPortBits::J1_W9_3_MTR_PWR_BRKR_OK) == false);
 
-    simCore.writeNewOutputPort(OutputPortBits::RESET_MOTOR_BREAKERS, false);
+    simCore.writeNewOutputPortBit(OutputPortBits::RESET_MOTOR_BREAKERS, false);
     this_thread::sleep_for(chrono::duration<double>(motorCfg.getBreakerOnTime()));
     REQUIRE(motorPowerOnTest(simCore, motorCfg) == true);
     info = simCore.getSysInfo();
@@ -212,13 +212,13 @@ TEST_CASE("Test SimCore", "[SimCore]") {
     REQUIRE(info.inputPort.getBitAtPos(control::InputPortBits::J1_W9_3_MTR_PWR_BRKR_OK));
 
     // comm breaker test
-    simCore.writeNewOutputPort(OutputPortBits::RESET_COMM_BREAKERS, true);
+    simCore.writeNewOutputPortBit(OutputPortBits::RESET_COMM_BREAKERS, true);
     this_thread::sleep_for(chrono::duration<double>(commCfg.getBreakerOnTime()));
     info = simCore.getSysInfo();
     REQUIRE(info.commCurrent < 1.0);
     REQUIRE(info.inputPort.getBitAtPos(control::InputPortBits::J2_W13_2_COMM_PWR_BRKR_OK) == false);
 
-    simCore.writeNewOutputPort(OutputPortBits::RESET_COMM_BREAKERS, false);
+    simCore.writeNewOutputPortBit(OutputPortBits::RESET_COMM_BREAKERS, false);
     this_thread::sleep_for(chrono::duration<double>(commCfg.getBreakerOnTime()));
     REQUIRE(commPowerOnTest(simCore, commCfg) == true);
     info = simCore.getSysInfo();
@@ -226,11 +226,11 @@ TEST_CASE("Test SimCore", "[SimCore]") {
     REQUIRE(info.inputPort.getBitAtPos(control::InputPortBits::J2_W13_2_COMM_PWR_BRKR_OK));
 
     // motor power off test
-    simCore.writeNewOutputPort(OutputPortBits::MOTOR_POWER_ON, false);
+    simCore.writeNewOutputPortBit(OutputPortBits::MOTOR_POWER_ON, false);
     REQUIRE(motorPowerOffTest(simCore, motorCfg));
 
     // comm power off test
-    simCore.writeNewOutputPort(OutputPortBits::ILC_COMM_POWER_ON, false);
+    simCore.writeNewOutputPortBit(OutputPortBits::ILC_COMM_POWER_ON, false);
     REQUIRE(commPowerOffTest(simCore, motorCfg));
 
     LDEBUG("test_SimCore stop");

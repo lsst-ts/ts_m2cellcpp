@@ -32,6 +32,7 @@
 
 // project headers
 #include "faultmgr/FaultStatusBits.h"
+#include "util/Log.h"
 
 
 
@@ -63,12 +64,11 @@ bool InputPortBits::getBitAtPos(int pos) const {
 string InputPortBits::getAllSetBitEnums() const {
     string str;
     uint32_t mask = 1;
-
     for (int j=0; j<32; ++j) {
         if (getBitsSetInMask(mask)) {
             str += getEnumString(j) + ",";
         }
-         mask <<= 1;
+        mask <<= 1;
     }
     return str;
 }

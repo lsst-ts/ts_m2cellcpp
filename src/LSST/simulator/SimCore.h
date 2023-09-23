@@ -24,6 +24,7 @@
 
 // System headers
 #include <chrono>
+#include <condition_variable>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -53,22 +54,34 @@ namespace simulator {
 /// between outputs being set and other values changing.
 /// output is what would be sent to the FPGA.
 /// input is what would be read from the FPGA.
-/// unit test: test_SimCore.cpp
+/// unit test: test_SimCore.cpp, test_PowerSystem.cpp
 class SimCore {
 public:
     using Ptr = std::shared_ptr<SimCore>;
 
     SimCore();
 
+    /* &&&
     /// The values in `outputPort` will be read by the `_simThread` the
     /// next time through the loop, thread safe.
     void writeNewOutputPort(int pos, bool set);
+    */
 
     /// Get a copy of the `_newOutputPort`
     control::OutputPortBits getNewOutputPort();
 
+    /// Write the value of `_newOutput` bit at `pos` to 1 if
+    /// `set` is true or 0  if `set` is false. `_newOutputPort`
+    /// is read into the simulation at the start of each
+    /// loop in the simulation.
+    /// @throws range_error.
+    void writeNewOutputPortBit(int pos, bool set);
+
+    /// Set the value the output port to be written to `outputPort`.
+    void setNewOutputPort(control::OutputPortBits const& outputPort);
+
     /// Return SysInfo from the most recent iteration.
-    control::SysInfo getSysInfo();
+    control::SysInfo getSysInfo() const;
 
     /// Start the simulation thread
     void start();
@@ -81,12 +94,18 @@ public:
     /// Join the simulation thread.
     bool join();
 
-    /// Write the value of `_newOutput` `bit` to 1 if `set` is true or 0
-    /// if `set` is false.
-    void writeNewOutputBit(int bit, bool set);
+    /// Write the value of `_inputPort` bit at `pos` to 1 if
+    /// `set` is true or 0  if `set` is false.
+    /// This is useful for simulating faults and errors.
+    /// @throws range_error.
+    void writeInputPortBit(int bit, bool set);
 
     /// Return `_iterations`.
     uint64_t getIterations() { return _iterations; }
+
+    /// Wait until the next iteration of the simulator has completed.
+    /// @param count - minimum number of simulator iterations to wait for.
+    void waitForUpdate(int count) const;
 
 private:
     double _frequencyHz = 40.0; ///< How many times loop should run per second.
@@ -109,7 +128,8 @@ private:
 
     control::SysInfo _simInfo; ///< simulation status information.
 
-    std::mutex _mtx; ///< protects `_newOutput`
+    mutable std::mutex _mtx; ///< protects `_newOutput`
+    mutable std::condition_variable _iterationCv; ///< used to detect that the simulator has advanced.
 
     std::atomic<uint64_t> _iterations{0}; ///< number of times through the `_simRun` loop.
 

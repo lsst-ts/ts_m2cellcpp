@@ -105,13 +105,29 @@ void SimCore::_simRun() {
             _simInfo.commCurrent = _commSub->getCurrent();
             _simInfo.commBreakerClosed = _commSub->getBreakerClosed();
             _simInfo.iterations = _iterations;
-            // FUTURE: send message to system with this data.
+            _simInfo.timestamp = timestamp;
         }
-        LDEBUG(_simInfo.dump());
+        //&&& LDEBUG(_simInfo.dump());
         ++_iterations;
+        _iterationCv.notify_all();
         _prevTimeStamp = timestamp;
         this_thread::sleep_for(chrono::duration<double, std::ratio<1,1>>(1.0/_frequencyHz));
     }
+}
+
+void SimCore::waitForUpdate(int count)  const {
+    LDEBUG("SimCore::waitForUpdate()");
+    uint64_t iteration = _iterations;
+    unique_lock<mutex> gLock(_mtx);
+    _iterationCv.wait(gLock, [&]() {
+        if (_iterations != iteration) {
+            iteration = _iterations;
+            --count;
+            LDEBUG("SimCore::waitForUpdate() ", count);
+        };
+        return count <= 0;
+    });
+    LDEBUG("SimCore::waitForUpdate() end");
 }
 
 void SimCore::start() {
@@ -128,9 +144,14 @@ bool SimCore::join() {
     return false;
 }
 
-void SimCore::writeNewOutputPort(int pos, bool set) {
+void SimCore::writeNewOutputPortBit(int pos, bool set) {
     lock_guard<mutex> lg(_mtx);
     _newOutput.writeBit(pos, set);
+}
+
+void SimCore::setNewOutputPort(control::OutputPortBits const& outputPort) {
+    lock_guard<mutex> lg(_mtx);
+    _newOutput.setBitmap(outputPort.getBitmap());
 }
 
 
@@ -140,11 +161,15 @@ control::OutputPortBits SimCore::getNewOutputPort() {
 }
 
 
-control::SysInfo SimCore::getSysInfo() {
+control::SysInfo SimCore::getSysInfo() const {
     lock_guard<mutex> lg(_mtx);
     return _simInfo;
 }
 
+void SimCore::writeInputPortBit(int pos, bool set) {
+    lock_guard<mutex> lg(_mtx);
+    _inputPort->writeBit(pos, set);
+}
 
 }  // namespace simulator
 }  // namespace m2cellcpp

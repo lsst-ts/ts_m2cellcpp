@@ -69,7 +69,7 @@ FaultMgr& FaultMgr::get() {
 
 
 
-bool FaultMgr::checkForPowerSubsystemFaults(FaultStatusBits const& subsystemMask) {
+bool FaultMgr::checkForPowerSubsystemFaults(FaultStatusBits const& subsystemMask, string const& note) {
     /// &&& see PowerSubsystem->set_motor_power.vi and BasicFaultManager->read_faults.vi
     FaultStatusBits faultBitmap(subsystemMask.getBitmap()
             & _faultEnableMask.getBitmap() & _currentFaults.getBitmap());
@@ -80,6 +80,10 @@ bool FaultMgr::checkForPowerSubsystemFaults(FaultStatusBits const& subsystemMask
 }
 
 FaultMgr::FaultMgr()   {
+}
+
+void FaultMgr::setFault(std::string const& faultNote) {
+    LERROR("FaultMgr::setFault PLACEHOLDER ", faultNote);
 }
 
 }  // namespace faultmgr

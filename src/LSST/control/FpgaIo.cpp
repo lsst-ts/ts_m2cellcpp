@@ -30,6 +30,8 @@
 #include <string>
 
 // Project headers
+#include "control/PowerSystem.h"
+#include "simulator/SimCore.h"
 #include "system/Config.h"
 #include "util/Bug.h"
 #include "util/Log.h"
@@ -69,12 +71,74 @@ FpgaIo& FpgaIo::get() {
 
 
 FpgaIo::FpgaIo(std::shared_ptr<simulator::SimCore> const& simCore) : _simCore(simCore) {
+    //LWARN("&&& FpgaIo::FpgaIo");
+    std::thread thrd(&FpgaIo::_readWriteFpga, this);
+    _fpgaIoThrd = move(thrd);
+}
+
+FpgaIo::~FpgaIo() {
+    LWARN("&&& FpgaIo::~FpgaIo");
+    _loop = false;
+    if (_fpgaIoThrd.joinable()) {
+        _fpgaIoThrd.join();
+    }
 }
 
 void FpgaIo::writeOutputPortBitPos(int pos, bool set) {
+    VMUTEX_NOT_HELD(_portMtx);
     lock_guard<util::VMutex> lg(_portMtx);
     _outputPort.writeBit(pos, set);
 }
+
+/// Return a copy of the current system information.
+SysInfo FpgaIo::getSysInfo() const {
+    VMUTEX_NOT_HELD(_portMtx);
+    lock_guard<util::VMutex> lg(_portMtx);
+    return _sysInfo;
+}
+
+void FpgaIo::registerPowerSys(std::shared_ptr<PowerSystem> const& powerSys) {
+    _powerSys = powerSys;
+}
+
+void FpgaIo::_emergencyTurnOffAllPower() {
+    VMUTEX_NOT_HELD(_portMtx); // Following function calls need to lock it.
+    LWARN("FpgaIo::_emergencyTurnOffAllPower()");
+    writeOutputPortBitPos(OutputPortBits::MOTOR_POWER_ON, false);
+    writeOutputPortBitPos(OutputPortBits::ILC_COMM_POWER_ON, false);
+}
+
+void FpgaIo::_readWriteFpga() {
+    while (_loop) {
+        auto powerSys = _powerSys.lock();
+        if (powerSys == nullptr) {
+            LWARN("FpgaIo::_readWriteFpga() No PowerSystemRegistered");
+            // With no power system registered, breakers are not being checked, etc,
+            // so turn everything off.
+            _emergencyTurnOffAllPower();
+        }
+
+        {
+            lock_guard<util::VMutex> lg(_portMtx);
+            if (_simCore == nullptr) {
+                throw util::Bug(ERR_LOC, "FpgaIo::getSysInfo() hardware mode unavailable");
+            } else {
+                _simCore->setNewOutputPort(_outputPort);
+                _sysInfo = _simCore->getSysInfo();
+            }
+        }
+
+        if (powerSys != nullptr) {
+            powerSys->queueDaqInfoRead();
+        }
+        std::this_thread::sleep_for(std::chrono::duration<double>(_loopSleepSecs));
+
+    }
+}
+
+
+/// Return `_outputPort`
+OutputPortBits FpgaIo::getOutputPort() const { return _outputPort; }
 
 }  // namespace control
 }  // namespace m2cellcpp

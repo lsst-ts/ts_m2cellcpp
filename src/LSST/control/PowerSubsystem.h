@@ -134,7 +134,6 @@ public:
     /// Check the status of the breakers.
     /// @return - SysStatus of the worst Feed checked and a string
     ///     containing the names of the problem Feed input bits as defined in InputPortBits.
-    //&&&std::tuple<util::SysStatus, std::string> checkBreakers(InputPortBits const& input);
     std::tuple<control::SysStatus, std::string> checkBreakers(control::SysInfo const& info);
 
 private:
@@ -240,6 +239,14 @@ public:
     /// Return `_relayInUse`.
     int getRelayInUse() const { return _relayInUse; }
 
+    /// Check the status of the breakers, according to `sysInfo`.
+    /// @return - SysStatus of the worst Feed checked and a string
+    ///     containing the names of the problem Feed input bits as defined in InputPortBits.
+    ///     If `_breakerFeeds` is nullptr, return FAULT and "nullptr".
+    /// The status of the breakers comes from `sysInfo`, `_breakerGroup` only
+    /// knows which bits in `sysInfo` are important.
+    std::tuple<SysStatus, std::string> checkBreakers(SysInfo sysInfo);
+
 private:
     PowerSystemType _systemType; ///< indicates if this is the MOTOR or COMM system.
 
@@ -277,6 +284,8 @@ private:
 
     double _maxCurrent; ///< maximum output current in amps.
 
+    /// Contains the bit positions that are connected to the 3 breaker feeds,
+    /// but does not store any data.
     BreakerFeedGroup::Ptr _breakerFeedGroup;
 
     int _outputPowerOnBitPos; ///< Output bit that turns power on/off for this subsystem, active high.
@@ -302,45 +311,62 @@ class PowerSubsystem {
 public:
 
     enum PowerState {
-        ON,
-        TURNING_ON,
-        TURNING_OFF,
         OFF,
+        TURNING_OFF,
+        TURNING_ON,
+        ON,
         RESET,
         UNKNOWN
     };
 
+    /// Return an appropraite string representation of `powerState`.
     static std::string getPowerStateStr(PowerState powerState);
 
     PowerSubsystem() = delete;
+    PowerSubsystem(PowerSubsystem const&) = delete;
+    PowerSubsystem& operator=(PowerSubsystem const&) = delete;
 
-    /// &&& doc
+    /// Try to make sure the power is off.
+    ~PowerSubsystem();
+
+    /// `sysType` must be `MOTOR` or `COMM`.
     PowerSubsystem(PowerSystemType sysType);
 
     /// Return the name of the class and systemType string.
-    std::string getClassName() { return "PowerSubsystem " + getPowerSystemTypeStr(_systemType); }
+    std::string getClassName() const { return "PowerSubsystem " + getPowerSystemTypeStr(_systemType); }
+
+    /// Return `_systemType`.
+    PowerSystemType getSystemType() const { return _systemType; }
 
     /// Return subsytem voltage in volts.
-    double getVoltage();
+    double getVoltage() const;
 
     /// Return subsystem current in amps.
-    double getCurrent();
+    double getCurrent() const;
 
-    /// doc &&&
+    /// Take action to turn the power on, this may be called from nearly anywhere.
     void setPowerOn();
 
-    /// doc &&&
-    void setPowerOff();
+    /// Take action to turn the power off, this may be called from nearly anywhere.
+    /// @param note - should contain information about the source of
+    ///         the `setPowerOff()` call.
+    void setPowerOff(std::string const& note);
 
     /// &&& doc     Based on PowerSubsystem->process_DAQ_telemetry.vi
-    SysStatus processDAQ(SysInfo const& info);
+    SysStatus processDaq(SysInfo const& info);
+
+    /// Return the actual power state.
+    PowerState getActualPowerState() const;
+
+    /// Return the target power state.
+    PowerState getTargPowerState() const;
 
 private:
     /// doc &&&
     void _setPowerOn();
 
     /// doc &&&
-    void _setPowerOff();
+    void _setPowerOff(std::string const& note);
 
     /// Go through the sequence of events required when `_targPowerState` is ON,
     /// `_powerStateMtx` must be locked before calling.
@@ -362,6 +388,9 @@ private:
     /// Return true if the OutputPort is has the correct bits to turn on this power system.
     /// Sets "interlock fault" if the interlock is preventing power on.
     bool _powerShouldBeOn();
+
+    /// Return a log worth string of the power situation.
+    std::string _getPowerShouldBeOnStr();
 
     /// Return true if there are any breaker faults. Breaker faults can only
     /// be reported if the voltage is over `_breakerOperatingVoltage`.
@@ -392,7 +421,7 @@ private:
 
     PowerSubsystemConfig _psCfg; ///< Configuration values for this PowerSubsystem.
 
-    SysInfo _sysInfo; ///< last value of SysInfo read by processDAQ.
+    SysInfo _sysInfo; ///< last value of SysInfo read by processDaq.
 
     util::TIMEPOINT _powerOnStart; ///< Time `_targPowerState` was set to ON.
     util::TIMEPOINT _powerOffStart; ///< Time `_targPowerState` was set to OFF.
@@ -402,9 +431,12 @@ private:
 
     PowerState _targPowerState = OFF; ///< Target power state, valid values are ON, OFF, and RESET.
     PowerState _actualPowerState = UNKNOWN; ///< Actual state of this PowerSubsystem.
-    util::VMutex _powerStateMtx; ///< Protects `_targPowerState` and `_actualPowerState`.
+    mutable util::VMutex _powerStateMtx; ///< Protects `_targPowerState` and `_actualPowerState`.
 
-    BreakerFeedGroup::Ptr _breakerFeeds; ///< Contains all breaker feeds for this power susbsystem.
+    PowerState _targPowerStatePrev = UNKNOWN; ///< Previous value of `_targPowerState`
+    PowerState _actualPowerStatePrev = UNKNOWN; ///< Previous value of `_actualPowerState`
+
+    //&&&BreakerFeedGroup::Ptr _breakerFeeds; ///< Contains all breaker feeds for this power susbsystem.
 
     std::shared_ptr<FpgaIo> _fpgaIo; ///< pointer to the global FpgaIo instance.
 };
