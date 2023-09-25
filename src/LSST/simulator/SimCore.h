@@ -61,12 +61,6 @@ public:
 
     SimCore();
 
-    /* &&&
-    /// The values in `outputPort` will be read by the `_simThread` the
-    /// next time through the loop, thread safe.
-    void writeNewOutputPort(int pos, bool set);
-    */
-
     /// Get a copy of the `_newOutputPort`
     control::OutputPortBits getNewOutputPort();
 
@@ -77,7 +71,8 @@ public:
     /// @throws range_error.
     void writeNewOutputPortBit(int pos, bool set);
 
-    /// Set the value the output port to be written to `outputPort`.
+    /// Set the value the output port to be written to `outputPort`
+    /// at the start of the loop in the simulation.
     void setNewOutputPort(control::OutputPortBits const& outputPort);
 
     /// Return SysInfo from the most recent iteration.

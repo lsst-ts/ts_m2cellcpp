@@ -89,6 +89,9 @@ public:
     /// Determine the voltage and current related values in the simulation.
     void calcVoltageCurrent(double timeDiff);
 
+    /// Return a string version of the class name and `_systemType`.
+    std::string getClassName() const;
+
 private:
     void _setup(); ///< Setup according to `_systemType`.
 
@@ -109,14 +112,17 @@ private:
     double _currentMax; ///< max current, amps. "maximum output current"
     double _currentGain; ///< Current based on `_voltage`, amp/volt.
 
+
     bool _breakerClosed = true; ///< true when the simulated breaker is closed.
-    bool _breakerClosedTarg = true; ///< Target state of `_breakerClosed`
+    bool _breakerClosedPrev = !_breakerClosed; ///< Set to the previous value of `_breakerClosed`.
+    bool _breakerClosedTarg = true; ///< Target state of `_breakerClosed`.
+
     util::CLOCK::time_point _breakerClosedTargTs; ///< Time stamp when `_breakerClosedTarg` was set.
     double _breakerCloseTimeSec; ///< Time for the breaker to go from open to close.
 
     control::OutputPortBits::Ptr _outputPort; ///< Integer value to be written to the ouput port.
     int _powerOnBitPos; ///< Bit position indicating power on (active high).
-    int _breakerResetPos; ///< Bit position indicating breaker reset (active high).
+    int _breakerResetPos; ///< Bit position indicating breaker reset (active low).
 
     control::InputPortBits::Ptr _inputPort; ///< Integer value representing simulator status.
     std::vector<int> _breakerBitPositions; ///< Positions indicating breaker ok.

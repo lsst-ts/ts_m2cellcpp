@@ -56,37 +56,27 @@ BreakerFeedGroup::BreakerFeedGroup(Feed::Ptr const& feed1, Feed::Ptr const& feed
 
 tuple<SysStatus, string> BreakerFeedGroup::checkBreakers(SysInfo const& info) {
     LWARN("&&& BreakerFeedGroup::checkBreakers ", info.dump());
-    LWARN("&&& BreakerFeedGroup::checkBreakers a");
     SysStatus result = GOOD;
     string inactiveInputs = "";
 
     LWARN("&&& BreakerFeedGroup::checkBreakers a1");
-    LWARN("&&& BreakerFeedGroup::checkBreakers a1 feeds.size=", _feeds.size());
     for (Feed::Ptr const& feed:_feeds) {
-        LWARN("&&& BreakerFeedGroup::checkBreakers b");
-        LWARN("&&& BreakerFeedGroup::checkBreakers b feed=", feed);
         auto [status, str] = feed->checkBreakers(info.inputPort);
         inactiveInputs += str;
         /// Result should contain the worst SysStatus found.
-        if (status > result) {
+        if (status < result) {
             result = status;
         }
     }
-
-    LWARN("&&& BreakerFeedGroup::checkBreakers c");
     return make_tuple(result, inactiveInputs);
 }
 
 
 tuple<SysStatus, string> BreakerFeedGroup::Feed::checkBreakers(InputPortBits const& input) {
-    LWARN("&&& BreakerFeedGroup::Feed::checkBreakers a");
     bool bit0 = input.getBitAtPos(_bit0Pos);
     bool bit1 = input.getBitAtPos(_bit1Pos);
     bool bit2 = input.getBitAtPos(_bit2Pos);
 
-    LWARN("&&& BreakerFeedGroup::Feed::checkBreakers bit0=", bit0, " bit1=", bit1, " bit2=", bit2);
-
-    LWARN("&&& BreakerFeedGroup::Feed::checkBreakers input=", input.getAllSetBitEnums());
     // All 3 bits should be high
     int count = 0;
     uint8_t bitmap = 0;
@@ -112,12 +102,15 @@ tuple<SysStatus, string> BreakerFeedGroup::Feed::checkBreakers(InputPortBits con
 
     SysStatus breakerStatus = FAULT;
     if (count == 3) breakerStatus = GOOD;
-    if (count == 2) breakerStatus = WARN;
+    else if (count == 2) breakerStatus = WARN;
     if (bitmap != _feedBitmap) {
-        LDEBUG("BreakerStatus change to ", bitmap, " from ", _feedBitmap,
-              " status=", sysStatusStr(breakerStatus), " low inputs=", inactiveStr);
+        LDEBUG("BreakerStatus change to ", (int)bitmap, " from ", (int)_feedBitmap,
+              " status=", getSysStatusStr(breakerStatus), " low inputs=", inactiveStr);
     }
     _feedBitmap = bitmap;
+
+    LWARN("&&& BreakerFeedGroup::Feed::checkBreakers breakerStat=", getSysStatusStr(breakerStatus), " count=", count, " bit0=", bit0, " bit1=", bit1, " bit2=", bit2);
+    LWARN("&&& BreakerFeedGroup::Feed::checkBreakers input=", input.getAllSetBitEnums());
 
     return make_tuple(breakerStatus, inactiveStr);
 }
@@ -521,28 +514,29 @@ SysStatus PowerSubsystem::processDaq(SysInfo const& info) {
 
 
 bool PowerSubsystem::_checkForPowerOnBreakerFault(double voltage) {
-    LWARN(getClassName(), " &&& _checkForPowerOnBreakerFault volt=", voltage);
+    //LWARN(getClassName(), " &&& _checkForPowerOnBreakerFault volt=", voltage);
     // Is the voltage high enough to to check the breakers? breaker_status_is_Active.vi
     if (voltage >= _psCfg.getBreakerOperatingVoltage()) {
-        //&&&auto [breakerStatus, inactiveInputs] = _breakerFeeds->checkBreakers(_sysInfo);
-        auto [breakerStatus, inactiveInputs] = _psCfg.checkBreakers(_sysInfo);
+        SysStatus breakerStatus;
+        string inactiveInputs;
+        tie(breakerStatus, inactiveInputs) = _psCfg.checkBreakers(_sysInfo);
         LWARN(getClassName(), " &&& _checkForPowerOnBreakerFault a breakerStatus=", breakerStatus,
-            " inactiveInputs=", inactiveInputs);
+                " ", getSysStatusStr(breakerStatus), " inactiveInputs=", inactiveInputs);
         if (breakerStatus == GOOD) {
-            return true;
-        } else {
-            if (breakerStatus == FAULT) {
-                _sendFaultMgrSetBit(_psCfg.getBreakerFault()); //"breaker fault"
-                _setPowerOff(string(__func__) + " breaker fault");
-            } else {
-                _sendFaultMgrSetBit(_psCfg.getBreakerWarn()); //"breaker warning"
-            }
+            return false; // no faults
         }
-    } else {
-        // The power should be on and stable.
-        _sendBreakerVoltageFault();
+        if (breakerStatus <= FAULT) {
+            _sendFaultMgrSetBit(_psCfg.getBreakerFault()); //"breaker fault"
+            _setPowerOff(string(__func__) + " breaker fault");
+            return true;
+        }
+        _sendFaultMgrSetBit(_psCfg.getBreakerWarn()); //"breaker warning"
+        return false; // no faults, just warnings
     }
-    return false;
+
+    // The power should be on and stable by this point.
+    _sendBreakerVoltageFault();
+    return true;
 }
 
 void PowerSubsystem::_sendBreakerVoltageFault() {
@@ -581,17 +575,22 @@ void PowerSubsystem::_processPowerOn() {
             _setPowerOff(string(__func__) + " output is not on when it should be on");
             return;
         }
+
+        if (_checkForPowerOnBreakerFault(voltage)) {
+            LERROR("Breaker fault while _actualPowerState == ON");
+            _setPowerOff(string(__func__) + " Breaker fault _actualPowerState == ON");
+            return;
+        }
+
         if (_phase <= 1) {
+            LDEBUG(getClassName(), " ON phase 1");
             // ouput_voltage_is_stable.vi
             double timeSincePhaseStartInSec = util::timePassedSec(_phaseStartTime, now);
             double minTimeToStablize = _psCfg.getVoltageSettlingTime() - _psCfg.getBreakerOperatingVoltageRiseTime();
-            if (_checkForPowerOnBreakerFault(voltage)) {
-                LERROR("Breaker fault while _actualPowerState == ON");
-                return;
-            }
             if(timeSincePhaseStartInSec > minTimeToStablize) {
                 _phase = 2;
                 _phaseStartTime = util::CLOCK::now();
+                LINFO(getClassName(), " ON phase 2 reached");
             }
         } else if (_phase == 2) {
             if (voltage < _psCfg.getMinVoltageWarn()) {
@@ -669,7 +668,7 @@ void PowerSubsystem::_processPowerOn() {
                 _actualPowerState = RESET;
                 _phaseStartTime = now;
                 _phase = 1;
-                LINFO(getClassName(), " reset needed");
+                LINFO(getClassName(), " breaker RESET starting");
                 // Start resetting the breakers by setting the output low.
                 _fpgaIo->writeOutputPortBitPos(_psCfg.getOutputBreakerBitPos(), false);
             }
@@ -682,7 +681,7 @@ void PowerSubsystem::_processPowerOn() {
         // Trying to reset the breakers, this can only be done while trying to turn power on.
         if (!outputIsOn) {
             // Something happened, give up.
-            LDEBUG(_getPowerShouldBeOnStr(), " RESET");
+            LDEBUG(_getPowerShouldBeOnStr(), " breaker RESET");
             _fpgaIo->writeOutputPortBitPos(_psCfg.getOutputBreakerBitPos(), true);
             _setPowerOff(string(__func__) + " cannot RESET breakers when not outputIsOn");
             return;
@@ -694,17 +693,21 @@ void PowerSubsystem::_processPowerOn() {
         double timeSincePhaseStartInSec = util::timePassedSec(_phaseStartTime, now);
         if (timeSincePhaseStartInSec > _psCfg.getResetBreakerPulseWidth()) {
             // Enough time passed, restore breaker the output
+            LINFO(getClassName(), " breaker RESET restoring");
             _fpgaIo->writeOutputPortBitPos(_psCfg.getOutputBreakerBitPos(), true);
-            // Check breakers again (failure sets power to off).
-            if (_checkForPowerOnBreakerFault(voltage)) {
-                LERROR("Breaker fault while _actualPowerState == RESET");
+            // Need to wait longer for faults to clear
+            if (timeSincePhaseStartInSec > (_psCfg.getResetBreakerPulseWidth() * 2.0)) {
+                // Check breakers again (fault sets power to off).
+                if (_checkForPowerOnBreakerFault(voltage)) {
+                    LERROR("Breaker RESET fault while _actualPowerState == RESET");
+                    return;
+                }
+                // It worked, set power on.
+                _actualPowerState = ON;
+                _phaseStartTime = now;
+                LINFO(getClassName(), " breaker RESET success");
                 return;
             }
-            // It worked, set power on.
-            _actualPowerState = ON;
-            _phaseStartTime = now;
-            LINFO(getClassName(), " reset success");
-            return;
         }
         break;
     }

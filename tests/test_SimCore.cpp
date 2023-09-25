@@ -176,7 +176,7 @@ TEST_CASE("Test SimCore", "[SimCore]") {
     }
 
     auto info = simCore.getSysInfo();
-    REQUIRE(info.motorBreakerClosed == true);
+    REQUIRE(info.motorBreakerClosed == false);
     REQUIRE(info.commCurrent < 1);
     REQUIRE(info.commVoltage < 1);
     REQUIRE(info.motorCurrent < 1);
@@ -198,13 +198,13 @@ TEST_CASE("Test SimCore", "[SimCore]") {
     REQUIRE(commPowerOnTest(simCore, commCfg));
 
     // motor breaker test
-    simCore.writeNewOutputPortBit(OutputPortBits::RESET_MOTOR_BREAKERS, true);
+    simCore.writeNewOutputPortBit(OutputPortBits::RESET_MOTOR_BREAKERS, false);
     this_thread::sleep_for(0.2s);
     info = simCore.getSysInfo();
     REQUIRE(info.motorCurrent < 1.0);
     REQUIRE(info.inputPort.getBitAtPos(control::InputPortBits::J1_W9_3_MTR_PWR_BRKR_OK) == false);
 
-    simCore.writeNewOutputPortBit(OutputPortBits::RESET_MOTOR_BREAKERS, false);
+    simCore.writeNewOutputPortBit(OutputPortBits::RESET_MOTOR_BREAKERS, true);
     this_thread::sleep_for(chrono::duration<double>(motorCfg.getBreakerOnTime()));
     REQUIRE(motorPowerOnTest(simCore, motorCfg) == true);
     info = simCore.getSysInfo();
@@ -212,13 +212,13 @@ TEST_CASE("Test SimCore", "[SimCore]") {
     REQUIRE(info.inputPort.getBitAtPos(control::InputPortBits::J1_W9_3_MTR_PWR_BRKR_OK));
 
     // comm breaker test
-    simCore.writeNewOutputPortBit(OutputPortBits::RESET_COMM_BREAKERS, true);
+    simCore.writeNewOutputPortBit(OutputPortBits::RESET_COMM_BREAKERS, false);
     this_thread::sleep_for(chrono::duration<double>(commCfg.getBreakerOnTime()));
     info = simCore.getSysInfo();
     REQUIRE(info.commCurrent < 1.0);
     REQUIRE(info.inputPort.getBitAtPos(control::InputPortBits::J2_W13_2_COMM_PWR_BRKR_OK) == false);
 
-    simCore.writeNewOutputPortBit(OutputPortBits::RESET_COMM_BREAKERS, false);
+    simCore.writeNewOutputPortBit(OutputPortBits::RESET_COMM_BREAKERS, true);
     this_thread::sleep_for(chrono::duration<double>(commCfg.getBreakerOnTime()));
     REQUIRE(commPowerOnTest(simCore, commCfg) == true);
     info = simCore.getSysInfo();
