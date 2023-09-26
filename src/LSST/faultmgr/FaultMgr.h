@@ -36,9 +36,9 @@ namespace LSST {
 namespace m2cellcpp {
 namespace faultmgr {
 
-/// &&& doc
-/// FUTURE: DM-???  &&& add functionality to FaultMgr, currently there's just enough here to turn on the power.
-/// Unit tests in test_FaultMgr.cpp. // &&&
+/// This class will track and reset faults encountered in the system.
+/// FUTURE: DM-40909 add functionality to FaultMgr, currently there's just enough here to turn on the power.
+/// Unit tests in test_FaultMgr.cpp.
 class FaultMgr {
 public:
     using Ptr = std::shared_ptr<FaultMgr>;

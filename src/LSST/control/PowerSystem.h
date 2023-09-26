@@ -39,8 +39,9 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-/// doc &&&  Class to contain both MOTOR and COMM PowerSubsystems.
-/// unit tests: &&&
+/// Class is used to contain both the `MOTOR` `PowerSubsystem` and
+/// the `COMM` `PowerSubsystem`.
+/// unit tests: test_PowerSystem.cpp
 class PowerSystem {
 public:
     using Ptr = std::shared_ptr<PowerSystem>;
@@ -84,11 +85,14 @@ private:
     /// than `_sysInfoTimeoutSecs`, everything in seconds.
     bool _checkTimeout(double diffInSeconds);
 
-    /// &&& doc     Based on PowerSubsystem->process_DAQ_telemetry.vi
+    /// Pass the lastest `info` from `FpgaIo` to both PowerSubsytems.
+    /// Based on PowerSubsystem->process_DAQ_telemetry.vi
     void _processDaq(SysInfo info);
 
-    /// PLACEHOLDER DAQ_to_PS_health_telemetry.vi - copy the data into a placeholder structure, but doesn't do any checking.
-    /// DM-??? &&&
+
+    /// To be implemented in DM-40908, handle faults for some hardware signals related to power.
+    /// PLACEHOLDER DAQ_to_PS_health_telemetry.vi - copy the data into a placeholder structure,
+    ///         but doesn't do any checking.
     void _processDaqHealthTelemetry(SysInfo info);
 
     PowerSubsystem _motor; ///< Handles MOTOR power control.

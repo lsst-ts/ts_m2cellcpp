@@ -107,7 +107,6 @@ void SimCore::_simRun() {
             _simInfo.iterations = _iterations;
             _simInfo.timestamp = timestamp;
         }
-        //&&& LDEBUG(_simInfo.dump());
         ++_iterations;
         _iterationCv.notify_all();
         _prevTimeStamp = timestamp;

@@ -213,10 +213,10 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::ON);
 
         // Trip one breaker, power should remain on
-        LCRITICAL("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& Trip J2_W10_1_MTR_PWR_BRKR_OK=", control::InputPortBits::J2_W10_1_MTR_PWR_BRKR_OK);
+        LINFO("Trip J2_W10_1_MTR_PWR_BRKR_OK=", control::InputPortBits::J2_W10_1_MTR_PWR_BRKR_OK);
         simCore->writeInputPortBit(control::InputPortBits::J2_W10_1_MTR_PWR_BRKR_OK, false);
 
-        // verify power on &&&
+        // verify power on
         simCore->waitForUpdate(simWaitLong);
         simCore->waitForUpdate(simWaitLong);
         sInfo = simCore->getSysInfo();
@@ -224,10 +224,10 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
         REQUIRE(sInfo.motorVoltage > approxMinVoltageFault); // approximate _minVoltageFault
         REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::ON);
-        // FUTURE: DM-??? check for FaultMgr warning &&&
+        // FUTURE: DM-40909 check for FaultMgr warning
 
         // Trip a second breaker, power should go off
-        LCRITICAL("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& Trip J2_W10_3_MTR_PWR_BRKR_OK=", control::InputPortBits::J2_W10_3_MTR_PWR_BRKR_OK);
+        LINFO("Trip J2_W10_3_MTR_PWR_BRKR_OK=", control::InputPortBits::J2_W10_3_MTR_PWR_BRKR_OK);
         simCore->writeInputPortBit(control::InputPortBits::J2_W10_3_MTR_PWR_BRKR_OK, false);
 
         // verify power off
@@ -237,7 +237,6 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
         REQUIRE(sInfo.motorVoltage < voltageOffLevel); // _voltageOffLevel
         REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::OFF);
-
 
         // Try to turn on, this should result in reset logic being used
         motorSubSys.setPowerOn();

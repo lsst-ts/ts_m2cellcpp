@@ -2,7 +2,7 @@
 
 @startuml
 class Config
-class FpgaIo
+class FpgaIoOld
 class DaqBase
 class DaqIn
 class DaqInMock
@@ -61,11 +61,11 @@ DaqBoolOut <|-- DaqBoolOutReal
 
 AllIlc o-- Ilc
 
-FpgaIo o-- AllIlc
+FpgaIoOld o-- AllIlc
 
-FpgaIo o-- DaqIn
-FpgaIo o-- DaqOut
-FpgaIo o-- DaqBoolIn
-FpgaIo o-- DaqBoolOut
+FpgaIoOld o-- DaqIn
+FpgaIoOld o-- DaqOut
+FpgaIoOld o-- DaqBoolIn
+FpgaIoOld o-- DaqBoolOut
 
 @enduml

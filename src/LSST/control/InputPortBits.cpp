@@ -57,9 +57,6 @@ bool InputPortBits::getBitAtPos(int pos) const {
     }
     uint32_t mask = 1;
     mask <<= pos;
-    //bitset<32> m(mask); // &&&
-    //bitset<32> bm(_bitmap); //&&&
-    //LDEBUG("&&& getBitAtPos pos=", pos, " mask=", m, " bitmap=", bm, " & =", (mask & _bitmap));
     return getBitsSetInMask(mask);
 }
 

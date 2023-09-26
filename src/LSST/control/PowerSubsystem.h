@@ -305,8 +305,30 @@ private:
 };
 
 
-/// doc &&&  Class for MOTOR and COMM power systems.
-/// unit tests: &&&
+/// This class represents the MOTOR and COMM power subsystems. The physical
+/// hardware for both systems is the same, the differences are found in the
+/// PowerSubsystemConfig `_psCfg` for each type.
+///
+/// The hardware has built in breakers which can trigger power being
+/// turned off if more than one breaker in a Feed is tripped.
+/// See class `BreakerFeedGroup`.
+///
+/// Turning power off is simply a matter of calling `setPowerOff()` and
+/// OutputPortBits will be set to turn the power off.
+///
+/// Turning the power on is done by calling `setPowerOn()` which begins
+/// a sequence of events that turns the power on. Numerous checks
+/// are made while `TURNING_ON` the power. Most of these simply
+/// give up and call `setPowerOff()` if there is a problem. However,
+/// breaker faults cause `setPowerOn()` to try to reset the breakers
+/// by going into `RESET` mode. This is complicated by the fact that
+/// breakers can only be RESET while the power is on.
+/// See `_processPowerOn()` and `processDaq()`.
+///
+/// When power has been turned on successfully, `getActualPowerState()`
+/// should return `ON`.
+///
+/// unit tests: test_PowerSystem.cpp
 class PowerSubsystem {
 public:
 
@@ -344,15 +366,24 @@ public:
     /// Return subsystem current in amps.
     double getCurrent() const;
 
-    /// Take action to turn the power on, this may be called from nearly anywhere.
+    /// Take action to turn the power on, this may be called from nearly anywhere,
+    /// but many things can interrupt the process.
+    /// When the process is complete `getActualPowerState()` should return `ON`.
+    /// See `_setPowerOn()`
     void setPowerOn();
 
     /// Take action to turn the power off, this may be called from nearly anywhere.
     /// @param note - should contain information about the source of
     ///         the `setPowerOff()` call.
+    /// When the process is complete `getActualPowerState()` should return `OFF`.
+    /// See `_setPowerOff()`
     void setPowerOff(std::string const& note);
 
-    /// &&& doc     Based on PowerSubsystem->process_DAQ_telemetry.vi
+    /// Use the information in `info` to control this power subsystem. `info`
+    /// should be provided by `FpgaIo` and should contain the most recent
+    /// data available. `processDaq` will try to attain the `_targPowerState`
+    /// but will change the `_targPowerState` to `OFF` if problems occur.
+    /// Based on PowerSubsystem->process_DAQ_telemetry.vi
     SysStatus processDaq(SysInfo const& info);
 
     /// Return the actual power state.
@@ -362,10 +393,15 @@ public:
     PowerState getTargPowerState() const;
 
 private:
-    /// doc &&&
+    /// If there are no related problems, turn power on by setting the
+    /// `_targPowerState` to `ON` and setting the appropriate `OutputPortBits`.
+    /// `processDaq` will monitor and complete the task of `TURNING_ON`.
+    /// When the process is complete `getActualPowerState()` should return `ON`.
     void _setPowerOn();
 
-    /// doc &&&
+    /// Turn off the power by setting the appropriate `OutputPortBits`.
+    /// `processDaq` will monitor and complete the task of `TURNING_OFF`,
+    /// When the process is complete `getActualPowerState()` should return `OFF`.
     void _setPowerOff(std::string const& note);
 
     /// Go through the sequence of events required when `_targPowerState` is ON,
@@ -376,13 +412,13 @@ private:
     /// `_powerStateMtx` must be locked before calling.
     void _processPowerOff();
 
-    /// Return “Relay Control Output On”.  &&& doc
+    /// Return “Relay Control Output On”.
     bool _getRelayControlOutputOn() const;
 
-    /// Return “cRIO Ready Output On”. &&& doc
+    /// Return “cRIO Ready Output On”.
     bool _getCrioReadyOutputOn() const;
 
-    /// Return ”Interlock Relay Control Output On”. &&& doc
+    /// Return ”Interlock Relay Control Output On”.
     bool _getInterlockRelayControlOutputOn() const;
 
     /// Return true if the OutputPort is has the correct bits to turn on this power system.
@@ -435,8 +471,6 @@ private:
 
     PowerState _targPowerStatePrev = UNKNOWN; ///< Previous value of `_targPowerState`
     PowerState _actualPowerStatePrev = UNKNOWN; ///< Previous value of `_actualPowerState`
-
-    //&&&BreakerFeedGroup::Ptr _breakerFeeds; ///< Contains all breaker feeds for this power susbsystem.
 
     std::shared_ptr<FpgaIo> _fpgaIo; ///< pointer to the global FpgaIo instance.
 };

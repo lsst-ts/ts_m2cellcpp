@@ -50,16 +50,12 @@ BreakerFeedGroup::BreakerFeedGroup(Feed::Ptr const& feed1, Feed::Ptr const& feed
     _feeds.push_back(_feed1);
     _feeds.push_back(_feed2);
     _feeds.push_back(_feed3);
-    LWARN("&&& BreakerFeedGroup::BreakerFeedGroup feeds.size=", _feeds.size());
 }
 
 
 tuple<SysStatus, string> BreakerFeedGroup::checkBreakers(SysInfo const& info) {
-    LWARN("&&& BreakerFeedGroup::checkBreakers ", info.dump());
     SysStatus result = GOOD;
     string inactiveInputs = "";
-
-    LWARN("&&& BreakerFeedGroup::checkBreakers a1");
     for (Feed::Ptr const& feed:_feeds) {
         auto [status, str] = feed->checkBreakers(info.inputPort);
         inactiveInputs += str;
@@ -108,10 +104,6 @@ tuple<SysStatus, string> BreakerFeedGroup::Feed::checkBreakers(InputPortBits con
               " status=", getSysStatusStr(breakerStatus), " low inputs=", inactiveStr);
     }
     _feedBitmap = bitmap;
-
-    LWARN("&&& BreakerFeedGroup::Feed::checkBreakers breakerStat=", getSysStatusStr(breakerStatus), " count=", count, " bit0=", bit0, " bit1=", bit1, " bit2=", bit2);
-    LWARN("&&& BreakerFeedGroup::Feed::checkBreakers input=", input.getAllSetBitEnums());
-
     return make_tuple(breakerStatus, inactiveStr);
 }
 
@@ -470,12 +462,6 @@ void PowerSubsystem::_setPowerOff(std::string const& note) {
 SysStatus PowerSubsystem::processDaq(SysInfo const& info) {
     _sysInfo = info;
 
-    // Breakers only matter (and have correct input) when voltage is
-    // above `_breakerOperatingVoltage`, there's been time for them
-    // to stabilize, and `_targPowerOn` is true.
-    LWARN(getClassName(), " &&& processDaq targ=", getPowerStateStr(_targPowerState),
-           " act=", getPowerStateStr(_actualPowerState));
-
     // Check for faults
     bool systemFaults = _checkForFaults();
     if (systemFaults) {
@@ -514,18 +500,21 @@ SysStatus PowerSubsystem::processDaq(SysInfo const& info) {
 
 
 bool PowerSubsystem::_checkForPowerOnBreakerFault(double voltage) {
-    //LWARN(getClassName(), " &&& _checkForPowerOnBreakerFault volt=", voltage);
+    // Breakers only matter (and have correct input) when voltage is
+    // above `_breakerOperatingVoltage`, there's been time for them
+    // to stabilize, and `_targPowerOn` is true.
+
     // Is the voltage high enough to to check the breakers? breaker_status_is_Active.vi
     if (voltage >= _psCfg.getBreakerOperatingVoltage()) {
         SysStatus breakerStatus;
         string inactiveInputs;
         tie(breakerStatus, inactiveInputs) = _psCfg.checkBreakers(_sysInfo);
-        LWARN(getClassName(), " &&& _checkForPowerOnBreakerFault a breakerStatus=", breakerStatus,
-                " ", getSysStatusStr(breakerStatus), " inactiveInputs=", inactiveInputs);
         if (breakerStatus == GOOD) {
             return false; // no faults
         }
         if (breakerStatus <= FAULT) {
+            LWARN(getClassName(), " _checkForPowerOnBreakerFault a breakerStatus=", breakerStatus,
+                    " ", getSysStatusStr(breakerStatus), " inactiveInputs=", inactiveInputs);
             _sendFaultMgrSetBit(_psCfg.getBreakerFault()); //"breaker fault"
             _setPowerOff(string(__func__) + " breaker fault");
             return true;
@@ -638,7 +627,7 @@ void PowerSubsystem::_processPowerOn() {
         }
 
         if (_phase == 2) {
-            LDEBUG(getClassName(), " phase 2 &&& timeInPhase=", timeSincePhaseStartInSec, " wait=", _psCfg.outputOnMaxDelay());
+            LDEBUG(getClassName(), " phase 2 timeInPhase=", timeSincePhaseStartInSec, " wait=", _psCfg.outputOnMaxDelay());
             if (timeSincePhaseStartInSec > _psCfg.outputOnMaxDelay()) {
                 _phase = 3;
                 _phaseStartTime = now;
@@ -649,7 +638,7 @@ void PowerSubsystem::_processPowerOn() {
         }
 
         if (_phase == 3) {
-            LDEBUG(getClassName(), " phase 3 &&&");
+            LDEBUG(getClassName(), " phase 3");
             // If the voltage isn't high enough to read the breakers, give up, turn power off
             if (voltage < _psCfg.getBreakerOperatingVoltage()) {
                 LERROR(getClassName(), " TURNING_ON voltage too low volt=", voltage);
@@ -658,7 +647,7 @@ void PowerSubsystem::_processPowerOn() {
             }
             // If the breakers have any faults or warnings, try to reset them.
             auto [breakerStatus, inactiveInputs] = _psCfg.checkBreakers(_sysInfo);
-            LDEBUG(getClassName(), " phase 3 &&& breaker=", breakerStatus, " ", inactiveInputs);
+            LDEBUG(getClassName(), " phase 3 breaker=", breakerStatus, " ", inactiveInputs);
             if (breakerStatus == GOOD) {
                 _actualPowerState = ON;
                 _phaseStartTime = now;
@@ -668,7 +657,7 @@ void PowerSubsystem::_processPowerOn() {
                 _actualPowerState = RESET;
                 _phaseStartTime = now;
                 _phase = 1;
-                LINFO(getClassName(), " breaker RESET starting");
+                LWARN(getClassName(), " breaker RESET starting");
                 // Start resetting the breakers by setting the output low.
                 _fpgaIo->writeOutputPortBitPos(_psCfg.getOutputBreakerBitPos(), false);
             }

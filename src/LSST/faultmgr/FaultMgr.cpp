@@ -70,7 +70,7 @@ FaultMgr& FaultMgr::get() {
 
 
 bool FaultMgr::checkForPowerSubsystemFaults(FaultStatusBits const& subsystemMask, string const& note) {
-    /// &&& see PowerSubsystem->set_motor_power.vi and BasicFaultManager->read_faults.vi
+    /// see PowerSubsystem->set_motor_power.vi and BasicFaultManager->read_faults.vi
     FaultStatusBits faultBitmap(subsystemMask.getBitmap()
             & _faultEnableMask.getBitmap() & _currentFaults.getBitmap());
     if (faultBitmap.getBitmap() != 0) {

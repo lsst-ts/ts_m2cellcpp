@@ -86,7 +86,6 @@ bool PowerSystem::_checkTimeout(double diffInSeconds) {
 }
 
 void PowerSystem::_processDaq(SysInfo info) {
-    LWARN("&&& PowerSystem::_processDaq");
     SysStatus motorStat = _motor.processDaq(info);
     SysStatus commStat = _comm.processDaq(info);
 
@@ -101,7 +100,6 @@ void PowerSystem::_processDaq(SysInfo info) {
 }
 
 void PowerSystem::queueDaqInfoRead() {
-    LWARN("&&& PowerSystem::queueDaqInfoRead()");
     auto cmdDaqInfoRead = std::make_shared<util::Command>([&](util::CmdData*) { _daqInfoRead(); });
     _eThrd.queCmd(cmdDaqInfoRead);
 }
@@ -117,7 +115,7 @@ void PowerSystem::_processDaqHealthTelemetry(SysInfo sInfo) {
     //  - DAQ_to_PS_health_telemetry.vi - assemble vi output “Power Subsystem Common Telemetry” (shortening to PSCT)
     //  - “Power Control/Status Telemetry.Digital Inputs”
 
-    /// struct to be replaced by real class in its own header file in DM-??? &&&
+    /// struct to be replaced by real class in its own header file in DM-40908
     struct HealthTelemetryPSCT {
         HealthTelemetryPSCT(SysInfo info) {
             //- AND with “Input Port Bit Masks.RedundancyOK Bit” (active high)

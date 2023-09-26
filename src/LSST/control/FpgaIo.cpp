@@ -71,13 +71,12 @@ FpgaIo& FpgaIo::get() {
 
 
 FpgaIo::FpgaIo(std::shared_ptr<simulator::SimCore> const& simCore) : _simCore(simCore) {
-    //LWARN("&&& FpgaIo::FpgaIo");
     std::thread thrd(&FpgaIo::_readWriteFpga, this);
     _fpgaIoThrd = move(thrd);
 }
 
 FpgaIo::~FpgaIo() {
-    LWARN("&&& FpgaIo::~FpgaIo");
+    LTRACE("FpgaIo::~FpgaIo");
     _loop = false;
     if (_fpgaIoThrd.joinable()) {
         _fpgaIoThrd.join();

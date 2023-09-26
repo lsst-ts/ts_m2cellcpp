@@ -112,9 +112,10 @@ void SimPowerSubsystem::calcBreakers(util::CLOCK::time_point ts) {
             _inputPort->writeBit(bPos, _breakerClosed);
             LDEBUG(getClassName(), " calcBreakers wrote bPos=", bPos, " _breakerClosed=", _breakerClosed);
         }
+        bitset<32> inp(_inputPort->getBitmap());
+        LDEBUG("SimPowerSubsystem::calcBreakers _inputPort=", inp);
     }
-    bitset<32> inp(_inputPort->getBitmap()); // &&&
-    LDEBUG("&&& _inputPort=", inp);
+
 }
 
 

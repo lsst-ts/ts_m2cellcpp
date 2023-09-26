@@ -49,7 +49,8 @@ namespace control {
 
 class PowerSystem;
 
-// &&& doc
+/// This class is used to communicate with the FPGA, and hence, all of the hardware.
+/// Since hardware is not readily available, it currently only talks to the simulator.
 class FpgaIo {
 public:
     using Ptr = std::shared_ptr<FpgaIo>;
@@ -57,6 +58,10 @@ public:
     /// Create the global FaultMgr object. If `simCore` is not nullptr,
     /// this is a simulation.
     static void setup(std::shared_ptr<simulator::SimCore> const& simCore);
+
+    FpgaIo() = delete;
+    FpgaIo(FpgaIo const&) = delete;
+    FpgaIo& operator=(FpgaIo const&) = delete;
 
     /// Stop and join `_fpgaIoThrd`
     ~FpgaIo();
@@ -75,7 +80,7 @@ public:
     /// Return `_outputPort`
     OutputPortBits getOutputPort() const;
 
-    /// &&& doc
+    /// Set the bit at `pos` to 1 if `set` true, otherwise set it to 0.
     void writeOutputPortBitPos(int pos, bool set);
 
     /// Register `powerSys` with the FpgaIo instance so it can be notified of updates.
@@ -103,8 +108,6 @@ private:
 
     /// Private constructor to force call to `setup`.
     FpgaIo(std::shared_ptr<simulator::SimCore> const& simCore);
-    // &&& constructors etc.
-
 
     OutputPortBits _outputPort; ///< Output to be written to the output port.
     InputPortBits _inputPort; ///< Input to be read from to the input port.
