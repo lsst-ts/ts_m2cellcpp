@@ -24,6 +24,7 @@
 
 // System headers
 #include <memory>
+#include <string>
 
 /// This file contains simple definitions related to the `control` namespace.
 
