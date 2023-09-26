@@ -139,10 +139,10 @@ void TelemetryCom::_server() {
     address.sin_port = htons(_port);
 
     if (bind(_serverFd, (struct sockaddr*)&address, sizeof(address)) < 0) {
-        throw util::Bug(ERR_LOC, "TelemetryCom::server() failed to bind " + to_string(_port));
+        throw util::Bug(ERR_LOC, string("TelemetryCom::server() failed to bind ") + to_string(_port));
     }
     if (listen(_serverFd, 3) < 0) {
-        throw util::Bug(ERR_LOC, "TelemetryCom::server() failed to listen " + to_string(_port));
+        throw util::Bug(ERR_LOC, string("TelemetryCom::server() failed to listen ") + to_string(_port));
     }
     LINFO("TelemetryCom::server() listening _seqId=", _seqId, " port=", _port);
 

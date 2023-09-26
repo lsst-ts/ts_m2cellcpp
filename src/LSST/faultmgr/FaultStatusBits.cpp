@@ -257,7 +257,7 @@ uint64_t FaultStatusBits::getMaskPowerSubsystemFaults(control::PowerSystemType s
         return _maskSubsystemMotorFault->_bitmap;
     }
     }
-    throw util::Bug(ERR_LOC, "FaultStatusBits::getMaskPowerSubsystemFaults "
+    throw util::Bug(ERR_LOC, string("FaultStatusBits::getMaskPowerSubsystemFaults ")
             + getPowerSystemTypeStr(sysType) + " unexpected type");
 }
 
