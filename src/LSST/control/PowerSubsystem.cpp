@@ -577,7 +577,7 @@ void PowerSubsystem::_processPowerOn() {
             double timeSincePhaseStartInSec = util::timePassedSec(_phaseStartTime, now);
             double minTimeToStablize = _psCfg.getVoltageSettlingTime() - _psCfg.getBreakerOperatingVoltageRiseTime();
             if(timeSincePhaseStartInSec > minTimeToStablize) {
-                _phase = 2;
+                _phase = 2; // advance to next phase.
                 _phaseStartTime = util::CLOCK::now();
                 LINFO(getClassName(), " ON phase 2 reached");
             }
@@ -608,9 +608,10 @@ void PowerSubsystem::_processPowerOn() {
         if (_phase == 1) {
             // Presumably, waiting for the signal to stabilize.
             ++_telemCounter;
-            // Value of 10 comes from telemetry_is_stable.vi, no explanation.
+            // Value of 10 comes from telemetry_is_stable.vi, with no explanation
+            // in LabView for the source of the value or its direct purpose.
             if (_telemCounter >= 10) {
-                _phase = 2;
+                _phase = 2; // advance to the next phase
                 _phaseStartTime = now;
                 LINFO(getClassName(), " TURNING_ON moved to phase 2");
             }
@@ -629,7 +630,7 @@ void PowerSubsystem::_processPowerOn() {
         if (_phase == 2) {
             LDEBUG(getClassName(), " phase 2 timeInPhase=", timeSincePhaseStartInSec, " wait=", _psCfg.outputOnMaxDelay());
             if (timeSincePhaseStartInSec > _psCfg.outputOnMaxDelay()) {
-                _phase = 3;
+                _phase = 3; // advance to the next phase
                 _phaseStartTime = now;
                 LINFO(getClassName(), " TURNING_ON moved to phase 3");
             } else {
@@ -637,7 +638,7 @@ void PowerSubsystem::_processPowerOn() {
             }
         }
 
-        if (_phase == 3) {
+        if (_phase >= 3) {
             LDEBUG(getClassName(), " phase 3");
             // If the voltage isn't high enough to read the breakers, give up, turn power off
             if (voltage < _psCfg.getBreakerOperatingVoltage()) {
@@ -650,6 +651,7 @@ void PowerSubsystem::_processPowerOn() {
             LDEBUG(getClassName(), " phase 3 breaker=", breakerStatus, " ", inactiveInputs);
             if (breakerStatus == GOOD) {
                 _actualPowerState = ON;
+                _phase = 1;
                 _phaseStartTime = now;
                 LINFO(getClassName(), " is now ON");
                 return;

@@ -100,7 +100,7 @@ class BreakerFeedGroup {
 public:
     using Ptr = std::shared_ptr<BreakerFeedGroup>;
 
-    /// Each breaker group contains three feeds, which each have three binary inputs that are read from
+    /// Each breaker group contains three feeds, where each has three binary inputs that are read from
     /// InputPortBits.
     class Feed {
     public:
@@ -289,7 +289,7 @@ private:
     BreakerFeedGroup::Ptr _breakerFeedGroup;
 
     int _outputPowerOnBitPos; ///< Output bit that turns power on/off for this subsystem, active high.
-    int _outputBreakerBitPos; ///< Output bit that will reset breaker for this subsystem when low/high???.
+    int _outputBreakerBitPos; ///< Output bit that will reset breaker for this subsystem when low.
 
     faultmgr::FaultStatusBits _subsystemFaultMask; ///< Mask for bits
 
@@ -461,7 +461,17 @@ private:
 
     util::TIMEPOINT _powerOnStart; ///< Time `_targPowerState` was set to ON.
     util::TIMEPOINT _powerOffStart; ///< Time `_targPowerState` was set to OFF.
-    int _phase = 1; ///< Current phase of power up or power off. Initialize to powering off.
+
+    /// Current phase of the `_actualPowerState`, initialize to powering off.
+    /// Going from one `_actualPowerState` to another requires the system
+    /// to go through one or more `_phase`s (or steps). When changing
+    /// `_actualPowerState` or `targPowerState`, `_phase` should always be set
+    /// to 1, and `_phase` is then incremented as the steps are completed until
+    /// the `_actualPowerState` matches the `targPowerState` and enough time has
+    /// passed for the hardware signals to be considered stable.
+    /// In general, `_phase` is incremented when a specified time has passed and
+    /// no related failures have been detected.
+    int _phase = 1;
     util::TIMEPOINT _phaseStartTime; ///< Time the current `_phase` started.
     int _telemCounter = 0; ///< For unexplained reasons, power on `_phase` 1 lasts 10 telemetry reads.
 

@@ -54,7 +54,7 @@ public:
     /// Changing the values of these enums will likely cause hardware problems.
     /// J1-W9, J2-W10, J3-W11, J1-W12, J2-W13, and J3-W14 refer to bit positions.
     /// J1-WE9, J2-WE10, J3-WE11, J1-WE12, J2-WE13, and J3-WE14 refer to the bitmaps
-    ///    made using the matching bit position.
+    /// made using the matching bit position.
     enum {
         REDUNDANCY_OK = 0,              ///< “Redundancy OK” = 0
         LOAD_DISTRIBUTION_OK = 1,       ///< “Load Distribution OK” = 1

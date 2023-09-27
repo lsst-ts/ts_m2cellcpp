@@ -43,7 +43,7 @@ enum SysStatus {
     WAITING = 1
 };
 
-/// Return a string representation of the enum `sta`.
+/// Return a string representation of the SysStatus enum `sta`.
 inline std::string getSysStatusStr(SysStatus sta) {
     switch (sta) {
     case GOOD: return "GOOD";
