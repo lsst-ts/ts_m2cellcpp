@@ -49,7 +49,7 @@ SimCore::SimCore() {
             control::InputPortBits::J3_W11_3_MTR_PWR_BRKR_OK};
 
     _motorSub = SimPowerSubsystem::Ptr(new SimPowerSubsystem(
-            control::PowerSubsystemConfig::MOTOR,
+            control::MOTOR,
             _outputPort, control::OutputPortBits::MOTOR_POWER_ON,
             control::OutputPortBits::RESET_MOTOR_BREAKERS,
             _inputPort, motorBreakerInBits));
@@ -63,7 +63,7 @@ SimCore::SimCore() {
             control::InputPortBits::J3_W14_2_COMM_PWR_BRKR_OK};
 
     _commSub = SimPowerSubsystem::Ptr(new SimPowerSubsystem(
-            control::PowerSubsystemConfig::COMM,
+            control::COMM,
             _outputPort, control::OutputPortBits::ILC_COMM_POWER_ON,
             control::OutputPortBits::RESET_COMM_BREAKERS,
             _inputPort, commBreakerInBits));
@@ -105,13 +105,28 @@ void SimCore::_simRun() {
             _simInfo.commCurrent = _commSub->getCurrent();
             _simInfo.commBreakerClosed = _commSub->getBreakerClosed();
             _simInfo.iterations = _iterations;
-            // FUTURE: send message to system with this data.
+            _simInfo.timestamp = timestamp;
         }
-        LDEBUG(_simInfo.dump());
         ++_iterations;
+        _iterationCv.notify_all();
         _prevTimeStamp = timestamp;
         this_thread::sleep_for(chrono::duration<double, std::ratio<1,1>>(1.0/_frequencyHz));
     }
+}
+
+void SimCore::waitForUpdate(int count)  const {
+    LDEBUG("SimCore::waitForUpdate()");
+    uint64_t iteration = _iterations;
+    unique_lock<mutex> gLock(_mtx);
+    _iterationCv.wait(gLock, [&]() {
+        if (_iterations != iteration) {
+            iteration = _iterations;
+            --count;
+            LDEBUG("SimCore::waitForUpdate() ", count);
+        };
+        return count <= 0;
+    });
+    LDEBUG("SimCore::waitForUpdate() end");
 }
 
 void SimCore::start() {
@@ -128,9 +143,14 @@ bool SimCore::join() {
     return false;
 }
 
-void SimCore::writeNewOutputPort(int pos, bool set) {
+void SimCore::writeNewOutputPortBit(int pos, bool set) {
     lock_guard<mutex> lg(_mtx);
     _newOutput.writeBit(pos, set);
+}
+
+void SimCore::setNewOutputPort(control::OutputPortBits const& outputPort) {
+    lock_guard<mutex> lg(_mtx);
+    _newOutput.setBitmap(outputPort.getBitmap());
 }
 
 
@@ -139,25 +159,15 @@ control::OutputPortBits SimCore::getNewOutputPort() {
     return _newOutput;
 }
 
-SimInfo SimCore::getSimInfo() {
+
+control::SysInfo SimCore::getSysInfo() const {
     lock_guard<mutex> lg(_mtx);
     return _simInfo;
 }
 
-
-string SimInfo::dump() {
-    stringstream os;
-    os << "SimInfo"
-            << " outputPort=" << outputPort.getAllSetBitEnums()
-            << " inputPort=" << inputPort.getAllSetBitEnums()
-            << " motorVoltage=" << motorVoltage
-            << " motorCurrent=" << motorCurrent
-            << " motorBreakerClosed=" << motorBreakerClosed
-            << " commVoltage=" << commVoltage
-            << " commCurrent=" << commCurrent
-            << " commBreakerClosed=" << commBreakerClosed
-            << " iterations=" << iterations;
-    return os.str();
+void SimCore::writeInputPortBit(int pos, bool set) {
+    lock_guard<mutex> lg(_mtx);
+    _inputPort->writeBit(pos, set);
 }
 
 }  // namespace simulator

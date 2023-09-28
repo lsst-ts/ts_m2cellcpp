@@ -31,7 +31,7 @@
 #include <string>
 
 // project headers
-#include "control/FaultStatusBits.h"
+#include "faultmgr/FaultStatusBits.h"
 
 
 using namespace std;
@@ -42,11 +42,11 @@ namespace control {
 
 
 void OutputPortBits::writeBit(int pos, bool set) {
-    FaultStatusBits::setBit8(_bitmap, pos, set);
+    faultmgr::FaultStatusBits::setBit8(_bitmap, pos, set);
 }
 
 
-bool OutputPortBits::getBit(int pos) {
+bool OutputPortBits::getBitAtPos(int pos) const {
     if (pos < 0 || pos >= 8 ) {
         return 0;
     }
@@ -56,7 +56,7 @@ bool OutputPortBits::getBit(int pos) {
 }
 
 
-string OutputPortBits::getAllSetBitEnums() {
+string OutputPortBits::getAllSetBitEnums() const {
     string str;
     uint8_t mask = 1;
 

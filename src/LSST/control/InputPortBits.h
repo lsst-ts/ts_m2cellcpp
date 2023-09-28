@@ -52,6 +52,9 @@ public:
 
     /// These enums should match those in create_input_port_bits_masks.vi
     /// Changing the values of these enums will likely cause hardware problems.
+    /// J1-W9, J2-W10, J3-W11, J1-W12, J2-W13, and J3-W14 refer to bit positions.
+    /// J1-WE9, J2-WE10, J3-WE11, J1-WE12, J2-WE13, and J3-WE14 refer to the bitmaps
+    /// made using the matching bit position.
     enum {
         REDUNDANCY_OK = 0,              ///< “Redundancy OK” = 0
         LOAD_DISTRIBUTION_OK = 1,       ///< “Load Distribution OK” = 1
@@ -84,7 +87,10 @@ public:
         J3_W14_2_COMM_PWR_BRKR_OK = 28, ///< “J3-W14-2-CommPwrBrkr OK” = 28
         SPARE_D29 = 29,                 ///< “Spare_D29” = 29
         SPARE_D30 = 30,                 ///< “Spare_D30” = 30
-        INTERLOCK_POWER_RELAY = 31, ///< “Interlock Power Relay On” = 31
+        INTERLOCK_POWER_RELAY = 31,     ///< “Interlock Power Relay On” = 31
+        // Special values
+        ALWAYS_HIGH = 100000, ///< Indicates that the bit will always be set high.
+        ALWAYS_LOW = 100001   ///< Indicates that the bit will always be set low.
     };
 
     /// Returns the input port bit mask, which is all bits. This is from the
@@ -98,7 +104,7 @@ public:
     void writeBit(int pos, bool set);
 
     /// Return a copy of `_bitmap`.
-    uint32_t getBitmap() { return _bitmap; }
+    uint32_t getBitmap() const { return _bitmap; }
 
     /// Set `_bitmap` to `bitmap`.
     void setBitmap(uint32_t bitmap) { _bitmap = bitmap; }
@@ -107,18 +113,20 @@ public:
     static std::string getEnumString(int enumVal);
 
     /// Return a string containing the string version of all set bit enums
-    std::string getAllSetBitEnums();
+    std::string getAllSetBitEnums() const;
 
-    /// Return the state of bit in `_bitmap` at `pos`, `pos` out of range returns false.
-    bool getBit(int pos);
+    /// Return the state of bit in `_bitmap` at `pos`, `pos` out of range returns false,
+    /// except for ALWAYS_HIGH, which returns true.
+    /// ALWAYS_HIGH is used in cases where missing bits are forced high.
+    bool getBitAtPos(int pos) const;
 
     /// Return all bits that are set in `_bitmap` and in `mask`.
-    uint32_t getBitsSetInMask(uint32_t mask) {
+    uint32_t getBitsSetInMask(uint32_t mask) const {
         return _bitmap & mask;
     }
 
     /// Return all bits that are set in `_bitmap` and not in `mask`.
-    uint32_t getBitsSetOutOfMask(uint32_t mask) {
+    uint32_t getBitsSetOutOfMask(uint32_t mask) const {
         return _bitmap & ~mask;
     }
 

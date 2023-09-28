@@ -21,26 +21,31 @@
  */
 
 // Class header
-#include "FaultStatusBits.h"
+#include "faultmgr/FaultStatusBits.h"
 
-// system headers
 #include <bitset>
 #include <sstream>
 #include <mutex>
 #include <stdexcept>
 #include <string>
 
+// Project headers
+#include "util/Bug.h"
+
 using namespace std;
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace faultmgr {
 
 FaultStatusBits::Ptr FaultStatusBits::_maskOpenLoopControl;
 FaultStatusBits::Ptr FaultStatusBits::_maskTelemetryOnlyControl;
 FaultStatusBits::Ptr FaultStatusBits::_maskFaults;
 FaultStatusBits::Ptr FaultStatusBits::_maskWarn;
 FaultStatusBits::Ptr FaultStatusBits::_maskInfo;
+
+FaultStatusBits::Ptr FaultStatusBits::_maskSubsystemCommFault;
+FaultStatusBits::Ptr FaultStatusBits::_maskSubsystemMotorFault;
 
 /// `faultMaskCreationMtx` is only needed during the creation of fault
 /// status masks. There's a slight race condition when creating masks
@@ -115,7 +120,7 @@ uint64_t FaultStatusBits::getMaskOpenLoopControl() {
         FaultStatusBits::Ptr fsm(new FaultStatusBits(getMaskClosedLoopControl()));
         lock_guard<mutex> lg(faultMaskCreationMtx);
         if (_maskOpenLoopControl == nullptr) {
-            // - open-loop control mask:
+            // - "open-loop control mask":
             fsm->setBit(ACTUATOR_LIMIT_CL);          // “Actuator limit CL”
             fsm->setBit(INCLINOMETER_W_LUT);         // “Inclinometer error w/ lut”
             fsm->setBit(CRIO_TIMING_FAULT);          // “cRIO timing fault”
@@ -133,7 +138,7 @@ uint64_t FaultStatusBits::getMaskTelemetryOnlyControl() {
         FaultStatusBits::Ptr fsm(new FaultStatusBits(getMaskOpenLoopControl()));
         lock_guard<mutex> lg(faultMaskCreationMtx);
         if (_maskTelemetryOnlyControl == nullptr) {
-            // - telemetry-only control mask - all of the _maskOpenLoopControl and
+            // - "telemetry-only control mask" - all of the _maskOpenLoopControl and
             fsm->setBit(FaultStatusBits::ACTUATOR_FAULT);             // “actuator fault”
             fsm->setBit(FaultStatusBits::EXCESSIVE_FORCE);            // “excessive force”
             fsm->setBit(FaultStatusBits::MOTOR_VOLTAGE_FAULT);        // “motor voltage error fault”
@@ -154,7 +159,7 @@ uint64_t FaultStatusBits::getMaskFaults() {
         FaultStatusBits::Ptr fsm(new FaultStatusBits(getMaskTelemetryOnlyControl()));
         lock_guard<mutex> lg(faultMaskCreationMtx);
         if (_maskFaults == nullptr) {
-            // - Faults Mask - all of the faults in getMaskTelemetryOnlyControl and the following
+            // - "Faults Mask" - all of the faults in getMaskTelemetryOnlyControl and the following
             fsm->setBit(FaultStatusBits::COMM_VOLTAGE_FAULT);          // “comm voltage error fault”
             fsm->setBit(FaultStatusBits::COMM_OVER_CURRENT);           // “comm over current”
             fsm->setBit(FaultStatusBits::POWER_RELAY_OPEN_FAULT);      // “power relay open fault”
@@ -179,18 +184,18 @@ uint64_t FaultStatusBits::getMaskWarn() {
         lock_guard<mutex> lg(faultMaskCreationMtx);
         if (_maskWarn == nullptr) {
             // - Warnings Mask - starting clean with all zeroes
-            fsm->setBit(FaultStatusBits::ACTUATOR_LIMIT_OL);       // “actuator limit OL”
-            fsm->setBit(FaultStatusBits::INCLINOMETER_WO_LUT);     // “inclinometer error w/o lut”
-            fsm->setBit(FaultStatusBits::MOTOR_VOLTAGE_WARN);      // “motor voltage error warning”
-            fsm->setBit(FaultStatusBits::COMM_VOLTAGE_WARN);       // “comm voltage error warning”
-            fsm->setBit(FaultStatusBits::SINGLE_BREAKER_TRIP);     // “single breaker trip”
-            fsm->setBit(FaultStatusBits::CRIO_TIMING_WARN);        // “cRIO timing warning”
-            fsm->setBit(FaultStatusBits::DISPLACEMENT_SENSOR_RANGE_ERR); // “displacement sensor range”
-            fsm->setBit(FaultStatusBits::MIRROR_TEMP_SENSOR_WARN); // “mirror temp sensor warning”
-            fsm->setBit(FaultStatusBits::CELL_TEMP_WARN);          // “cell temp warning”
-            fsm->setBit(FaultStatusBits::TEMP_DIFF_WARN);          // “excessive temperature differential warning”
-            fsm->setBit(FaultStatusBits::LOSS_OF_TMA_WARN);        // “loss of TMA comm warning”
-            fsm->setBit(FaultStatusBits::MONITOR_ILC_READ_WARN);   // “monitoring ILC read error warning”
+            fsm->setBit(ACTUATOR_LIMIT_OL);       // “actuator limit OL”
+            fsm->setBit(INCLINOMETER_WO_LUT);     // “inclinometer error w/o lut”
+            fsm->setBit(MOTOR_VOLTAGE_WARN);      // “motor voltage error warning”
+            fsm->setBit(COMM_VOLTAGE_WARN);       // “comm voltage error warning”
+            fsm->setBit(SINGLE_BREAKER_TRIP);     // “single breaker trip”
+            fsm->setBit(CRIO_TIMING_WARN);        // “cRIO timing warning”
+            fsm->setBit(DISPLACEMENT_SENSOR_RANGE_ERR); // “displacement sensor range”
+            fsm->setBit(MIRROR_TEMP_SENSOR_WARN); // “mirror temp sensor warning”
+            fsm->setBit(CELL_TEMP_WARN);          // “cell temp warning”
+            fsm->setBit(TEMP_DIFF_WARN);          // “excessive temperature differential warning”
+            fsm->setBit(LOSS_OF_TMA_WARN);        // “loss of TMA comm warning”
+            fsm->setBit(MONITOR_ILC_READ_WARN);   // “monitoring ILC read error warning”
             _maskWarn = fsm;
         }
     }
@@ -199,21 +204,61 @@ uint64_t FaultStatusBits::getMaskWarn() {
 
 uint64_t FaultStatusBits::getMaskInfo() {
     if (_maskInfo == nullptr) {
-        FaultStatusBits::Ptr fsm(new FaultStatusBits(0));\
+        FaultStatusBits::Ptr fsm(new FaultStatusBits(0));
         lock_guard<mutex> lg(faultMaskCreationMtx);
         if (_maskInfo == nullptr) {
            // - Info Mask - starting with all zeroes
-           fsm->setBit(FaultStatusBits::BROADCAST_ERR);    // “broadcast error”
-           fsm->setBit(FaultStatusBits::MOTOR_RELAY);      // “motor relay”
-           fsm->setBit(FaultStatusBits::COMM_RELAY);       // “comm relay”
-           fsm->setBit(FaultStatusBits::HARDWARE_FAULT);   // “hardware fault”
-           fsm->setBit(FaultStatusBits::STALE_DATA_WARN);  // “stale data warning”
-           fsm->setBit(FaultStatusBits::STALE_DATA_FAULT); // “stale data fault”
+           fsm->setBit(BROADCAST_ERR);    // “broadcast error”
+           fsm->setBit(MOTOR_RELAY);      // “motor relay”
+           fsm->setBit(COMM_RELAY);       // “comm relay”
+           fsm->setBit(HARDWARE_FAULT);   // “hardware fault”
+           fsm->setBit(STALE_DATA_WARN);  // “stale data warning”
+           fsm->setBit(STALE_DATA_FAULT); // “stale data fault”
            // The LabView code indicates it may unset some values, but doesn't seem to do so.
            _maskInfo = fsm;
         }
     }
     return _maskInfo->_bitmap;
+}
+
+uint64_t FaultStatusBits::getMaskPowerSubsystemFaults(control::PowerSystemType sysType) {
+    switch (sysType) {
+    case control::COMM:
+    {
+        if (_maskSubsystemCommFault == nullptr) {
+            FaultStatusBits::Ptr fsm(new FaultStatusBits(0));
+            lock_guard<mutex> lg(faultMaskCreationMtx);
+            if (_maskSubsystemCommFault == nullptr) {
+                // - comm subsystem fault mask - starting with all zeroes
+                fsm->setBit(FaultStatusBits::COMM_VOLTAGE_FAULT); // "comm voltage error fault"
+                fsm->setBit(FaultStatusBits::COMM_OVER_CURRENT); // "comm over current"
+                fsm->setBit(FaultStatusBits::POWER_RELAY_OPEN_FAULT); // "power relay open fault"
+                fsm->setBit(FaultStatusBits::COMM_MULTI_BREAKER_FAULT); // "comm multi-breaker fault"
+                _maskSubsystemCommFault = fsm;
+            }
+        }
+        return _maskSubsystemCommFault->_bitmap;
+    }
+    case control::MOTOR:
+    {
+        if (_maskSubsystemMotorFault == nullptr) {
+            FaultStatusBits::Ptr fsm(new FaultStatusBits(0));
+            lock_guard<mutex> lg(faultMaskCreationMtx);
+            if (_maskSubsystemMotorFault == nullptr) {
+                // - motor subsystem fault mask - starting with all zeroes
+                fsm->setBit(FaultStatusBits::MOTOR_VOLTAGE_FAULT); // "motor voltage error fault"
+                fsm->setBit(FaultStatusBits::MOTOR_OVER_CURRENT); // "motor over current"
+                fsm->setBit(FaultStatusBits::POWER_RELAY_OPEN_FAULT); // "power relay open fault"
+                fsm->setBit(FaultStatusBits::MOTOR_MULTI_BREAKER_FAULT); // "motor multi-breaker fault"
+                _maskSubsystemMotorFault = fsm;
+            }
+
+        }
+        return _maskSubsystemMotorFault->_bitmap;
+    }
+    }
+    throw util::Bug(ERR_LOC, string("FaultStatusBits::getMaskPowerSubsystemFaults ")
+            + getPowerSystemTypeStr(sysType) + " unexpected type");
 }
 
 string FaultStatusBits::getAllSetBitEnums() {
@@ -284,8 +329,6 @@ string FaultStatusBits::getEnumString(int enumVal) {
     }
     return "unknown " + to_string(enumVal);
 }
-
-
 
 }  // namespace control
 }  // namespace m2cellcpp

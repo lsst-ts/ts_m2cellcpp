@@ -19,21 +19,24 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
+#ifndef LSST_M2CELLCPP_SIMULATOR_SIMPOWERSUBSYTEM_H
+#define LSST_M2CELLCPP_SIMULATOR_SIMPOWERSUBSYTEM_H
+
 // System headers
 #include <memory>
 #include <stdint.h>
 #include <string>
 #include <vector>
 
-#include "../util/clock_defs.h"
+
 // Project headers
+#include "control/control_defs.h"
 #include "control/InputPortBits.h"
 #include "control/OutputPortBits.h"
 #include "control/PowerSubsystem.h"
+#include "util/clock_defs.h"
 #include "util/Log.h"
 
-#ifndef LSST_M2CELLCPP_SIMULATOR_SIMPOWERSUBSYTEM_H
-#define LSST_M2CELLCPP_SIMULATOR_SIMPOWERSUBSYTEM_H
 
 namespace LSST {
 namespace m2cellcpp {
@@ -59,12 +62,12 @@ public:
     /// @param `breakerBitPositions` list of bits affected by breaker status.
     /// It's unclear which InputPortBits each power system should be concerned
     /// with at this point. Hopefully that will become clearer.
-    SimPowerSubsystem(control::PowerSubsystemConfig::SystemType systemType,
+    SimPowerSubsystem(control::PowerSystemType systemType,
             control::OutputPortBits::Ptr const& outputPort, int powerOnBitPos, int breakerResetPos,
             control::InputPortBits::Ptr const& inputPort,  std::vector<int> const& breakerBitPositions);
 
     /// Return true if outputPort has set the power on.
-    bool getPowerOn() { return _outputPort->getBit(_powerOnBitPos); }
+    bool getPowerOn() { return _outputPort->getBitAtPos(_powerOnBitPos); }
 
     /// Return the simulated `_voltage`.
     double getVoltage() { return _voltage; }
@@ -86,10 +89,13 @@ public:
     /// Determine the voltage and current related values in the simulation.
     void calcVoltageCurrent(double timeDiff);
 
+    /// Return a string version of the class name and `_systemType`.
+    std::string getClassName() const;
+
 private:
     void _setup(); ///< Setup according to `_systemType`.
 
-    control::PowerSubsystemConfig::SystemType _systemType; ///< MOTOR or COMM.
+    control::PowerSystemType _systemType; ///< MOTOR or COMM.
 
     double _voltage = 0.0; ///< current voltage, volts
     double _current = 0.0; ///< current current, amps
@@ -106,14 +112,17 @@ private:
     double _currentMax; ///< max current, amps. "maximum output current"
     double _currentGain; ///< Current based on `_voltage`, amp/volt.
 
+
     bool _breakerClosed = true; ///< true when the simulated breaker is closed.
-    bool _breakerClosedTarg = true; ///< Target state of `_breakerClosed`
+    bool _breakerClosedPrev = !_breakerClosed; ///< Set to the previous value of `_breakerClosed`.
+    bool _breakerClosedTarg = true; ///< Target state of `_breakerClosed`.
+
     util::CLOCK::time_point _breakerClosedTargTs; ///< Time stamp when `_breakerClosedTarg` was set.
     double _breakerCloseTimeSec; ///< Time for the breaker to go from open to close.
 
     control::OutputPortBits::Ptr _outputPort; ///< Integer value to be written to the ouput port.
     int _powerOnBitPos; ///< Bit position indicating power on (active high).
-    int _breakerResetPos; ///< Bit position indicating breaker reset (active high).
+    int _breakerResetPos; ///< Bit position indicating breaker reset (active low).
 
     control::InputPortBits::Ptr _inputPort; ///< Integer value representing simulator status.
     std::vector<int> _breakerBitPositions; ///< Positions indicating breaker ok.

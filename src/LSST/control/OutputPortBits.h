@@ -77,7 +77,7 @@ public:
     void writeMask(uint8_t mask, uint8_t values);
 
     /// Return a copy of `_bitmap`.
-    uint8_t getBitmap() { return _bitmap; }
+    uint8_t getBitmap() const { return _bitmap; }
 
     /// Set `_bitmap` to `bitmap`.
     void setBitmap(uint8_t bitmap) { _bitmap = bitmap; }
@@ -86,18 +86,18 @@ public:
     static std::string getEnumString(int enumVal);
 
     /// Return a string containing the string version of all set bit enums
-    std::string getAllSetBitEnums();
+    std::string getAllSetBitEnums() const;
 
     /// Return the bit in `_bitmap` at `pos`, `pos` out of range returns 0.
-    bool getBit(int pos);
+    bool getBitAtPos(int pos) const;
 
     /// Return all bits that are set in `_bitmap` and in `mask`.
-    uint8_t getBitsSetInMask(uint8_t mask) {
+    uint8_t getBitsSetInMask(uint8_t mask) const {
         return _bitmap & mask;
     }
 
     /// Return all bits that are set in `_bitmap` and not in `mask`.
-    uint8_t getBitsSetOutOfMask(uint8_t mask) {
+    uint8_t getBitsSetOutOfMask(uint8_t mask) const {
         return _bitmap & ~mask;
     }
 

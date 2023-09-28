@@ -1,0 +1,43 @@
+# Copy and paste the following into http://www.plantuml.com/plantuml/uml/
+
+@startuml
+
+class SysInfo
+class FpgaIo
+class SimCore
+class PowerSystem
+class PowerSubsystem
+class PowerSubsystemConfig
+class BreakerFeedGroup
+class Feed
+
+
+class InputPortBits
+class OutputPortBits
+class PowerSubsystemConfig
+class SimPowerSubsystem
+
+SimCore *-- SimPowerSubsystem
+SimPowerSubsystem *-- InputPortBits
+SimPowerSubsystem *-- OutputPortBits
+SimCore *-- PowerSubsystemConfig
+
+PowerSystem *-- PowerSubsystem
+PowerSubsystem *-- PowerSubsystemConfig
+PowerSubsystem *-- BreakerFeedGroup
+BreakerFeedGroup *-- Feed
+
+FpgaIo o.. SysInfo
+FpgaIo o.. SimCore
+PowerSystem o.. SysInfo
+
+SysInfo *-- InputPortBits
+SysInfo *-- OutputPortBits
+
+PowerSubsystem o..FpgaIo
+
+PowerSubsystemConfig *-- InputPortBits
+PowerSubsystemConfig *-- OutputPortBits
+
+
+@enduml

@@ -30,13 +30,14 @@
 #include <catch2/catch_session.hpp>
 
 // Project headers
-#include "control/FaultStatusBits.h"
-#include "control/FpgaIo.h"
+#include "faultmgr/FaultStatusBits.h"
+#include "control/FpgaIoOld.h"
 #include "system/Config.h"
 #include "util/Log.h"
 
 using namespace std;
 using namespace LSST::m2cellcpp::control;
+using namespace LSST::m2cellcpp::faultmgr;
 
 TEST_CASE("Test FpgaIo", "[FpgaIo]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
@@ -87,7 +88,7 @@ TEST_CASE("Test FpgaIo", "[FpgaIo]") {
 
     {
         LDEBUG("Test DaqInMock DaqOutMock");
-        FpgaIo fpga(true);
+        FpgaIoOld fpga(true);
 
         auto ilcMotorCurrent = fpga.getIlcMotorCurrent();
         auto ilcCommCurrent = fpga.getIlcCommCurrent();

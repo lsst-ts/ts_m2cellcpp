@@ -31,7 +31,8 @@
 #include <string>
 
 // project headers
-#include "control/FaultStatusBits.h"
+#include "faultmgr/FaultStatusBits.h"
+#include "util/Log.h"
 
 
 
@@ -42,12 +43,16 @@ namespace m2cellcpp {
 namespace control {
 
 void InputPortBits::writeBit(int pos, bool set) {
-    FaultStatusBits::setBit32(_bitmap, pos, set);
+    faultmgr::FaultStatusBits::setBit32(_bitmap, pos, set);
 }
 
 
-bool InputPortBits::getBit(int pos) {
+bool InputPortBits::getBitAtPos(int pos) const {
     if (pos < 0 || pos >= 32 ) {
+        if (pos == InputPortBits::ALWAYS_HIGH) {
+            return 1;
+        }
+        // No need to check for ALWAYS_LOW
         return 0;
     }
     uint32_t mask = 1;
@@ -56,15 +61,14 @@ bool InputPortBits::getBit(int pos) {
 }
 
 
-string InputPortBits::getAllSetBitEnums() {
+string InputPortBits::getAllSetBitEnums() const {
     string str;
     uint32_t mask = 1;
-
     for (int j=0; j<32; ++j) {
         if (getBitsSetInMask(mask)) {
             str += getEnumString(j) + ",";
         }
-         mask <<= 1;
+        mask <<= 1;
     }
     return str;
 }
@@ -109,6 +113,8 @@ string InputPortBits::getEnumString(int enumVal) {
     case SPARE_D29: return "SPARE_D29 " + to_string(enumVal);
     case SPARE_D30: return "SPARE_D30 " + to_string(enumVal);
     case INTERLOCK_POWER_RELAY: return "INTERLOCK_POWER_RELAY " + to_string(enumVal);
+    case ALWAYS_HIGH: return "ALWAYS_HIGH " + to_string(enumVal);
+    case ALWAYS_LOW: return "ALWAYS_LOW " + to_string(enumVal);
     }
     return "unknown " + to_string(enumVal);
 }

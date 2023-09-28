@@ -1,30 +1,37 @@
 /*
- *  This file is part of LSST M2 support system package.
+ * This file is part of LSST ts_m2cellcpp test suite.
  *
- * This product includes software developed by the
- * LSST Project (http://www.lsst.org/).
+ * Developed for the Vera C. Rubin Observatory Telescope & Site Software Systems.
+ * This product includes software developed by the Vera C.Rubin Observatory Project
+ * (https://www.lsst.org). See the COPYRIGHT file at the top-level directory of
+ * this distribution for details of code ownership.
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
  *
- * You should have received a copy of the LSST License Statement and
- * the GNU General Public License along with this program.  If not,
- * see <http://www.lsstcorp.org/LegalNotices/>.
+ * You should have received a copy of the GNU General Public License along with
+ * this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 // Class header
 #include "control/FpgaIo.h"
 
-// System headers
+#include <bitset>
+#include <sstream>
+#include <mutex>
+#include <stdexcept>
+#include <string>
 
 // Project headers
+#include "control/PowerSystem.h"
+#include "simulator/SimCore.h"
 #include "system/Config.h"
 #include "util/Bug.h"
 #include "util/Log.h"
@@ -35,80 +42,105 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-FpgaIo::FpgaIo(bool useMocks) {
-    // FUTURE: Once C API is available, create instances capable of communicating
-    //         with the FPGA.
-    if (!useMocks) {
-        throw util::Bug(ERR_LOC, "Only Mock instances available.");
+FpgaIo::Ptr FpgaIo::_thisPtr;
+std::mutex FpgaIo::_thisPtrMtx;
+
+void FpgaIo::setup(std::shared_ptr<simulator::SimCore> const& simCore) {
+    lock_guard<mutex> lock(_thisPtrMtx);
+    if (_thisPtr) {
+        LERROR("FpgaIo already setup");
+        return;
     }
+    _thisPtr = Ptr(new FpgaIo(simCore));
+}
 
-    _ilcMotorCurrent = DaqInMock::create("ILC_Motor_Current", &_mapDaqIn);
-    _ilcCommCurrent = DaqInMock::create("ILC_Comm_Current", &_mapDaqIn);
-    _ilcMotorVoltage = DaqInMock::create("ILC_Motor_Voltage", &_mapDaqIn);
-    _ilcCommVoltage = DaqInMock::create("ILC_Comm_Voltage", &_mapDaqIn);
 
-    _ilcMotorPowerOnOut = DaqBoolOutMock::create("ILC_Motor_Power_On_out", &_mapDaqBoolOut);
-    _ilcCommPowerOnOut = DaqBoolOutMock::create("ILC_Comm_Power_On_out", &_mapDaqBoolOut);
-    _crioInterlockEnableOut = DaqBoolOutMock::create("cRIO_Interlock_Enable_out", &_mapDaqBoolOut);
-
-    _ilcMotorPowerOnIn = DaqBoolInMock::create("ILC_Motor_Power_On_in", &_mapDaqBoolIn);
-    _ilcCommPowerOnIn = DaqBoolInMock::create("ILC_Comm_Power_On_in", &_mapDaqBoolIn);
-    _crioInterlockEnableIn = DaqBoolInMock::create("cRIO_Interlock_Enable_in", &_mapDaqBoolIn);
-
-    _ilcs = make_shared<AllIlcs>(useMocks);
-
-    _testIlcMotorCurrent = DaqOutMock::create("ILC_Motor_Current_test", &_mapDaqOut);
-    _testIlcCommCurrent = DaqOutMock::create("ILC_Comm_Current_test", &_mapDaqOut);
-    _testIlcMotorVoltage = DaqOutMock::create("ILC_Motor_Voltage_test", &_mapDaqOut);
-    _testIlcCommVoltage = DaqOutMock::create("ILC_Comm_Voltage_test", &_mapDaqOut);
-
-    for (auto& elem : _mapDaqOut) {
-        (elem.second)->finalSetup(_mapDaqIn);
+FpgaIo::Ptr FpgaIo::getPtr() {
+    if (_thisPtr == nullptr) {
+        throw system::ConfigException(ERR_LOC, "FpgaIo has not been setup.");
     }
+    return _thisPtr;
+}
 
-    for (auto& elem : _mapDaqBoolOut) {
-        (elem.second)->finalSetup(_mapDaqBoolIn, _mapDaqOut);
+FpgaIo& FpgaIo::get() {
+    if (_thisPtr == nullptr) {
+        throw system::ConfigException(ERR_LOC, "FpgaIo has not been setup.");
+    }
+    return *_thisPtr;
+}
+
+
+FpgaIo::FpgaIo(std::shared_ptr<simulator::SimCore> const& simCore) : _simCore(simCore) {
+    std::thread thrd(&FpgaIo::_readWriteFpga, this);
+    _fpgaIoThrd = move(thrd);
+}
+
+FpgaIo::~FpgaIo() {
+    LTRACE("FpgaIo::~FpgaIo");
+    _loop = false;
+    if (_fpgaIoThrd.joinable()) {
+        _fpgaIoThrd.join();
     }
 }
 
-void FpgaIo::writeAllOutputs() {
-    // start with booleans and then DAQ.
-    for (auto& elem : _mapDaqBoolOut) {
-        (elem.second)->write();
-    }
+void FpgaIo::writeOutputPortBitPos(int pos, bool set) {
+    VMUTEX_NOT_HELD(_portMtx);
+    lock_guard<util::VMutex> lg(_portMtx);
+    _outputPort.writeBit(pos, set);
+}
 
-    for (auto& elem : _mapDaqOut) {
-        (elem.second)->write();
+/// Return a copy of the current system information.
+SysInfo FpgaIo::getSysInfo() const {
+    VMUTEX_NOT_HELD(_portMtx);
+    lock_guard<util::VMutex> lg(_portMtx);
+    return _sysInfo;
+}
+
+void FpgaIo::registerPowerSys(std::shared_ptr<PowerSystem> const& powerSys) {
+    _powerSys = powerSys;
+}
+
+void FpgaIo::_emergencyTurnOffAllPower() {
+    VMUTEX_NOT_HELD(_portMtx); // Following function calls need to lock it.
+    LWARN("FpgaIo::_emergencyTurnOffAllPower()");
+    writeOutputPortBitPos(OutputPortBits::MOTOR_POWER_ON, false);
+    writeOutputPortBitPos(OutputPortBits::ILC_COMM_POWER_ON, false);
+}
+
+void FpgaIo::_readWriteFpga() {
+    while (_loop) {
+        auto powerSys = _powerSys.lock();
+        if (powerSys == nullptr) {
+            LWARN("FpgaIo::_readWriteFpga() No PowerSystemRegistered");
+            // With no power system registered, breakers are not being checked, etc,
+            // so turn everything off.
+            _emergencyTurnOffAllPower();
+        }
+
+        {
+            lock_guard<util::VMutex> lg(_portMtx);
+            if (_simCore == nullptr) {
+                throw util::Bug(ERR_LOC, "FpgaIo::getSysInfo() hardware mode unavailable");
+            } else {
+                _simCore->setNewOutputPort(_outputPort);
+                _sysInfo = _simCore->getSysInfo();
+            }
+        }
+
+        if (powerSys != nullptr) {
+            powerSys->queueDaqInfoRead();
+        }
+        std::this_thread::sleep_for(std::chrono::duration<double>(_loopSleepSecs));
+
     }
 }
 
-std::string FpgaIo::dump() {
-    stringstream os;
-    os << "FpgaIo:" << endl;
-    for (auto const& elem : _mapDaqOut) {
-        elem.second->dump(os);
-        os << endl;
-    }
-    os << endl;
-    for (auto const& elem : _mapDaqBoolOut) {
-        elem.second->dump(os);
-        os << endl;
-    }
-    os << endl;
-    for (auto const& elem : _mapDaqIn) {
-        elem.second->dump(os);
-        os << endl;
-    }
-    os << endl;
-    for (auto const& elem : _mapDaqBoolIn) {
-        elem.second->dump(os);
-        os << endl;
-    }
-    os << endl;
 
-    return os.str();
-}
+/// Return `_outputPort`
+OutputPortBits FpgaIo::getOutputPort() const { return _outputPort; }
 
 }  // namespace control
 }  // namespace m2cellcpp
 }  // namespace LSST
+
+

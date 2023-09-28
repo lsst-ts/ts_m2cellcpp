@@ -29,96 +29,95 @@
 #include <vector>
 
 // Project headers
-#include "control/DaqInMock.h"
-#include "control/Ilc.h"
+#include "control/InputPortBits.h"
+#include "control/OutputPortBits.h"
+#include "control/SysInfo.h"
 #include "util/Log.h"
+#include "util/VMutex.h"
 
 #ifndef LSST_M2CELLCPP_CONTROL_FPGAIO_H
 #define LSST_M2CELLCPP_CONTROL_FPGAIO_H
 
 namespace LSST {
 namespace m2cellcpp {
+
+namespace simulator {
+class SimCore;
+}
+
 namespace control {
 
-/// This class is currently a place holder for FPGA I/O.
-/// Since the rest of the system isn't setup for I/O with
-/// the FPGA, this class will be a placeholder for now,
-/// and likely used as a mock in the future.
-/// Unit test in test_FpgaIo.cpp.
+class PowerSystem;
+
+/// This class is used to communicate with the FPGA, and hence, all of the hardware.
+/// Since hardware is not readily available, it currently only talks to the simulator.
 class FpgaIo {
 public:
-    /// Construct the FpgaIo instance, using mocks if `useMocks` is true.
-    /// Mocks are meant for unit testing where no hardware is available.
-    FpgaIo(bool useMocks = false);
+    using Ptr = std::shared_ptr<FpgaIo>;
 
-    /// Wrtie all outputs, starting with `DaqBoolOutMock`. ILC's not included.
-    void writeAllOutputs();
+    /// Create the global FaultMgr object. If `simCore` is not nullptr,
+    /// this is a simulation.
+    static void setup(std::shared_ptr<simulator::SimCore> const& simCore);
 
-    /// Returns `_ilcMotorCurrent`
-    DaqInMock::Ptr getIlcMotorCurrent() const { return _ilcMotorCurrent; }
-    /// Returns `_ilcCommCurrent`
-    DaqInMock::Ptr getIlcCommCurrent() const { return _ilcCommCurrent; }
-    /// Returns `_ilcMotorVoltage`
-    DaqInMock::Ptr getIlcMotorVoltage() const { return _ilcMotorVoltage; }
-    /// Returns `_ilcCommVoltage`
-    DaqInMock::Ptr getIlcCommVoltage() const { return _ilcCommVoltage; }
+    FpgaIo() = delete;
+    FpgaIo(FpgaIo const&) = delete;
+    FpgaIo& operator=(FpgaIo const&) = delete;
 
-    /// Returns `_ilcMotorPowerOnOut`
-    DaqBoolOutMock::Ptr getIlcMotorPowerOnOut() const { return _ilcMotorPowerOnOut; }
-    /// Returns `_ilcCommPowerOnOut`
-    DaqBoolOutMock::Ptr getIlcCommPowerOnOut() const { return _ilcCommPowerOnOut; }
-    /// Returns `_crioInterlockEnableOut`
-    DaqBoolOutMock::Ptr getCrioInterlockEnableOut() const { return _crioInterlockEnableOut; }
+    /// Stop and join `_fpgaIoThrd`
+    ~FpgaIo();
 
-    /// Returns `_ilcMotorPowerOnIn`
-    DaqBoolInMock::Ptr getIlcMotorPowerOnIn() const { return _ilcMotorPowerOnIn; }
-    /// Returns `_ilcCommPowerOnIn`
-    DaqBoolInMock::Ptr getIlcCommPowerOnIn() const { return _ilcCommPowerOnIn; }
-    /// Returns `_crioInterlockEnableIn`
-    DaqBoolInMock::Ptr getCrioInterlockEnableIn() const { return _crioInterlockEnableIn; }
+    /// Return a reference to the global FpgaIo instance.
+    /// @throws `ConfigException` if `setup` has not already been called.
+    static FpgaIo& get();
 
-    /// Returns pointer container for all ILC instances.
-    AllIlcs::Ptr getAllIlcs() const { return _ilcs; }
+    /// Return a shared pointer to the global FpgaIo instance.
+    /// @throws `ConfigException` if `setup` has not already been called.
+    static Ptr getPtr();
 
-    /// Returns `_testIlcMotorCurrent`
-    DaqOutMock::Ptr getTestIlcMotorCurrent() const { return _testIlcMotorCurrent; }
-    /// Returns `_testIlcCommCurrent`
-    DaqOutMock::Ptr getTestIlcCommCurrent() const { return _testIlcCommCurrent; }
-    /// Returns `_testIlcMotorVoltage`
-    DaqOutMock::Ptr getTestIlcMotorVoltage() const { return _testIlcMotorVoltage; }
-    /// Returns `_testIlcCommVoltage`
-    DaqOutMock::Ptr getTestIlcCommVoltage() const { return _testIlcCommVoltage; }
+    /// Return a copy of the current system information.
+    SysInfo getSysInfo() const;
 
-    /// Return a log string describing the contents of this FpgaIo object.
-    std::string dump();
+    /// Return `_outputPort`
+    OutputPortBits getOutputPort() const;
+
+    /// Set the bit at `pos` to 1 if `set` true, otherwise set it to 0.
+    void writeOutputPortBitPos(int pos, bool set);
+
+    /// Register `powerSys` with the FpgaIo instance so it can be notified of updates.
+    void registerPowerSys(std::shared_ptr<PowerSystem> const& powerSys);
+
+    /// Set the loop sleep time in seconds.
+    void setLoopSleepSecs(double seconds) { _loopSleepSecs = seconds; }
 
 private:
-    std::map<std::string, DaqInMock::Ptr> _mapDaqIn;            ///< map of all DaqInMock instances.
-    std::map<std::string, DaqOutMock::Ptr> _mapDaqOut;          ///< map of all DaqOutMock instances.
-    std::map<std::string, DaqBoolInMock::Ptr> _mapDaqBoolIn;    ///< map of all DaqBoolInMock instances.
-    std::map<std::string, DaqBoolOutMock::Ptr> _mapDaqBoolOut;  ///< map of all DaqBoolOutMock instances.
+    static Ptr _thisPtr; ///< Pointer to the global instance of FpgaIo.
+    static std::mutex _thisPtrMtx; ///< Protects `_thisPtr`.
 
-    DaqInMock::Ptr _ilcMotorCurrent;  ///< ILC motor current input
-    DaqInMock::Ptr _ilcCommCurrent;   ///< ILC communication current input
-    DaqInMock::Ptr _ilcMotorVoltage;  ///< ILC motor voltage input
-    DaqInMock::Ptr _ilcCommVoltage;   ///< ILC communication voltage input
+    /// Turn off all power bits in _outputPort as something is unsafe
+    /// and the PowerSystem is not available.
+    void _emergencyTurnOffAllPower();
 
-    DaqBoolOutMock::Ptr _ilcMotorPowerOnOut;      ///< ILC motor power on output
-    DaqBoolOutMock::Ptr _ilcCommPowerOnOut;       //< ILomm power on output
-    DaqBoolOutMock::Ptr _crioInterlockEnableOut;  ///< cRIO interlock enable output
+    SysInfo _sysInfo; ///< Last information read from the FPGA.
 
-    DaqBoolInMock::Ptr _ilcMotorPowerOnIn;      ///< ILC motor power on input
-    DaqBoolInMock::Ptr _ilcCommPowerOnIn;       ///< ILC communication power on input
-    DaqBoolInMock::Ptr _crioInterlockEnableIn;  ///< cRIO interlock enable input
+    void _readWriteFpga(); ///< Reads/writes to the FPGA/simulator.
+    std::thread _fpgaIoThrd; ///< Thread that runs `_readWriteFpga()`
+    std::atomic<bool> _loop{true}; ///< Set false to stop `_fpgaIoThrd`.
 
-    AllIlcs::Ptr _ilcs;  ///< Vector of all ILC
+    /// Sleep this long after each loop, in seconds.
+    std::atomic<double> _loopSleepSecs{0.05};
 
-    // The following are only expected to be found on the test hardware.
-    DaqOutMock::Ptr _testIlcMotorCurrent;  ///< ILC motor current test output
-    DaqOutMock::Ptr _testIlcCommCurrent;   ///< ILC communication current test output
-    DaqOutMock::Ptr _testIlcMotorVoltage;  ///< ILC motor voltage test output
-    DaqOutMock::Ptr _testIlcCommVoltage;   ///< ILC communication voltage test output
+    /// Private constructor to force call to `setup`.
+    FpgaIo(std::shared_ptr<simulator::SimCore> const& simCore);
+
+    OutputPortBits _outputPort; ///< Output to be written to the output port.
+    InputPortBits _inputPort; ///< Input to be read from to the input port.
+    mutable util::VMutex _portMtx; ///< Protects `_outputPort` and `_inputPort`.
+
+    std::shared_ptr<simulator::SimCore> _simCore; ///< simulator
+
+    std::weak_ptr<PowerSystem> _powerSys; ///< Pointer to the `PowerSystem`.
 };
+
 
 }  // namespace control
 }  // namespace m2cellcpp

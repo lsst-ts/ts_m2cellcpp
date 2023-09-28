@@ -18,6 +18,7 @@
  * the GNU General Public License along with this program.  If not,
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
+
 #ifndef LSST_M2CELLCPP_UTIL_CLOCKDEFS_H
 #define LSST_M2CELLCPP_UTIL_CLOCKDEFS_H
 
@@ -34,6 +35,7 @@
 namespace LSST {
 namespace m2cellcpp {
 namespace util {
+
 
 /// It's important that the clock used is consistent when calculating time. steady_clock may be a better choice.
 using CLOCK = std::chrono::system_clock;
@@ -98,6 +100,5 @@ private:
 }  // namespace util
 }  // namespace m2cellcpp
 }  // namespace LSST
-
 
 #endif  // LSST_M2CELLCPP_UTIL_CLOCKDEFS_H

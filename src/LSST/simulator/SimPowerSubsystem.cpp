@@ -23,6 +23,7 @@
 #include "simulator/SimPowerSubsystem.h"
 
 // System headers
+#include <bitset>
 
 // Project headers
 #include "util/Bug.h"
@@ -34,13 +35,20 @@ namespace LSST {
 namespace m2cellcpp {
 namespace simulator {
 
-SimPowerSubsystem::SimPowerSubsystem(control::PowerSubsystemConfig::SystemType systemType,
+SimPowerSubsystem::SimPowerSubsystem(control::PowerSystemType systemType,
         control::OutputPortBits::Ptr const& outputPort, int powerOnBitPos, int breakerResetPos,
         control::InputPortBits::Ptr const& inputPort,  std::vector<int> const& breakerBitPositions)
         : _systemType(systemType) ,_outputPort(outputPort),  _powerOnBitPos(powerOnBitPos), _breakerResetPos(breakerResetPos),
           _inputPort(inputPort), _breakerBitPositions(breakerBitPositions) {
     _setup();
 }
+
+
+string SimPowerSubsystem::getClassName() const {
+    string str = string("SimPowerSubsystem ") + getPowerSystemTypeStr(_systemType);
+    return str;
+}
+
 
 void SimPowerSubsystem::_setup() {
     control::PowerSubsystemConfig psc(_systemType);
@@ -65,17 +73,18 @@ void SimPowerSubsystem::_setup() {
     _currentGain = 0.75 * (_currentMax/_voltageNominal);
 
     /// Assuming "breaker on time" is related to how long it takes for the breaker to close.
-    /// 0.75 as closing the breaker shouldn't normally take the maximum amount of time.
-    _breakerCloseTimeSec = psc.getBreakerOnTime() * 0.75;
+    /// 0.5 as closing the breaker shouldn't normally take the maximum amount of time.
+    _breakerCloseTimeSec = psc.getBreakerOnTime() * 0.5;
 }
 
 
 void SimPowerSubsystem::calcBreakers(util::CLOCK::time_point ts) {
     // breaker reset opens the breaker.
-    bool newbreakerClosedTarg = !(_outputPort->getBit(_breakerResetPos));
+    bool newbreakerClosedTarg = _outputPort->getBitAtPos(_breakerResetPos);
     if (newbreakerClosedTarg != _breakerClosedTarg) {
         _breakerClosedTargTs = ts;
         _breakerClosedTarg = newbreakerClosedTarg;
+        LINFO(getClassName(), " calcBreakers _breakerClosedTarg changed to ", _breakerClosedTarg);
     }
 
     if (!_breakerClosed) {
@@ -91,17 +100,27 @@ void SimPowerSubsystem::calcBreakers(util::CLOCK::time_point ts) {
         }
     }
 
-    // This is more for testing purposes so that something affects the `_inputPort`.
-    // there's no evidence this logic exists in the hardware. The next ticket
-    // will probably use `_inputPort` to trigger PowerSubsystem faults.
-    for (auto const& bPos : _breakerBitPositions) {
-        /// Bits indicate breaker ok with active high.
-        _inputPort->writeBit(bPos, _breakerClosed);
+    /// Only set the bits once per _breakerClosed change. This allows so bits to be
+    // changed individually elsewhere for testing.
+    if(_breakerClosed != _breakerClosedPrev) {
+        _breakerClosedPrev = _breakerClosed;
+        // This is more for testing purposes so that something affects the `_inputPort`.
+        // there's no evidence this logic exists in the hardware. The next ticket
+        // will probably use `_inputPort` to trigger PowerSubsystem faults.
+        for (auto const& bPos : _breakerBitPositions) {
+            /// Bits indicate breaker ok with active high.
+            _inputPort->writeBit(bPos, _breakerClosed);
+            LDEBUG(getClassName(), " calcBreakers wrote bPos=", bPos, " _breakerClosed=", _breakerClosed);
+        }
+        bitset<32> inp(_inputPort->getBitmap());
+        LDEBUG("SimPowerSubsystem::calcBreakers _inputPort=", inp);
     }
+
 }
 
 
 void SimPowerSubsystem::calcVoltageCurrent(double timeDiff) {
+    double startingVoltage = _voltage;
     if (getPowerOn()) {
         if (_voltage < _voltageNominal) {
             _voltage += _voltageChangeRateOn*timeDiff;
@@ -127,8 +146,10 @@ void SimPowerSubsystem::calcVoltageCurrent(double timeDiff) {
         _current = 0.0;
     }
 
-    LTRACE(control::PowerSubsystemConfig::getPrettyType(_systemType),
+    if (_voltage != startingVoltage) {
+        LINFO(getClassName(),
            " _current=", _current, " _voltage=", _voltage);
+    }
 }
 
 
