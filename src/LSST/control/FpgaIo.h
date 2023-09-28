@@ -55,7 +55,6 @@ class FpgaIo {
 public:
     using Ptr = std::shared_ptr<FpgaIo>;
 
-<<<<<<< HEAD
     /// Create the global FaultMgr object. If `simCore` is not nullptr,
     /// this is a simulation.
     static void setup(std::shared_ptr<simulator::SimCore> const& simCore);

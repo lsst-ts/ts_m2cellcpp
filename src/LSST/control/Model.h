@@ -162,13 +162,11 @@ private:
     /// This memeber serves a similar purpose to the LabView `_commandFactory` and `_state`.
     StateMap _stateMap;
 
-    // &&& merge
     // _cellCommRT_FIFO // systemElement VI-PH
     // _deltaForceRT_FIFO // systemElement VI-PH
     std::shared_ptr<FpgaIo> _fpgaIo; ///< The FpgaIo instance for communicating with hardware.
 
     std::shared_ptr<MotionCtrl> _motionCtrl; ///< The MotionCtrl instance.
-    std::shared_ptr<FpgaCtrl> _fpgaCtrl; ///< The FpgaCtrl instance;
 
 
     // The LabView implementation of Model has the folowing systemElements that need to
