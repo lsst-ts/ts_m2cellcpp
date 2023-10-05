@@ -35,8 +35,12 @@ namespace m2cellcpp {
 namespace faultmgr {
 
 /// Class representation of the "Fault Status", which is a bitmap
-/// representing the status of several system items.
+/// representing the status of several system items. In the LabView
+/// code, this class comes from "Faults-Warnings-Info_BitStatus.lvclass"
+/// and has an icon with a box and TelemBit in the label.
 /// Aside from the static mask functions, this class is not thread safe.
+/// "Telemetry Fault Manager", "Fault Manager", and "PowerSubsystems use the
+/// same bitmap bits but have different initialization code.
 /// Unit tests in test_FpgaIo.cpp.
 class FaultStatusBits {
 public:
@@ -128,6 +132,22 @@ public:
     /// Should match "Info Mask" found in Faults-Warnings-Info_BitStatus.lvclass:masks.vi
     static uint64_t getMaskInfo();
 
+    /// Returns "Affected Fault Mask" used by "TelemetryFaultManager" set in
+    /// "TelemetryFaultManager.lvclass:init_affected_masks.vi"
+    static uint64_t getTelemetryFaultManagerAffectedFaultMask();
+
+    /// Returns "Affected Warning Mask" used by "TelemetryFaultManager" set in
+    /// "TelemetryFaultManager.lvclass:init_affected_masks.vi"
+    static uint64_t getTelemetryFaultManagerAffectedWarningMask();
+
+    /// Returns "Affected Faults Bit Mask" used by "PowerSubsystem" set in
+    /// "PowerSubsystem.lvclass:create_affected_masks.vi"
+    static uint64_t getPowerSubsystemFaultManagerAffectedFaultMask();
+
+    /// Returns "Affected Warnings/Info Bit Mask" used by "PowerSubsystem" set in
+    /// "PowerSubsystem.lvclass:create_affected_masks.vi"
+    static uint64_t getPowerSubsystemFaultManagerAffectedWarningMask();
+
     /// Returns a mask of the faults for the COMM or MOTOR power subsystem, depending on
     /// the value of `sysType`.
     /// Should match "subsystem fault mask" maps found in BasePowerSubsystem.lvclass:set_fault_masks.vi
@@ -189,6 +209,19 @@ private:
 
     static Ptr _maskSubsystemCommFault; ///< Stored "subsystem fault mask" for COMM.
     static Ptr _maskSubsystemMotorFault; ///< Stored "subsystem fault mask" for MOTOR.
+
+    /// Stored "Telemetry Fault Manager Affected Fault Mask" for TelemetryFaultManager
+    static Ptr _telemetryFaultManagerAffectedFaultMask;
+
+    /// Stored "Telemetry Fault Manager Affected Warning Mask" for TelemetryFaultManager
+    static Ptr _telemetryFaultManagerAffectedWarningMask;
+
+    /// Stored "PowerSubsystem Affected Fault Mask"
+    static Ptr _powerSubsystemFaultManagerAffectedFaultMask;
+
+    /// Stored "PowerSubsystem Affected Fault Mask"
+    static Ptr _powerSubsystemFaultManagerAffectedWarningMask;
+
 };
 
 

@@ -383,8 +383,12 @@ public:
     /// should be provided by `FpgaIo` and should contain the most recent
     /// data available. `processDaq` will try to attain the `_targPowerState`
     /// but will change the `_targPowerState` to `OFF` if problems occur.
+    /// @param info - Fresh hardware information from FpgaIo.
+    /// @param faultsSet - Faults encountered while processing `info`
+    ///           will be reported here.
+    /// @return the power status for this subsystem after processing `info`.
     /// Based on PowerSubsystem->process_DAQ_telemetry.vi
-    SysStatus processDaq(SysInfo const& info);
+    SysStatus processDaq(SysInfo const& info, faultmgr::FaultStatusBits& faultsSet);
 
     /// Return the actual power state.
     PowerState getActualPowerState() const;
@@ -406,11 +410,13 @@ private:
 
     /// Go through the sequence of events required when `_targPowerState` is ON,
     /// `_powerStateMtx` must be locked before calling.
-    void _processPowerOn();
+    /// @param faultsSet - Faults that occur will be recorded here.
+    void _processPowerOn(faultmgr::FaultStatusBits& faultsSet);
 
     /// Go through the sequence of events required when `_targPowerState` is OFF,
     /// `_powerStateMtx` must be locked before calling.
-    void _processPowerOff();
+    /// @param faultsSet - Faults that occur will be recorded here.
+    void _processPowerOff(faultmgr::FaultStatusBits& faultsSet);
 
     /// Return “Relay Control Output On”.
     bool _getRelayControlOutputOn() const;
@@ -432,10 +438,11 @@ private:
     /// be reported if the voltage is over `_breakerOperatingVoltage`.
     /// Faults and warnings will be sent to the FaultMgr.
     /// Faults will result in `_setPowerOff()` being called.
-    bool _checkForPowerOnBreakerFault(double voltage);
+    /// @param faultsSet - Faults that occur will be recorded here.
+    bool _checkForPowerOnBreakerFault(double voltage, faultmgr::FaultStatusBits& faultsSet);
 
     /// Set power off and send the FaultMgr low voltage warnings and faults.
-    void _sendBreakerVoltageFault();
+    void _sendBreakerVoltageFault(faultmgr::FaultStatusBits& faultsSet); // &&& rename
 
     /// PLACEHOLDER to register an error with the fault manager.
     void _sendFaultMgrError();

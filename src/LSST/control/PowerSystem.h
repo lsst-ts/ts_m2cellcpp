@@ -32,6 +32,7 @@
 #include "control/FpgaIo.h"
 #include "control/InputPortBits.h"
 #include "control/PowerSubsystem.h"
+#include "faultmgr/FaultMgr.h"
 #include "util/EventThread.h"
 
 
@@ -94,6 +95,14 @@ private:
     /// PLACEHOLDER DAQ_to_PS_health_telemetry.vi - copy the data into a placeholder structure,
     ///         but doesn't do any checking.
     void _processDaqHealthTelemetry(SysInfo info);
+
+    /* &&&
+    /// "Current Faults", this initializes to 0, but the LabView code has a mention
+    /// of "Dropout Count", which doesn't seem to apply to this version.
+    faultmgr::FaultStatusBits _currentFaults; // &&& can probably be replaced with local variable
+    */
+
+    faultmgr::PowerFaultMgr _powerFaultMgr; ///< "Basic Fault Manager" for power system.
 
     PowerSubsystem _motor; ///< Handles MOTOR power control.
     PowerSubsystem _comm; ///< Handles COMM power control.

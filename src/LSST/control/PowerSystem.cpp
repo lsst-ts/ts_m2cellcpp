@@ -86,17 +86,25 @@ bool PowerSystem::_checkTimeout(double diffInSeconds) {
 }
 
 void PowerSystem::_processDaq(SysInfo info) {
-    SysStatus motorStat = _motor.processDaq(info);
-    SysStatus commStat = _comm.processDaq(info);
+    faultmgr::FaultStatusBits currentFaults;
+    SysStatus motorStat = _motor.processDaq(info, currentFaults);
+    SysStatus commStat = _comm.processDaq(info, currentFaults);
 
     _processDaqHealthTelemetry(info);
+
+    //&&& _powerFaultMgr.setCurrentFaults(currentFaults);
+    //&&& _powerFaultMgr.xmitFaults();
+    faultmgr::FaultMgr::get().updatePowerFaults(currentFaults, faultmgr::FaultInfo::POWER_SUBSYSTEM);
 
     if (_motorStatusPrev != motorStat || _commStatusPrev != commStat) {
         LINFO("Power status change motor:now=", motorStat, " prev=", _motorStatusPrev,
                 " comm=", commStat, " prev=", _commStatusPrev);
         _motorStatusPrev = motorStat;
         _commStatusPrev = commStat;
+        // TODO: DM-40339 send information to telemetry server
     }
+
+
 }
 
 void PowerSystem::queueDaqInfoRead() {

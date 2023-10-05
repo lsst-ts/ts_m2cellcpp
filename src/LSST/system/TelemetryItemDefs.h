@@ -86,7 +86,6 @@ public:
 };
 
 
-
 /// TelemetryItem child class for storing the "tangentForce" values.
 /// Unit tests in tests/test_TelemetryCom
 class TItemTangentForce : public TelemetryItem {

@@ -459,7 +459,8 @@ void PowerSubsystem::_setPowerOff(std::string const& note) {
 }
 
 
-SysStatus PowerSubsystem::processDaq(SysInfo const& info) {
+SysStatus PowerSubsystem::processDaq(SysInfo const& info, faultmgr::FaultStatusBits& faultsSet) {
+    /// &&& faultmgr::FaultStatusBits& faultsSet
     _sysInfo = info;
 
     // Check for faults
@@ -480,7 +481,7 @@ SysStatus PowerSubsystem::processDaq(SysInfo const& info) {
     lock_guard<util::VMutex> lg(_powerStateMtx);
     switch (_targPowerState) {
     case  ON:
-        _processPowerOn();
+        _processPowerOn(faultsSet);
         break;
     case RESET: [[fallthrough]]; // invalid case
     case TURNING_ON: [[fallthrough]]; // invalid case
@@ -491,15 +492,14 @@ SysStatus PowerSubsystem::processDaq(SysInfo const& info) {
         [[fallthrough]];
     case OFF: [[fallthrough]]; // OFF is the default.
     default:
-        _processPowerOff();
+        _processPowerOff(faultsSet);
     }
-
 
     return FAULT;
 }
 
 
-bool PowerSubsystem::_checkForPowerOnBreakerFault(double voltage) {
+bool PowerSubsystem::_checkForPowerOnBreakerFault(double voltage, faultmgr::FaultStatusBits& faultsSet) {
     // Breakers only matter (and have correct input) when voltage is
     // above `_breakerOperatingVoltage`, there's been time for them
     // to stabilize, and `_targPowerOn` is true.
@@ -524,18 +524,21 @@ bool PowerSubsystem::_checkForPowerOnBreakerFault(double voltage) {
     }
 
     // The power should be on and stable by this point.
-    _sendBreakerVoltageFault();
+    _sendBreakerVoltageFault(faultsSet);
     return true;
 }
 
-void PowerSubsystem::_sendBreakerVoltageFault() {
-    _sendFaultMgrSetBit(_psCfg.getVoltageFault()); // "voltage fault"
-    _sendFaultMgrSetBit(faultmgr::FaultStatusBits::HARDWARE_FAULT); // "hardware fault"
+void PowerSubsystem::_sendBreakerVoltageFault(faultmgr::FaultStatusBits& faultsSet) {
+    //&&&_sendFaultMgrSetBit(_psCfg.getVoltageFault()); // "voltage fault"
+    //&&&_sendFaultMgrSetBit(faultmgr::FaultStatusBits::HARDWARE_FAULT); // "hardware fault"
+    faultsSet.setBit(_psCfg.getVoltageFault()); // "voltage fault"
+    faultsSet.setBit(faultmgr::FaultStatusBits::HARDWARE_FAULT); // "hardware fault"
     _setPowerOff(__func__);
 }
 
 
-void PowerSubsystem::_processPowerOn() {
+void PowerSubsystem::_processPowerOn(faultmgr::FaultStatusBits& faultsSet) {
+    // &&& faultmgr::FaultStatusBits& faultsSet
     VMUTEX_HELD(_powerStateMtx);
 
 
@@ -565,7 +568,7 @@ void PowerSubsystem::_processPowerOn() {
             return;
         }
 
-        if (_checkForPowerOnBreakerFault(voltage)) {
+        if (_checkForPowerOnBreakerFault(voltage, faultsSet)) {
             LERROR("Breaker fault while _actualPowerState == ON");
             _setPowerOff(string(__func__) + " Breaker fault _actualPowerState == ON");
             return;
@@ -643,7 +646,7 @@ void PowerSubsystem::_processPowerOn() {
             // If the voltage isn't high enough to read the breakers, give up, turn power off
             if (voltage < _psCfg.getBreakerOperatingVoltage()) {
                 LERROR(getClassName(), " TURNING_ON voltage too low volt=", voltage);
-                _sendBreakerVoltageFault(); // calls _setPowerOff()
+                _sendBreakerVoltageFault(faultsSet); // calls _setPowerOff()
                 return;
             }
             // If the breakers have any faults or warnings, try to reset them.
@@ -678,7 +681,7 @@ void PowerSubsystem::_processPowerOn() {
             return;
         }
         if (voltage < _psCfg.getBreakerOperatingVoltage()) {
-            _sendBreakerVoltageFault(); // calls _setPowerOff()
+            _sendBreakerVoltageFault(faultsSet); // calls _setPowerOff()
             return;
         }
         double timeSincePhaseStartInSec = util::timePassedSec(_phaseStartTime, now);
@@ -689,7 +692,7 @@ void PowerSubsystem::_processPowerOn() {
             // Need to wait longer for faults to clear
             if (timeSincePhaseStartInSec > (_psCfg.getResetBreakerPulseWidth() * 2.0)) {
                 // Check breakers again (fault sets power to off).
-                if (_checkForPowerOnBreakerFault(voltage)) {
+                if (_checkForPowerOnBreakerFault(voltage, faultsSet)) {
                     LERROR("Breaker RESET fault while _actualPowerState == RESET");
                     return;
                 }
@@ -710,7 +713,8 @@ void PowerSubsystem::_processPowerOn() {
 }
 
 
-void PowerSubsystem::_processPowerOff() {
+void PowerSubsystem::_processPowerOff(faultmgr::FaultStatusBits& faultsSet) {
+    // &&& faultmgr::FaultStatusBits& faultsSet
     VMUTEX_HELD(_powerStateMtx);
 
     bool powerOn = _getRelayControlOutputOn();
@@ -739,8 +743,10 @@ void PowerSubsystem::_processPowerOff() {
         } else {
             double timeInPhaseSec = util::timePassedSec(_phaseStartTime, now);
             if (timeInPhaseSec > _psCfg.outputOffMaxDelay()) {
-                _sendFaultMgrSetBit(_psCfg.getRelayFault()); // "relay fault"
-                _sendFaultMgrSetBit(_psCfg.getRelayInUse()); // "relay in use"
+                //&&&_sendFaultMgrSetBit(_psCfg.getRelayFault()); // "relay fault"
+                //&&&_sendFaultMgrSetBit(_psCfg.getRelayInUse()); // "relay in use"
+                faultsSet.setBit(_psCfg.getRelayFault()); // "relay fault"
+                faultsSet.setBit(_psCfg.getRelayInUse()); // "relay in use"
                 _setPowerOff(string(__func__) + " timeout TURNING_OFF");
             }
         }

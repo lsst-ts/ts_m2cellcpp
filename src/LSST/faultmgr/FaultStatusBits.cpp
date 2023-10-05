@@ -47,6 +47,12 @@ FaultStatusBits::Ptr FaultStatusBits::_maskInfo;
 FaultStatusBits::Ptr FaultStatusBits::_maskSubsystemCommFault;
 FaultStatusBits::Ptr FaultStatusBits::_maskSubsystemMotorFault;
 
+FaultStatusBits::Ptr FaultStatusBits::_telemetryFaultManagerAffectedFaultMask;
+FaultStatusBits::Ptr FaultStatusBits::_telemetryFaultManagerAffectedWarningMask;
+
+FaultStatusBits::Ptr FaultStatusBits::_powerSubsystemFaultManagerAffectedFaultMask;
+FaultStatusBits::Ptr FaultStatusBits::_powerSubsystemFaultManagerAffectedWarningMask;
+
 /// `faultMaskCreationMtx` is only needed during the creation of fault
 /// status masks. There's a slight race condition when creating masks
 /// where more than one thread could get past the if ( == nullptr) latch.
@@ -259,6 +265,99 @@ uint64_t FaultStatusBits::getMaskPowerSubsystemFaults(control::PowerSystemType s
     }
     throw util::Bug(ERR_LOC, string("FaultStatusBits::getMaskPowerSubsystemFaults ")
             + getPowerSystemTypeStr(sysType) + " unexpected type");
+}
+
+
+uint64_t FaultStatusBits::getTelemetryFaultManagerAffectedFaultMask() {
+    if (_telemetryFaultManagerAffectedFaultMask == nullptr) {
+        // Starts with nothing set
+        FaultStatusBits::Ptr fsm(new FaultStatusBits());
+        lock_guard<mutex> lg(faultMaskCreationMtx);
+        if (_telemetryFaultManagerAffectedFaultMask == nullptr) {
+            // - "Affected Fault Mask":
+            fsm->setBit(ACTUATOR_LIMIT_CL);          // “Actuator limit CL”
+            fsm->setBit(INCLINOMETER_W_LUT);         // “Inclinometer error w/ lut”
+            fsm->setBit(INCLINOMETER_RANGE_ERR);     // “Inclinometer range error”
+            fsm->setBit(MIRROR_TEMP_SENSOR_FAULT);   // “mirror temp sensor fault”
+            fsm->setBit(ELEVATION_ANGLE_DIFF_FAULT); // “elevation angle difference error fault”
+            fsm->setBit(ACTUATOR_FAULT);             // “actuator fault”
+            fsm->setBit(EXCESSIVE_FORCE);            // “excessive force”
+            fsm->setBit(AXIAL_ACTUATOR_ENCODER_RANGE_FAULT);   // “axial actuator encoder range fault”
+            fsm->setBit(TANGENT_ACTUATOR_ENCODER_RANGE_FAULT); // “tangent actuator encoder range fault”
+            fsm->setBit(TANGENT_LOAD_CELL_FAULT);    // “tangent load cell fault”
+            _telemetryFaultManagerAffectedFaultMask = fsm;
+        }
+    }
+    return  _telemetryFaultManagerAffectedFaultMask->_bitmap;
+}
+
+uint64_t FaultStatusBits::getTelemetryFaultManagerAffectedWarningMask() {
+    if (_telemetryFaultManagerAffectedWarningMask == nullptr) {
+        // Starts with nothing set
+        FaultStatusBits::Ptr fsm(new FaultStatusBits());
+        lock_guard<mutex> lg(faultMaskCreationMtx);
+        if (_telemetryFaultManagerAffectedWarningMask == nullptr) {
+            // - "Affected Warning Mask":
+            // warnings
+            fsm->setBit(MONITOR_ILC_READ_WARN);         // “monitoring ILC read error warning”
+            fsm->setBit(ACTUATOR_LIMIT_OL);             // “actuator limit OL”
+            fsm->setBit(INCLINOMETER_WO_LUT);           // “inclinometer error w/o lut”
+            fsm->setBit(DISPLACEMENT_SENSOR_RANGE_ERR); // “displacement sensor range error”
+            fsm->setBit(MIRROR_TEMP_SENSOR_WARN);       // “mirror temp sensor warning”
+            fsm->setBit(CELL_TEMP_WARN);                // “cell temp warning”
+            // info
+            fsm->setBit(BROADCAST_ERR);    // “broadcast error”
+            fsm->setBit(STALE_DATA_WARN);  // “stale data warning”
+            fsm->setBit(STALE_DATA_FAULT); // “stale data fault”
+            _telemetryFaultManagerAffectedWarningMask = fsm;
+        }
+    }
+    return  _telemetryFaultManagerAffectedWarningMask->_bitmap;
+}
+
+uint64_t FaultStatusBits::getPowerSubsystemFaultManagerAffectedFaultMask() {
+    if (_powerSubsystemFaultManagerAffectedFaultMask == nullptr) {
+        // Starts with nothing set
+        FaultStatusBits::Ptr fsm(new FaultStatusBits());
+        lock_guard<mutex> lg(faultMaskCreationMtx);
+        if (_powerSubsystemFaultManagerAffectedFaultMask == nullptr) {
+            // - "Affected Fault Mask":
+            fsm->setBit(MOTOR_VOLTAGE_FAULT);          // “motor voltage error fault”
+            fsm->setBit(MOTOR_OVER_CURRENT);          // “motor over current”
+            fsm->setBit(MOTOR_MULTI_BREAKER_FAULT);          // “motor multi-breaker fault”
+            fsm->setBit(COMM_VOLTAGE_FAULT);          // “comm voltage error fault”
+            fsm->setBit(COMM_OVER_CURRENT);          // “comm over current”
+            fsm->setBit(POWER_RELAY_OPEN_FAULT);          // “power relay open fault”
+            fsm->setBit(POWER_HEALTH_FAULT);          // “power supply health fault”
+            fsm->setBit(COMM_MULTI_BREAKER_FAULT);          // “comm multi-breaker fault”
+            fsm->setBit(POWER_SUPPLY_LOAD_SHARE_ERR);          // “power supply load share error”
+            fsm->setBit(INTERLOCK_FAULT);          // “interlock fault”
+            _powerSubsystemFaultManagerAffectedFaultMask = fsm;
+        }
+    }
+    return  _powerSubsystemFaultManagerAffectedFaultMask->_bitmap;
+}
+
+
+uint64_t FaultStatusBits::getPowerSubsystemFaultManagerAffectedWarningMask() {
+    if (_powerSubsystemFaultManagerAffectedWarningMask == nullptr) {
+        // Starts with nothing set
+        FaultStatusBits::Ptr fsm(new FaultStatusBits());
+        lock_guard<mutex> lg(faultMaskCreationMtx);
+        if (_powerSubsystemFaultManagerAffectedWarningMask == nullptr) {
+            // - "Affected Warning Mask":
+            // warnings
+            fsm->setBit(MOTOR_VOLTAGE_WARN);  // “motor voltage error warning”
+            fsm->setBit(COMM_VOLTAGE_WARN);   // “comm voltage error warning”
+            fsm->setBit(SINGLE_BREAKER_TRIP); // “single breaker trip”
+            // info
+            fsm->setBit(MOTOR_RELAY);    // “motor relay”
+            fsm->setBit(COMM_RELAY);     // “comm relay”
+            fsm->setBit(HARDWARE_FAULT); // “hardware fault”
+            _powerSubsystemFaultManagerAffectedWarningMask = fsm;
+        }
+    }
+    return  _powerSubsystemFaultManagerAffectedWarningMask->_bitmap;
 }
 
 string FaultStatusBits::getAllSetBitEnums() {
