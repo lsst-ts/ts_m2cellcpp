@@ -56,6 +56,9 @@ public:
         MOTION_ENGINE = 6      ///< "Motion Engine" = 6
     };
 
+    static std::string getCrioSubsystemStr(CrioSubsystem subSystem);
+
+    /* &&&
     /// &&& doc
     /// This is used by "TelemetryFaultManager.lvclass:xmit_faults.vi" and
     ///  "SystemStatus.lvclass:updateSummaryFaultsStatus.vi".
@@ -84,6 +87,7 @@ private:
     FaultStatusBits _affectedWarnInfoMask; ///< "Affected Warning/Info Mask", initialized to 0 in "Fault Manager" &&&
     CrioSubsystem _faultSource = FAULT_MANAGER; ///< "Faults Source" &&&
     util::TIMEPOINT _timeStamp; ///< "Time Stamp" &&&
+    */
 };
 
 
@@ -102,6 +106,28 @@ public:
     BasicFaultMgr& operator=(BasicFaultMgr const& other) = default;
 
     virtual ~BasicFaultMgr() = default;
+
+    /// &&& doc
+    /// This is used by "TelemetryFaultManager.lvclass:xmit_faults.vi" and
+    ///  "SystemStatus.lvclass:updateSummaryFaultsStatus.vi".
+    /// However, "BasicFaultManager.lvclass:send_faults.vi" just ands "Summary Fault Status" with
+    ///   "Default Fault Mask" then ors that with "Current Faults Status". Then passes that on
+    ///   as a "FaultsTelem" message. There's no explanation given as why different versions are
+    ///   required.
+    /// There's also no explanation given for the purpose of "Affected" variables. They seem to be
+    ///  bit masks that limit the operations to some entries in the bitmap, but that is less clear in
+    ///  their use with `_summaryFaultsStatus`.
+    /// @param summaryFaultStatus equivalent to Summary Fault Status in UpdateFaultStatus.vi
+    /// @param faultEnableMask equivalent to Fault Enable Mask in UpdateFaultStatus.vi
+    /// @param newFaultStatus equivalent to New Fault Status in UpdateFaultStatus.vi
+    /// @param affectedWarnInfo equivalent to Affected Warnings/Info Mask in UpdateFaultStatus.vi
+    /// @param affectedFault equivalent to Affected Fault Mask in UpdateFaultStatus.vi
+    /// @return FaultStatusBits with Updated Summary Faults, equivalent to the same in UpdateFaultStatus.vi
+    /// @return FaultStatusBits with bits that changed set to 1, , equivalent to the same in UpdateFaultStatus.vi
+    /// UpdateFaultStatus.vi
+    static std::tuple<uint16_t, uint16_t> updateFaultStatus(
+            uint64_t summaryFaultStatus, uint64_t faultEnableMask,
+            uint64_t newFaultStatus, uint64_t affectedWarnInfo, uint64_t affectedFault);
 
     /// Return `_summaryFaults`
     FaultStatusBits getSummaryFaults() const { return _summaryFaults; }
@@ -149,6 +175,16 @@ public:
     /// From "BasicFaultManager.lvclass:xmit_faults.vi"
     bool xmitFaults(FaultInfo::CrioSubsystem subsystem); // &&& change name.
 
+    /// Reset the faults in the mask in `_summaryFaults`, `_currentFaults`, and `_prevFaults`.
+    /// From "BasicFaultManager.lvclass:resetFaults.vi"
+    void resetFaults(FaultStatusBits mask);
+
+    /// Set the faults according to what is needed for a TCP/IP communications fault.
+    void setMaskComm(FaultStatusBits mask);
+
+    /// &&& doc
+    void updateSummary(uint64_t);
+
 private:
     FaultStatusBits _summaryFaults;        ///< "Summary Faults Status"
     FaultStatusBits _prevFaults;           ///< "Previous Faults Status"
@@ -157,6 +193,8 @@ private:
     FaultStatusBits _defaultFaultMask;     ///< "Default Fault Mask"
     FaultStatusBits _affectedFaultsMask;   ///< "Affected Faults Bit Mask"
     FaultStatusBits _affectedWarnInfoMask; ///< "Affected Warnings/Info Bit Mask"
+
+    util::TIMEPOINT _timeStamp; ///< last time there was a significant change.
 };
 
 
@@ -174,7 +212,9 @@ public:
 /// `TelemetryFaultMgr` adds arrays for ILC's and such, which will be implemented when ILC
 /// handling is added.
 class TelemetryFaultMgr : public BasicFaultMgr {
-    TelemetryFaultMgr();
+public:
+    /// Initialize arrays.
+    TelemetryFaultMgr() : BasicFaultMgr() {}
 };
 
 /// This class will track and reset faults encountered in the system.
@@ -202,28 +242,6 @@ public:
     /// @throws `ConfigException` if `setup` has not already been called.
     static Ptr getPtr();
 
-    /// &&& doc
-    /// This is used by "TelemetryFaultManager.lvclass:xmit_faults.vi" and
-    ///  "SystemStatus.lvclass:updateSummaryFaultsStatus.vi".
-    /// However, "BasicFaultManager.lvclass:send_faults.vi" just ands "Summary Fault Status" with
-    ///   "Default Fault Mask" then ors that with "Current Faults Status". Then passes that on
-    ///   as a "FaultsTelem" message. There's no explanation given as why different versions are
-    ///   required.
-    /// There's also no explanation given for the purpose of "Affected" variables. They seem to be
-    ///  bit masks that limit the operations to some entries in the bitmap, but that is less clear in
-    ///  their use with `_summaryFaultsStatus`.
-    /// @param summaryFaultStatus equivalent to Summary Fault Status in UpdateFaultStatus.vi
-    /// @param faultEnableMask equivalent to Fault Enable Mask in UpdateFaultStatus.vi
-    /// @param newFaultStatus equivalent to New Fault Status in UpdateFaultStatus.vi
-    /// @param affectedWarnInfo equivalent to Affected Warnings/Info Mask in UpdateFaultStatus.vi
-    /// @param affectedFault equivalent to Affected Fault Mask in UpdateFaultStatus.vi
-    /// @return FaultStatusBits with Updated Summary Faults, equivalent to the same in UpdateFaultStatus.vi
-    /// @return FaultStatusBits with bits that changed set to 1, , equivalent to the same in UpdateFaultStatus.vi
-    /// UpdateFaultStatus.vi
-    static std::tuple<uint16_t, uint16_t> updateFaultStatus(
-            uint64_t summaryFaultStatus, uint64_t faultEnableMask,
-            uint64_t newFaultStatus, uint64_t affectedWarnInfo, uint64_t affectedFault);
-
     /// Return true if there are any faults that the subsystem cares about.
     /// @param subsystemMask - mask of bits for the specific subsystem.
     /// @param note - identifier for calling class and/or function.
@@ -234,6 +252,13 @@ public:
 
     /// Update faults based on `currentFaults` provided by `subsystem`.
     void updatePowerFaults(FaultStatusBits currentFaults, FaultInfo::CrioSubsystem subsystem);
+
+    /// Get the number of TCP/IP connections `count`, triggering a fault if 0.
+    void reportComConnectionCount(size_t count);
+
+    /// Reset the fault bits in `resetMask` and send any required updates.
+    void resetFaults(FaultStatusBits resetMask);
+
 
     /* &&&
     /// Set the faults in `_summaryFaultsStatus` according to `bitmask` and internal masks.
@@ -250,22 +275,28 @@ private:
     // Private constructor to force use of `setup`;
     FaultMgr();
 
+    /// Update TelemetryCom with `newFsbSummary`, which should be the latest value
+    /// of `_summarySystemFaultsStatus`.
+    void _updateTelemetryCom(BasicFaultMgr const& newFsbSummary);
+
     /// Overall system faults status, Model->systemStatus->summaryFaultsStatus
-    FaultStatusBits _summarySystemFaultsStatus;
+    // &&&FaultStatusBits _summarySystemFaultsStatus;
+    BasicFaultMgr _summarySystemFaultsStatus;
     std::mutex _summarySystemFaultsMtx; ///< Protects `_summarySystemFaultsStatus`.
 
     /// Faults, warnings, and info associated with power systems.
     PowerFaultMgr _powerFaultMgr;
     std::mutex _powerFaultMtx; ///< Protects `_powerFaultMgr`.
 
-    //&&&FaultInfo _faultInfo; ///< Faults, warnings, and info associated with power systems.
+    /// Faults, warnings, and info associated with ILC's.
+    /// FUTURE: complete implementation
+    TelemetryFaultMgr _telemetryFaultMgr;
+    std::mutex _telemetryFaultMtx; ///< Protects `_telemetryFaultMgr`.
 
-    /// Following come from "Fault Manager"
-    ///< "CLC Mode" &&&
-    ///< "Comm Power Subsystem State" &&&
-    ///< "Motor Power Subsystem State" &&&
-    ///< "BasicFaultManager" (seems to hold the bitmasks) &&&
-    ///< "Health Fault Mask" &&&
+    /// True when there are no ComServer Tcp/Ip connections.
+    std::atomic<bool> _commConnectionFault{true};
+
+    FaultStatusBits _healthFaultMask{FaultStatusBits::getMaskHealthFaults()}; ///< "Health Fault Mask"
 };
 
 }  // namespace faultmgr

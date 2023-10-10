@@ -24,6 +24,11 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_session.hpp>
 
+// Project headers
+#include "control/Context.h"
+#include "control/FpgaIo.h"
+#include "faultmgr/FaultMgr.h"
+#include "simulator/SimCore.h"
 #include "system/ComClient.h"
 #include "system/ComControlServer.h"
 #include "system/ComServer.h"
@@ -51,8 +56,13 @@ TEST_CASE("Test ComControl", "[ComControl]") {
     util::Log::getLog().useEnvironmentLogLvl();
     string cfgPath = Config::getEnvironmentCfgPath("../configs");
     Config::setup(cfgPath + "unitTestCfg.yaml");
-
     Globals::setup(Config::get());
+
+
+    simulator::SimCore::Ptr simCore(new LSST::m2cellcpp::simulator::SimCore());
+    faultmgr::FaultMgr::setup();
+    control::FpgaIo::setup(simCore);
+    control::Context::setup();
 
     // Start a ComControlServer
     IoContextPtr ioContext = make_shared<boost::asio::io_context>();

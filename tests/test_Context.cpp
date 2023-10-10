@@ -31,6 +31,8 @@
 
 // Project headers
 #include "control/Context.h"
+#include "control/FpgaIo.h"
+#include "simulator/SimCore.h"
 #include "system/Config.h"
 #include "util/Bug.h"
 #include "util/Log.h"
@@ -42,6 +44,8 @@ TEST_CASE("Test Csv", "[CSV]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
     string cfgPath = LSST::m2cellcpp::system::Config::getEnvironmentCfgPath("../configs");
 
+    LSST::m2cellcpp::simulator::SimCore::Ptr simCore(new LSST::m2cellcpp::simulator::SimCore());
+    FpgaIo::setup(simCore);
     Context::setup();
 
     Context::Ptr context = Context::get();

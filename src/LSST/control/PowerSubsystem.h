@@ -429,7 +429,8 @@ private:
 
     /// Return true if the OutputPort is has the correct bits to turn on this power system.
     /// Sets "interlock fault" if the interlock is preventing power on.
-    bool _powerShouldBeOn();
+    /// @param faultsSet - Faults that occur will be recorded here.
+    bool _powerShouldBeOn(faultmgr::FaultStatusBits& faultsSet);
 
     /// Return a log worth string of the power situation.
     std::string _getPowerShouldBeOnStr();

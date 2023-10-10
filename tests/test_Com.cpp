@@ -32,6 +32,10 @@
 #include <catch2/catch_session.hpp>
 
 // Project headers
+#include "control/Context.h"
+#include "control/FpgaIo.h"
+#include "faultmgr/FaultMgr.h"
+#include "simulator/SimCore.h"
 #include "system/Config.h"
 #include "system/ComClient.h"
 #include "system/ComServer.h"
@@ -39,6 +43,7 @@
 #include "util/Log.h"
 
 using namespace std;
+using namespace LSST::m2cellcpp;
 using namespace LSST::m2cellcpp::system;
 
 TEST_CASE("Test Com echo", "[Com]") {
@@ -46,6 +51,11 @@ TEST_CASE("Test Com echo", "[Com]") {
     string cfgPath = Config::getEnvironmentCfgPath("../configs");
     Config::setup(cfgPath + "unitTestCfg.yaml");
     Globals::setup(Config::get());
+
+    simulator::SimCore::Ptr simCore(new LSST::m2cellcpp::simulator::SimCore());
+    faultmgr::FaultMgr::setup();
+    control::FpgaIo::setup(simCore);
+    control::Context::setup();
 
     REQUIRE(ComServer::prettyState(ComServer::CREATED) == "CREATED");
     REQUIRE(ComServer::prettyState(ComServer::RUNNING) == "RUNNING");

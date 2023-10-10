@@ -30,6 +30,7 @@
 #include <string>
 
 // Project headers
+#include "control/Context.h"
 #include "system/Config.h"
 #include "util/Bug.h"
 #include "util/Log.h"
@@ -44,25 +45,18 @@ FaultMgr::Ptr FaultMgr::_thisPtr;
 std::mutex FaultMgr::_thisPtrMtx;
 
 
-std::tuple<uint16_t, uint16_t> FaultInfo::updateFaultStatus(uint64_t summaryFaultStatus, uint64_t newFaultStatus) {
-    // affectedAll is the same as 1.MASK' from UpdateFaultStatus.vi
-    uint64_t affectedAll = _affectedFaultMask.getBitmap() | _affectedWarnInfoMask.getBitmap();
 
-    // cF is the same as CF from UpdateFaultStatus.vi
-    uint64_t cF = summaryFaultStatus;
-
-    // cFPrime is the same as 2.CF' from UpdateFaultStatus.vi
-    uint64_t cFPrime = cF & ~(_affectedWarnInfoMask.getBitmap());
-
-    uint64_t newMasked = newFaultStatus & affectedAll;
-
-    // updatedSummaryFaults is the same as "Updated Summary Faults" from UpdateFaultStatus.vi
-    uint64_t updatedSummaryFaults = cF ^ (newMasked | cFPrime);
-
-    // changedBits is the same as "Changed Bits" from UpdateFaultStatus.vi
-    uint64_t changedBits = _faultEnableMask.getBitmap() & affectedAll & updatedSummaryFaults;
-
-    return make_tuple(updatedSummaryFaults, changedBits);
+string FaultInfo::getCrioSubsystemStr(CrioSubsystem subSystem) {
+    switch (subSystem) {
+    case SYSTEM_CONTROLLER: return "SYSTEM_CONTROLLER";
+    case FAULT_MANAGER: return "FAULT_MANAGER";
+    case POWER_SUBSYSTEM: return "POWER_SUBSYSTEM";
+    case CELL_CONTROLLER: return "CELL_CONTROLLER";
+    case TELEMETRY_LOGGER: return "TELEMETRY_LOGGER";
+    case NETWORK_INTERFACE: return "NETWORK_INTERFACE";
+    case MOTION_ENGINE: return "MOTION_ENGINE";
+    }
+    return string(" unexpected subSytem=") + to_string(subSystem);
 }
 
 BasicFaultMgr::BasicFaultMgr() {
@@ -70,6 +64,8 @@ BasicFaultMgr::BasicFaultMgr() {
     _faultEnableMask.setBitmap(FaultStatusBits::getMaskFaults()); ///< "Fault Enable Mask"
     _defaultFaultMask.setBitmap(FaultStatusBits::getMaskFaults());; ///< "Default Fault Mask"
     // _affectedFaultsMask, and _affectedWarnInfoMask should both be zero already.
+
+    _timeStamp = util::CLOCK::now();
 }
 
 bool BasicFaultMgr::xmitFaults(FaultInfo::CrioSubsystem subsystem) {
@@ -86,9 +82,69 @@ bool BasicFaultMgr::xmitFaults(FaultInfo::CrioSubsystem subsystem) {
     uint64_t combined = summaryAndDefault | _currentFaults.getBitmap();
     _summaryFaults = combined;
 
+    _timeStamp = util::CLOCK::now();
+
     return true;
 }
 
+void BasicFaultMgr::resetFaults(FaultStatusBits mask) {
+    LDEBUG("resetFaults ", mask.getAllSetBitEnums());
+    uint64_t notMask = ~(mask.getBitmap());
+    _summaryFaults.setBitmap(_summaryFaults.getBitmap() & notMask);
+    _currentFaults.setBitmap(_currentFaults.getBitmap() & notMask);
+    _prevFaults.setBitmap(_prevFaults.getBitmap() & notMask);
+
+    _timeStamp = util::CLOCK::now();
+}
+
+
+std::tuple<uint16_t, uint16_t> BasicFaultMgr::updateFaultStatus(
+        uint64_t summaryFaultStatus, uint64_t faultEnableMask,
+        uint64_t newFaultStatus, uint64_t affectedWarnInfo, uint64_t affectedFault) {
+    // affectedAll is the same as 1.MASK' from UpdateFaultStatus.vi
+    uint64_t affectedAll = affectedFault | affectedWarnInfo;
+
+    // cf is the same as CF from UpdateFaultStatus.vi
+    uint64_t cf = summaryFaultStatus;
+
+    // cfPrime is the same as 2.CF' from UpdateFaultStatus.vi
+    uint64_t cfPrime = cf & ~(affectedWarnInfo);
+
+    uint64_t newMasked = newFaultStatus & affectedAll;
+
+    // updatedSummaryFaults is the same as "Updated Summary Faults" from UpdateFaultStatus.vi
+    uint64_t updatedSummaryFaults = cf ^ (newMasked | cfPrime);
+
+    // changedBits is the same as "Changed Bits" from UpdateFaultStatus.vi
+    uint64_t changedBits = faultEnableMask & affectedAll & updatedSummaryFaults;
+
+    return make_tuple(updatedSummaryFaults, changedBits);
+}
+
+
+void BasicFaultMgr::updateSummary(uint64_t newSummary) {
+    _summaryFaults = newSummary;
+    _prevFaults = _currentFaults;
+    _currentFaults = _summaryFaults;
+}
+
+
+void BasicFaultMgr::setMaskComm(FaultStatusBits newFaultMask) {
+    // SendDisconnectFault.vi uses a mask with only the "cRIO COMM error fault" bit set.
+    // This mask is used to set New Faults Status, Fault Enable Mask, Affected FaultMask,
+    // and Current Faults Status in a message.
+
+    // see FaultManager.lvclass:fault_manager_main.vi
+    _faultEnableMask.setBitmap(_faultEnableMask.getBitmap() | newFaultMask.getBitmap());
+    _affectedFaultsMask.setBitmap(_affectedFaultsMask.getBitmap() | newFaultMask.getBitmap());
+    _prevFaults = _currentFaults; // This is different than what the LabView code does.
+    _currentFaults = newFaultMask;
+
+    _summaryFaults.setBitmap((_summaryFaults.getBitmap() & _defaultFaultMask.getBitmap()) | _currentFaults.getBitmap());
+    _currentFaults = _summaryFaults;
+
+    _timeStamp = util::CLOCK::now();
+}
 
 PowerFaultMgr::PowerFaultMgr() : BasicFaultMgr() {
     // see PowerSubsystem.lvclass:initialize.vi
@@ -124,27 +180,48 @@ FaultMgr& FaultMgr::get() {
     return *_thisPtr;
 }
 
-std::tuple<uint16_t, uint16_t> FaultMgr::updateFaultStatus(
-        uint64_t summaryFaultStatus, uint64_t faultEnableMask,
-        uint64_t newFaultStatus, uint64_t affectedWarnInfo, uint64_t affectedFault) {
-    // affectedAll is the same as 1.MASK' from UpdateFaultStatus.vi
-    uint64_t affectedAll = affectedFault | affectedWarnInfo;
 
-    // cf is the same as CF from UpdateFaultStatus.vi
-    uint64_t cf = summaryFaultStatus;
+void FaultMgr::resetFaults(FaultStatusBits resetMask) {
+    BasicFaultMgr newSummary;
+    {
+        lock_guard<mutex> lgPower(_powerFaultMtx);
+        _powerFaultMgr.resetFaults(resetMask);
+    }
 
-    // cfPrime is the same as 2.CF' from UpdateFaultStatus.vi
-    uint64_t cfPrime = cf & ~(affectedWarnInfo);
+    {
+        lock_guard<mutex> lgTelemetry(_telemetryFaultMtx);
+        _telemetryFaultMgr.resetFaults(resetMask);
+    }
 
-    uint64_t newMasked = newFaultStatus & affectedAll;
+    {
+        lock_guard<mutex> lgSummary(_summarySystemFaultsMtx);
+        // Model.lvclass:resetAndReportSummaryFaultStatus.vi
+        _summarySystemFaultsStatus.resetFaults(resetMask);
+        newSummary = _summarySystemFaultsStatus;
+    }
 
-    // updatedSummaryFaults is the same as "Updated Summary Faults" from UpdateFaultStatus.vi
-    uint64_t updatedSummaryFaults = cf ^ (newMasked | cfPrime);
+    // update TelemetryCom value.
+    _updateTelemetryCom(newSummary);
+}
 
-    // changedBits is the same as "Changed Bits" from UpdateFaultStatus.vi
-    uint64_t changedBits = faultEnableMask & affectedAll & updatedSummaryFaults;
 
-    return make_tuple(updatedSummaryFaults, changedBits);
+void FaultMgr::reportComConnectionCount(size_t count) {
+    // see FaultManager.lvclass::process_network_fault.vi
+    _commConnectionFault = (count < 1);
+
+    FaultStatusBits commMask;
+    commMask.setBit(FaultStatusBits::CRIO_COMM_FAULT);
+    if (_commConnectionFault) {
+        {
+            lock_guard<mutex> lgSummary(_summarySystemFaultsMtx);
+            _summarySystemFaultsStatus.setMaskComm(commMask);
+        }
+        control::Context::get()->model.goToSafeMode("no TCP/IP connections");
+    } else {
+        resetFaults(commMask);
+    }
+    // checkForPowerSubsystemFaults() checks _commConnectionFault to
+    // prevent power on without network connection.
 }
 
 
@@ -153,43 +230,70 @@ void FaultMgr::updatePowerFaults(FaultStatusBits currentFaults, FaultInfo::CrioS
     {
         lock_guard<mutex> lgPowerFault(_powerFaultMtx);
         _powerFaultMgr.setCurrentFaults(currentFaults);
+        // LabView code would like to OR the 'affected' masks together,
+        // but that's always the equivalent of ORing something with itself here.
+        //  see "FaultManager.lvclass:combine_affected_masks.vi
+        // Following merges current faults into _powerFaultMgr._summaryFaults.
         if (!_powerFaultMgr.xmitFaults(subsystem)) {
-            // no changes, nothing to do.
+            // no changes, nothing more to do.
             return;
         }
         bfm = _powerFaultMgr;
     }
 
+    // Check newFaultStatus for faults that require power or system state changes. &&&
+    switch (subsystem) {
+    case FaultInfo::POWER_SUBSYSTEM:
+    {
+        // see FaultManager.lvclass:health_fault_occurred.vi"
+        FaultStatusBits currentHealthFaults;
+        currentHealthFaults.setBitmap(currentFaults.getBitmap() & _healthFaultMask.getBitmap()); // "Health Fault Mask"
+        // Instead of only sending the message when something new happens, which is
+        // kind of tricky, always have the model go to safe mode. However,
+        // safe mode in the model doesn't do anything if it's already trying
+        // to go to safe mode.
+        if (currentHealthFaults.getBitmap() != 0) {
+            control::Context::get()->model.goToSafeMode(string("FaultMgr PowerFault ") + currentHealthFaults.getAllSetBitEnums());
+        }
+        break;
+    }
+    case FaultInfo::TELEMETRY_LOGGER: [[fallthrough]];
+    case FaultInfo::NETWORK_INTERFACE: [[fallthrough]];
+    case FaultInfo::SYSTEM_CONTROLLER: [[fallthrough]];
+    case FaultInfo::FAULT_MANAGER: [[fallthrough]];
+    case FaultInfo::CELL_CONTROLLER: [[fallthrough]];
+    case FaultInfo::MOTION_ENGINE: [[fallthrough]];
+    default:
+        LCRITICAL(__func__, "unexpected call with subsystem set to ", subsystem);
+    }
+
+    BasicFaultMgr newFsbSummary;
     {
         // see "SystemStatus.lvclass:updateSummaryFaultsStatus.vi"
         // Note that `FaultMgr::_summarySystemFaultsStatus` is the global
         //   system status object.
         lock_guard<mutex> lgSummary(_summarySystemFaultsMtx);
-        auto [newSummary, changedBits] = updateFaultStatus(
-                _summarySystemFaultsStatus.getBitmap(), bfm.getFaultEnableMask().getBitmap(),
+        auto [nSummary, changedBits] = BasicFaultMgr::updateFaultStatus(
+                _summarySystemFaultsStatus.getSummaryFaults().getBitmap(), bfm.getFaultEnableMask().getBitmap(),
                 bfm.getCurrentFaults().getBitmap(),  bfm.getAffectedWarnInfoMask().getBitmap(),
                 bfm.getAffectedFaultsMask().getBitmap());
 
-        if (newSummary != _summarySystemFaultsStatus.getBitmap()) {
-            _summarySystemFaultsStatus.setBitmap(newSummary);
+        if (nSummary != _summarySystemFaultsStatus.getSummaryFaults().getBitmap()) {
+            _summarySystemFaultsStatus.updateSummary(nSummary);
             FaultStatusBits cBits(changedBits);
             LINFO("FaultMgr::updatePowerFaults changedBits=", cBits.getAllSetBitEnums());
         }
+        newFsbSummary = _summarySystemFaultsStatus;
     }
     // &&& at this point the TelemetryItem for fault status should be updated,
     //     but there doesn't seem to be one.
+    _updateTelemetryCom(newFsbSummary);
 }
 
+
 bool FaultMgr::checkForPowerSubsystemFaults(FaultStatusBits const& subsystemMask, string const& note) {
-    /* &&&
-    /// see PowerSubsystem->set_motor_power.vi and BasicFaultManager->read_faults.vi
-    FaultStatusBits faultBitmap(subsystemMask.getBitmap()
-            & _faultEnableMask.getBitmap() & _currentFaults.getBitmap());
-    if (faultBitmap.getBitmap() != 0) {
-        LERROR("checkForPowerSubsystemFaults has faults for ", faultBitmap.getAllSetBitEnums());
-    }
-    return false;
-    */
+    // This will make certain that power cannot be turned on if there are no Tcp/Ip connections.
+    bool faultFound = _commConnectionFault;
 
     FaultStatusBits faultBitmap;
     {
@@ -199,14 +303,17 @@ bool FaultMgr::checkForPowerSubsystemFaults(FaultStatusBits const& subsystemMask
         faultBitmap.setBitmap(subsystemMask.getBitmap() & pfm.getFaultEnableMask().getBitmap()
                 & pfm.getCurrentFaults().getBitmap());
     }
-    bool result = faultBitmap.getBitmap() != 0;
-    if (result) {
-        LERROR("checkForPowerSubsystemFaults has faults for ", faultBitmap.getAllSetBitEnums());
+    if (!faultFound) {
+        faultFound = faultBitmap.getBitmap() != 0;
     }
-    return result;
+    if (faultFound) {
+        LERROR("checkForPowerSubsystemFaults has faults for ", faultBitmap.getAllSetBitEnums(),
+                " _commConnectionFault=", to_string(_commConnectionFault));
+    }
+    return faultFound;
 }
 
-FaultMgr::FaultMgr()   {
+FaultMgr::FaultMgr() {
 }
 
 bool FaultMgr::setFault(std::string const& faultNote) {
@@ -214,12 +321,10 @@ bool FaultMgr::setFault(std::string const& faultNote) {
     return true;
 }
 
-/* &&&
-bool FaultMgr::setFaultWithMask(uint64_t bitmask, std::string const& note) {
-    //&&& _faultInfo._currentFaults |= bitmask;
-    _faultInfo.setCurrentFaults(_currentFaults | bitmask);
+void FaultMgr::_updateTelemetryCom(BasicFaultMgr const& newFsbSummary) {
+    // TODO: DM-40339 send information to telemetry TCP/IP server
+    LCRITICAL("FaultMgr::_updateTelemetry NEEDS CODE");
 }
-*/
 
 }  // namespace faultmgr
 }  // namespace m2cellcpp

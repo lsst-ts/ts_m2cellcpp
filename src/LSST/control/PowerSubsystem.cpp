@@ -371,14 +371,15 @@ bool PowerSubsystem::_getInterlockRelayControlOutputOn() const {
 }
 
 
-bool PowerSubsystem::_powerShouldBeOn() {
+bool PowerSubsystem::_powerShouldBeOn(faultmgr::FaultStatusBits& faultsSet) {
     // BasePowerOutput->output_should_be_on.vi
     if (_getRelayControlOutputOn() && _getCrioReadyOutputOn()) {
         if (_getInterlockRelayControlOutputOn()) {
             return true;
         } else {
             // Set "Fault Status" "interlock fault"
-            _sendFaultMgrSetBit(faultmgr::FaultStatusBits::INTERLOCK_FAULT);
+            //&&&_sendFaultMgrSetBit(faultmgr::FaultStatusBits::INTERLOCK_FAULT);
+            faultsSet.setBit(faultmgr::FaultStatusBits::INTERLOCK_FAULT);
         }
     }
     return false;
@@ -445,9 +446,9 @@ void PowerSubsystem::setPowerOff(std::string const& note) {
 }
 
 void PowerSubsystem::_setPowerOff(std::string const& note) {
+    LINFO(getClassName(), " Turning power off ", note);
     VMUTEX_HELD(_powerStateMtx);
 
-    LINFO(getClassName(), " Turning power off ", note);
     _fpgaIo->writeOutputPortBitPos(_psCfg.getOutputBreakerBitPos(), true);
     _fpgaIo->writeOutputPortBitPos(_psCfg.getOutputPowerOnBitPos(), false);
     if (_targPowerState != OFF) {
@@ -460,13 +461,13 @@ void PowerSubsystem::_setPowerOff(std::string const& note) {
 
 
 SysStatus PowerSubsystem::processDaq(SysInfo const& info, faultmgr::FaultStatusBits& faultsSet) {
-    /// &&& faultmgr::FaultStatusBits& faultsSet
+    VMUTEX_NOT_HELD(_powerStateMtx);
     _sysInfo = info;
 
     // Check for faults
     bool systemFaults = _checkForFaults();
     if (systemFaults) {
-        _setPowerOff("processDaq had system faults");
+        setPowerOff("processDaq had system faults");
     }
 
     if (_targPowerStatePrev != _targPowerState
@@ -515,11 +516,13 @@ bool PowerSubsystem::_checkForPowerOnBreakerFault(double voltage, faultmgr::Faul
         if (breakerStatus <= FAULT) {
             LWARN(getClassName(), " _checkForPowerOnBreakerFault a breakerStatus=", breakerStatus,
                     " ", getSysStatusStr(breakerStatus), " inactiveInputs=", inactiveInputs);
-            _sendFaultMgrSetBit(_psCfg.getBreakerFault()); //"breaker fault"
+            //&&& _sendFaultMgrSetBit(_psCfg.getBreakerFault()); //"breaker fault"
+            faultsSet.setBit(_psCfg.getBreakerFault()); //"breaker fault"
             _setPowerOff(string(__func__) + " breaker fault");
             return true;
         }
-        _sendFaultMgrSetBit(_psCfg.getBreakerWarn()); //"breaker warning"
+        //&&& _sendFaultMgrSetBit(_psCfg.getBreakerWarn()); //"breaker warning"
+        faultsSet.setBit(_psCfg.getBreakerWarn()); //"breaker warning"
         return false; // no faults, just warnings
     }
 
@@ -544,7 +547,7 @@ void PowerSubsystem::_processPowerOn(faultmgr::FaultStatusBits& faultsSet) {
 
     // Check that the outputs are appropriate for turning power on
     // BasePowerOutput->output_should_be_on.vi
-    bool outputIsOn = _powerShouldBeOn();
+    bool outputIsOn = _powerShouldBeOn(faultsSet);
 
     double voltage = getVoltage();
     if (voltage > _psCfg.getMaxVoltageFault()) {
@@ -779,9 +782,11 @@ void PowerSubsystem::_sendFaultMgrWarn() {
     LERROR("PowerSubsystem::", __func__, " PLACEHOLDER NEEDS CODE");
 }
 
+/* &&&
 void PowerSubsystem::_sendFaultMgrSetBit(int bitPos) {
     LERROR("PowerSubsystem::", __func__, " PLACEHOLDER NEEDS CODE");
 }
+*/
 
 }  // namespace control
 }  // namespace m2cellcpp

@@ -91,10 +91,14 @@ private:
     void _processDaq(SysInfo info);
 
 
-    /// To be implemented in DM-40908, handle faults for some hardware signals related to power.
-    /// PLACEHOLDER DAQ_to_PS_health_telemetry.vi - copy the data into a placeholder structure,
-    ///         but doesn't do any checking.
-    void _processDaqHealthTelemetry(SysInfo info);
+    /// To be implemented in DM-40908, handle faults for some hardware signals related to power. &&&
+    /// PLACEHOLDER DAQ_to_PS_health_telemetry.vi - copy the data into a placeholder structure, &&&
+    ///         but doesn't do any checking. &&&
+    /// Handle faults for some hardware signals related to power.
+    /// @param sInfo - System hardware information from FpgaIo.
+    /// @param currentFaults - Faults detected in this function will be reported here.
+    void _processDaqHealthTelemetry(SysInfo sInfo, faultmgr::FaultStatusBits& currentFaults);
+
 
     /* &&&
     /// "Current Faults", this initializes to 0, but the LabView code has a mention
@@ -102,7 +106,7 @@ private:
     faultmgr::FaultStatusBits _currentFaults; // &&& can probably be replaced with local variable
     */
 
-    faultmgr::PowerFaultMgr _powerFaultMgr; ///< "Basic Fault Manager" for power system.
+    //&&& faultmgr::PowerFaultMgr _powerFaultMgr; ///< "Basic Fault Manager" for power system.
 
     PowerSubsystem _motor; ///< Handles MOTOR power control.
     PowerSubsystem _comm; ///< Handles COMM power control.
@@ -120,6 +124,10 @@ private:
     /// Timeout in seconds for fresh DAQ SystemInfo.
     /// DM-40694 set from config file, also needs a real value
     std::atomic<double> _sysInfoTimeoutSecs{1.5};
+
+    /// If true, boost current indicators from the power supplies will cause faults.
+    /// DM-40694 set from config file
+    bool _boostCurrentFaultEnabled = true;
 };
 
 

@@ -87,13 +87,16 @@ bool PowerSystem::_checkTimeout(double diffInSeconds) {
 
 void PowerSystem::_processDaq(SysInfo info) {
     faultmgr::FaultStatusBits currentFaults;
+
+    _processDaqHealthTelemetry(info, currentFaults);
+    // If the health check had a fault, update FaultMgr now so motor and comm power
+    // can be turned off asap.
+    if (currentFaults.getBitmap() != 0) {
+        faultmgr::FaultMgr::get().updatePowerFaults(currentFaults, faultmgr::FaultInfo::POWER_SUBSYSTEM);
+    }
+
     SysStatus motorStat = _motor.processDaq(info, currentFaults);
     SysStatus commStat = _comm.processDaq(info, currentFaults);
-
-    _processDaqHealthTelemetry(info);
-
-    //&&& _powerFaultMgr.setCurrentFaults(currentFaults);
-    //&&& _powerFaultMgr.xmitFaults();
     faultmgr::FaultMgr::get().updatePowerFaults(currentFaults, faultmgr::FaultInfo::POWER_SUBSYSTEM);
 
     if (_motorStatusPrev != motorStat || _commStatusPrev != commStat) {
@@ -103,8 +106,6 @@ void PowerSystem::_processDaq(SysInfo info) {
         _commStatusPrev = commStat;
         // TODO: DM-40339 send information to telemetry server
     }
-
-
 }
 
 void PowerSystem::queueDaqInfoRead() {
@@ -119,45 +120,41 @@ void PowerSystem::queueTimeoutCheck() {
 }
 
 
-void PowerSystem::_processDaqHealthTelemetry(SysInfo sInfo) {
-    //  - DAQ_to_PS_health_telemetry.vi - assemble vi output “Power Subsystem Common Telemetry” (shortening to PSCT)
+void PowerSystem::_processDaqHealthTelemetry(SysInfo sInfo, faultmgr::FaultStatusBits& currentFaults) {
+    //  - DAQ_to_PS_health_telemetry.vi - assemble vi output “Power Subsystem Common Telemetry”
     //  - “Power Control/Status Telemetry.Digital Inputs”
 
-    /// struct to be replaced by real class in its own header file in DM-40908
-    struct HealthTelemetryPSCT {
-        HealthTelemetryPSCT(SysInfo info) {
-            //- AND with “Input Port Bit Masks.RedundancyOK Bit” (active high)
-            //   -> convert to bool (true if !=0) -> “PSCT.Redundancy OK”
-            redundancyOk = info.inputPort.getBitAtPos(InputPortBits::REDUNDANCY_OK);
-            // - AND with “Input Port Bit Masks.Load Distribution OK Bit” (active high)
-            //   -> convert to bool (true if !=0) -> “PSCT.Load Distribution OK”
-            loadDistributionOk = info.inputPort.getBitAtPos(InputPortBits::LOAD_DISTRIBUTION_OK);
-            // - AND with “Input Port Bit Masks.Power Supply #1 DC OK Bit” (active high)
-            //   -> convert to bool (true if !=0) -> “PSCT.P/S 1 DC OK”
-            powerSupply1DcOk = info.inputPort.getBitAtPos(InputPortBits::POWER_SUPPLY_1_DC_OK);
-            // - AND with “Input Port Bit Masks.Power Supply #2 DC OK Bit” (active high)
-            //   -> convert to bool (true if !=0) -> “PSCT.P/S 2 DC OK”
-            powerSupply2DcOk = info.inputPort.getBitAtPos(InputPortBits::POWER_SUPPLY_2_DC_OK);
-            // - AND with “Input Port Bit Masks.Power Supply #1 Current OK Bit” (active low)
-            //   -> convert to bool (true if ==0) -> “PSCT.P/S 1 Boost Current ON”
-            powerSupply1BoostCurrentOn = !(info.inputPort.getBitAtPos(InputPortBits::POWER_SUPPLY_1_CURRENT_OK));
-            // - AND with “Input Port Bit Masks.Power Supply #2 Current OK Bit” (active low)
-            //   -> convert to bool (true if ==0) -> “PSCT.P/S 2 Boost Current ON”
-            powerSupply2BoostCurrentOn = !(info.inputPort.getBitAtPos(InputPortBits::POWER_SUPPLY_2_CURRENT_OK));
-        }
+    bool redundancyOk = sInfo.inputPort.getBitAtPos(InputPortBits::REDUNDANCY_OK);
+    bool loadDistributionOk = sInfo.inputPort.getBitAtPos(InputPortBits::LOAD_DISTRIBUTION_OK);
+    bool powerSupply1DcOk = sInfo.inputPort.getBitAtPos(InputPortBits::POWER_SUPPLY_1_DC_OK);
+    bool powerSupply2DcOk = sInfo.inputPort.getBitAtPos(InputPortBits::POWER_SUPPLY_2_DC_OK);
 
-        bool redundancyOk;
-        bool loadDistributionOk;
-        bool powerSupply1DcOk;
-        bool powerSupply2DcOk;
-        bool powerSupply1BoostCurrentOn;
-        bool powerSupply2BoostCurrentOn;
-    };
+    // Active low inputs, see PowerSubsystem.lvclass:DAQ_to_PS_health_telemetry.vi
+    bool powerSupply1BoostCurrentOn = !(sInfo.inputPort.getBitAtPos(InputPortBits::POWER_SUPPLY_1_CURRENT_OK));
+    bool powerSupply2BoostCurrentOn = !(sInfo.inputPort.getBitAtPos(InputPortBits::POWER_SUPPLY_2_CURRENT_OK));
 
-    HealthTelemetryPSCT psct(sInfo);
+    bool powerLoadOk = redundancyOk && loadDistributionOk;
+
+    if (!powerLoadOk) {
+        LERROR("POWER_SUPPLY_LOAD_SHARE_ERR redundancyOk=",
+                redundancyOk, " loadDistributionOk=", loadDistributionOk);
+        // "power supply load share error"
+        currentFaults.setBit(faultmgr::FaultStatusBits::POWER_SUPPLY_LOAD_SHARE_ERR);
+    }
+
+    bool anyBoostCurrentOnAndFaultEnabled = _boostCurrentFaultEnabled && (powerSupply1BoostCurrentOn || powerSupply2BoostCurrentOn);
+    bool allDcOk = powerSupply1DcOk && powerSupply2DcOk;
+    bool powerSupplyOk = allDcOk && !anyBoostCurrentOnAndFaultEnabled;
+
+    if (!powerSupplyOk) {
+        LERROR("POWER_HEALTH_FAULT _boostCurrentFaultEnabled=", _boostCurrentFaultEnabled,
+                " powerSupply1BoostCurrentOn=", powerSupply1BoostCurrentOn,
+                " powerSupply2BoostCurrentOn=", powerSupply2BoostCurrentOn,
+                " powerSupply1DcOk=", powerSupply1DcOk,
+                " powerSupply2DcOk=", powerSupply2DcOk);
+        currentFaults.setBit(faultmgr::FaultStatusBits::POWER_HEALTH_FAULT); // "power supply health fault"
+    }
 }
-
-
 
 }  // namespace control
 }  // namespace m2cellcpp

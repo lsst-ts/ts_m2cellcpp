@@ -53,6 +53,8 @@ FaultStatusBits::Ptr FaultStatusBits::_telemetryFaultManagerAffectedWarningMask;
 FaultStatusBits::Ptr FaultStatusBits::_powerSubsystemFaultManagerAffectedFaultMask;
 FaultStatusBits::Ptr FaultStatusBits::_powerSubsystemFaultManagerAffectedWarningMask;
 
+FaultStatusBits::Ptr FaultStatusBits::_healthFaultMask;
+
 /// `faultMaskCreationMtx` is only needed during the creation of fault
 /// status masks. There's a slight race condition when creating masks
 /// where more than one thread could get past the if ( == nullptr) latch.
@@ -358,6 +360,20 @@ uint64_t FaultStatusBits::getPowerSubsystemFaultManagerAffectedWarningMask() {
         }
     }
     return  _powerSubsystemFaultManagerAffectedWarningMask->_bitmap;
+}
+
+uint64_t FaultStatusBits::getMaskHealthFaults() {
+    if (_healthFaultMask == nullptr) {
+        // Starts with nothing set
+        FaultStatusBits::Ptr fsm(new FaultStatusBits());
+        lock_guard<mutex> lg(faultMaskCreationMtx);
+        if (_healthFaultMask == nullptr) {
+            fsm->setBit(faultmgr::FaultStatusBits::POWER_HEALTH_FAULT);
+            fsm->setBit(faultmgr::FaultStatusBits::POWER_SUPPLY_LOAD_SHARE_ERR);
+            _healthFaultMask = fsm;
+        }
+    }
+    return _healthFaultMask->_bitmap;
 }
 
 string FaultStatusBits::getAllSetBitEnums() {

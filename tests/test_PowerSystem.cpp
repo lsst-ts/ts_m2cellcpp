@@ -31,6 +31,7 @@
 #include <catch2/catch_session.hpp>
 
 // Project headers
+#include "control/Context.h"
 #include "control/FpgaIo.h"
 #include "control/PowerSubsystem.h"
 #include "control/PowerSystem.h"
@@ -72,8 +73,9 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
     const chrono::duration voltageRiseWait = 1.0s;
 
     simulator::SimCore::Ptr simCore(new simulator::SimCore());
-
     faultmgr::FaultMgr::setup();
+    control::FpgaIo::setup(simCore);
+    control::Context::setup();
 
     LDEBUG("test_SimCore start");
     simCore->start();
@@ -116,6 +118,17 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         powerSys->writeCrioInterlockEnable(true);
         simCore->waitForUpdate(telemWait);
         REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::OFF);
+
+        // Try to turn power on with any network connections
+        LDEBUG("Turn motor power on, expected failure due to no network connections");
+        motorSubSys.setPowerOn();
+        simCore->waitForUpdate(simWait);
+        sInfo = simCore->getSysInfo();
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) == 0);
+
+        // Pretend there's at least one TCP/IP connection so the
+        // power can be turned on.
+        faultmgr::FaultMgr::get().reportComConnectionCount(1);
 
         // turn power on
         LDEBUG("Turn motor power on!!!");
@@ -266,6 +279,18 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.inputPort.getBitAtPos(control::InputPortBits::J2_W10_3_MTR_PWR_BRKR_OK) == true);
         REQUIRE(sInfo.inputPort.getBitAtPos(control::InputPortBits::J2_W10_1_MTR_PWR_BRKR_OK) == true);
 
+        // Remove the pretend TCP/IP connections and verify power goes off.
+        faultmgr::FaultMgr::get().reportComConnectionCount(0);
+        simCore->waitForUpdate(simWait);
+        sInfo = simCore->getSysInfo();
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) == 0);
+        // verify power off
+        simCore->waitForUpdate(simWaitLong); // need to wait for voltage fall
+        sInfo = simCore->getSysInfo();
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) == 0);
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
+        REQUIRE(sInfo.motorVoltage < voltageOffLevel); // _voltageOffLevel
+        REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::OFF);
     }
 
     LDEBUG("test_PowerSystem simCore stop");

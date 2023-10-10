@@ -153,6 +153,9 @@ public:
     /// Should match "subsystem fault mask" maps found in BasePowerSubsystem.lvclass:set_fault_masks.vi
     static uint64_t getMaskPowerSubsystemFaults(control::PowerSystemType sysType);
 
+    /// Returns a mask of the health faults for the powre system.
+    static uint64_t getMaskHealthFaults();
+
     /// Set (when `set` == true) or unset (when `set` == false) the bit at `pos` in `bitmap`
     static void setBit64(uint64_t& bitmap, int pos, bool set);
 
@@ -164,11 +167,11 @@ public:
 
     /// Set the bit in `_bitmap` at `pos`.
     /// @throws range_error.
-    void setBit(int pos);
+    void setBit(int pos);  // &&& rename setBitAt(pos, val)
 
     /// Unset the bit in `_bitmap` at `pos`.
     /// @throws range_error.
-    void unsetBit(int pos);
+    void unsetBit(int pos); // &&& remove
 
     /// Return a copy of `_bitmap`.
     uint64_t getBitmap() const { return _bitmap; }
@@ -221,6 +224,9 @@ private:
 
     /// Stored "PowerSubsystem Affected Fault Mask"
     static Ptr _powerSubsystemFaultManagerAffectedWarningMask;
+
+    /// Stored health fault mask
+    static Ptr _healthFaultMask;
 
 };
 
