@@ -64,17 +64,18 @@ public:
     /// @param note - identifier for calling class and/or function.
     bool checkForPowerSubsystemFaults(FaultStatusBits const& subsystemMask, std::string const& note);
 
-    /// PLACEHOLDER set a fault until the appropriate way to handle it is determined. &&&
-    bool setFault(std::string const& faultNote); /// &&& delete
-
     /// Update faults based on `currentFaults` provided by `subsystem`.
-    void updatePowerFaults(FaultStatusBits currentFaults, FaultInfo::CrioSubsystem subsystem);
+    void updatePowerFaults(FaultStatusBits currentFaults, BasicFaultMgr::CrioSubsystem subsystem);
 
     /// Get the number of TCP/IP connections `count`, triggering a fault if 0.
     void reportComConnectionCount(size_t count);
 
     /// Reset the fault bits in `resetMask` and send any required updates.
     void resetFaults(FaultStatusBits resetMask);
+
+    /// Currently, this just logs an error. Eventually, this should result in a message
+    /// that can be displayed by the GUI.
+    void faultMsg(int errId, std::string const& eMsg);
 
 private:
     static Ptr _thisPtr; ///< pointer to the global instance of FaultMgr.

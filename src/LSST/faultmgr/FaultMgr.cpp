@@ -100,7 +100,7 @@ void FaultMgr::reportComConnectionCount(size_t count) {
     _commConnectionFault = (count < 1);
 
     FaultStatusBits commMask;
-    commMask.setBit(FaultStatusBits::CRIO_COMM_FAULT);
+    commMask.setBitAt(FaultStatusBits::CRIO_COMM_FAULT);
     if (_commConnectionFault) {
         {
             lock_guard<mutex> lgSummary(_summarySystemFaultsMtx);
@@ -115,7 +115,7 @@ void FaultMgr::reportComConnectionCount(size_t count) {
 }
 
 
-void FaultMgr::updatePowerFaults(FaultStatusBits currentFaults, FaultInfo::CrioSubsystem subsystem) {
+void FaultMgr::updatePowerFaults(FaultStatusBits currentFaults, BasicFaultMgr::CrioSubsystem subsystem) {
     BasicFaultMgr bfm;
     {
         lock_guard<mutex> lgPowerFault(_powerFaultMtx);
@@ -124,7 +124,7 @@ void FaultMgr::updatePowerFaults(FaultStatusBits currentFaults, FaultInfo::CrioS
         // but that's always the equivalent of ORing something with itself here.
         //  see "FaultManager.lvclass:combine_affected_masks.vi
         // Following merges current faults into _powerFaultMgr._summaryFaults.
-        if (!_powerFaultMgr.xmitFaults(subsystem)) {
+        if (!_powerFaultMgr.updateFaults(subsystem)) {
             // no changes, nothing more to do.
             return;
         }
@@ -133,7 +133,7 @@ void FaultMgr::updatePowerFaults(FaultStatusBits currentFaults, FaultInfo::CrioS
 
     // Check newFaultStatus for faults that require power or system state changes.
     switch (subsystem) {
-    case FaultInfo::POWER_SUBSYSTEM:
+    case BasicFaultMgr::POWER_SUBSYSTEM:
     {
         // see FaultManager.lvclass:health_fault_occurred.vi"
         FaultStatusBits currentHealthFaults;
@@ -147,12 +147,12 @@ void FaultMgr::updatePowerFaults(FaultStatusBits currentFaults, FaultInfo::CrioS
         }
         break;
     }
-    case FaultInfo::TELEMETRY_LOGGER: [[fallthrough]];
-    case FaultInfo::NETWORK_INTERFACE: [[fallthrough]];
-    case FaultInfo::SYSTEM_CONTROLLER: [[fallthrough]];
-    case FaultInfo::FAULT_MANAGER: [[fallthrough]];
-    case FaultInfo::CELL_CONTROLLER: [[fallthrough]];
-    case FaultInfo::MOTION_ENGINE: [[fallthrough]];
+    case BasicFaultMgr::TELEMETRY_LOGGER: [[fallthrough]];
+    case BasicFaultMgr::NETWORK_INTERFACE: [[fallthrough]];
+    case BasicFaultMgr::SYSTEM_CONTROLLER: [[fallthrough]];
+    case BasicFaultMgr::FAULT_MANAGER: [[fallthrough]];
+    case BasicFaultMgr::CELL_CONTROLLER: [[fallthrough]];
+    case BasicFaultMgr::MOTION_ENGINE: [[fallthrough]];
     default:
         LCRITICAL(__func__, "unexpected call with subsystem set to ", subsystem);
     }
@@ -206,14 +206,14 @@ bool FaultMgr::checkForPowerSubsystemFaults(FaultStatusBits const& subsystemMask
 FaultMgr::FaultMgr() {
 }
 
-bool FaultMgr::setFault(std::string const& faultNote) {
-    LERROR("FaultMgr::setFault PLACEHOLDER ", faultNote);
-    return true;
-}
 
 void FaultMgr::_updateTelemetryCom(BasicFaultMgr const& newFsbSummary) {
     // TODO: DM-40339 send information to telemetry TCP/IP server
     LCRITICAL("FaultMgr::_updateTelemetry NEEDS CODE");
+}
+
+void FaultMgr::faultMsg(int errId, std::string const& eMsg) {
+    LERROR("FaultMgr::faultMsg id=", errId, " msg=", eMsg);
 }
 
 }  // namespace faultmgr

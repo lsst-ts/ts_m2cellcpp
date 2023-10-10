@@ -442,20 +442,8 @@ private:
     /// @param faultsSet - Faults that occur will be recorded here.
     bool _checkForPowerOnBreakerFault(double voltage, faultmgr::FaultStatusBits& faultsSet);
 
-    /// Set power off and send the FaultMgr low voltage warnings and faults.
-    void _sendBreakerVoltageFault(faultmgr::FaultStatusBits& faultsSet); // &&& rename
-
-    /// PLACEHOLDER to register an error with the fault manager. // &&&
-    void _sendFaultMgrError(); // &&&
-
-    /// PLACEHOLDER to register an error with the fault manager. // &&&
-    void _sendFaultMgrError(int errId, std::string note); // &&&
-
-    /// PLACEHOLDER to register a warning with the fault manager. // &&&
-    void _sendFaultMgrWarn(); // &&&
-
-    /// PLACEHOLDER to set a bit in the FaulMgr FaultStatusBits. // &&&
-    void _sendFaultMgrSetBit(int bitPos); // &&&
+    /// Update the faults in the FaultMgr with `faultsSet`.
+    void _updateFaults(faultmgr::FaultStatusBits& faultsSet);
 
     /// Return true if the FaultMgr has any faults that affect this PowerSubsystem.
     bool _checkForFaults();

@@ -39,9 +39,33 @@ namespace faultmgr {
 
 class FaultMgr;
 
-/// doc &&&
-/// BasicFaultManager->send_faults.vi
-class FaultInfo {
+/// Stores a copy of fault information for a specific system.
+/// All systems use the same layout for a uint64_t with the bits mapped
+/// to specific faults (see `FaultStatusBits`).
+/// The purpose of most of the member variables is not well defined.
+/// `_currentFaults` is a record of the most recently set faults.
+/// `_summaryFaults` is a record of all faults that haven't been reset
+/// `_prevFaults` is usually the previous value of `_summaryFaults`,
+///    but often set from `_currentFaults` in LabView code.
+/// `_faultEnableMask` is used enable/disable faults.
+/// `_defaultFaultMask` may be used for the default enable mask.
+/// `_affectedFaultsMask` and `_affectedWarnInfoMask` in subsystems
+/// appear to indicate which fault bits cause faults or warnings for
+/// the subsystem. The central copy has all of the local `_affected`
+/// masks added to its `_affected` masks during updates (see
+/// `fault_manager_main.vi` "User Event:FaultsTelem").
+///
+/// They shouldn't need to have separate copies, as faults are system
+/// wide, but the LabView code has a central copy and then one copy per
+/// subsystem (most of them anyway) that are kept in sync using
+/// "FaultsTelem" User Event messages. There are subtle inconsistencies
+/// between how they are implemented in the LabView code and it's
+/// difficult to tell what effect the inconsistencies have, or
+/// are meant to have.
+/// The message passing has been eliminated but extra copies
+/// still remain.
+/// "BasicFaultManager.lvclass:init.vi"
+class BasicFaultMgr {
 public:
 
     /// cRIO subsystem enum values from SystemControlDefs.lvlib:cRIO_Subsystem.ctl
@@ -57,14 +81,7 @@ public:
     };
 
     static std::string getCrioSubsystemStr(CrioSubsystem subSystem);
-};
 
-
-/// &&& doc
-/// "BasicFaultManager.lvclass:init.vi"
-class BasicFaultMgr {
-public:
-    /// &&& doc
     /// from "BasicFaultManager.lvclass:init.vi"
     BasicFaultMgr();
 
@@ -76,7 +93,8 @@ public:
 
     virtual ~BasicFaultMgr() = default;
 
-    /// &&& doc
+    /// This function is used to combine new fault information with existing
+    /// fault information.
     /// This is used by "TelemetryFaultManager.lvclass:xmit_faults.vi" and
     ///  "SystemStatus.lvclass:updateSummaryFaultsStatus.vi".
     /// However, "BasicFaultManager.lvclass:send_faults.vi" just ands "Summary Fault Status" with
@@ -92,7 +110,8 @@ public:
     /// @param affectedWarnInfo equivalent to Affected Warnings/Info Mask in UpdateFaultStatus.vi
     /// @param affectedFault equivalent to Affected Fault Mask in UpdateFaultStatus.vi
     /// @return FaultStatusBits with Updated Summary Faults, equivalent to the same in UpdateFaultStatus.vi
-    /// @return FaultStatusBits with bits that changed set to 1, , equivalent to the same in UpdateFaultStatus.vi
+    /// @return FaultStatusBits with bits that changed set to 1, equivalent to the
+    ///         same in UpdateFaultStatus.vi
     /// UpdateFaultStatus.vi
     static std::tuple<uint16_t, uint16_t> updateFaultStatus(
             uint64_t summaryFaultStatus, uint64_t faultEnableMask,
@@ -140,9 +159,9 @@ public:
     /// Set `_affectedWarnInfoMask` to `val`.
     void setAffectedWarnInfoMask(FaultStatusBits& val) { _affectedWarnInfoMask = val; }
 
-    /// Return true if faults used by this sytem have changed and need to be shared.
+    /// Return true if faults used by this system have changed and need to be shared.
     /// From "BasicFaultManager.lvclass:xmit_faults.vi"
-    bool xmitFaults(FaultInfo::CrioSubsystem subsystem); // &&& change name.
+    bool updateFaults(CrioSubsystem subsystem);
 
     /// Reset the faults in the mask in `_summaryFaults`, `_currentFaults`, and `_prevFaults`.
     /// From "BasicFaultManager.lvclass:resetFaults.vi"
@@ -151,8 +170,9 @@ public:
     /// Set the faults according to what is needed for a TCP/IP communications fault.
     void setMaskComm(FaultStatusBits mask);
 
-    /// &&& doc
-    void updateSummary(uint64_t);
+    /// Update `_currentFaults` and `_summaryFaults` to `newSummary` and set `_prevFaults`
+    /// to the old `_currentFaults` value;
+    void updateSummary(uint64_t newSummary);
 
 private:
     FaultStatusBits _summaryFaults;        ///< "Summary Faults Status"

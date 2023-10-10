@@ -223,14 +223,14 @@ TEST_CASE("Test FaultStatusMap", "[FaultStatusMap]") {
         REQUIRE(info == infoOther);
         REQUIRE(info != 0);
 
-        fsm.setBit(FaultStatusBits::CRIO_TIMING_FAULT);
+        fsm.setBitAt(FaultStatusBits::CRIO_TIMING_FAULT);
         REQUIRE(fsm.getBit(FaultStatusBits::CRIO_TIMING_FAULT) != 0);
 
-        fsm.setBit(FaultStatusBits::BROADCAST_ERR); // = 2
+        fsm.setBitAt(FaultStatusBits::BROADCAST_ERR); // = 2
         REQUIRE(fsm.getBit(FaultStatusBits::CRIO_TIMING_FAULT) != 0);
         REQUIRE(fsm.getBit(FaultStatusBits::BROADCAST_ERR) == 4);
 
-        fsm.unsetBit(FaultStatusBits::CRIO_TIMING_FAULT);
+        fsm.unsetBitAt(FaultStatusBits::CRIO_TIMING_FAULT);
         REQUIRE(fsm.getBit(FaultStatusBits::CRIO_TIMING_FAULT) == 0);
         REQUIRE(fsm.getBit(FaultStatusBits::BROADCAST_ERR) == 4);
 
@@ -246,8 +246,8 @@ TEST_CASE("Test FaultStatusMap", "[FaultStatusMap]") {
         diff.setBitmap(fsm.getBitsSetOutOfMask(telemetry));
         LDEBUG("diff b=", FaultStatusBits::getBinaryStr(diff.getBitmap()), " ", diff.getAllSetBitEnums());
 
-        REQUIRE_THROWS(fsm.setBit(64));
-        REQUIRE_THROWS(fsm.setBit(-1));
+        REQUIRE_THROWS(fsm.setBitAt(64));
+        REQUIRE_THROWS(fsm.setBitAt(-1));
     }
 }
 

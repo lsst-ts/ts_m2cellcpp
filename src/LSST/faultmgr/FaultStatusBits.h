@@ -94,7 +94,8 @@ public:
         TANGENT_LOAD_CELL_FAULT=32,              ///< “tangent load cell fault” = 32
         ELEVATION_ANGLE_DIFF_FAULT=33,           ///< “elevation angle difference error fault” = 33
         MONITOR_ILC_READ_WARN=34,                ///< “monitoring ILC read error warning” = 34
-        /// “SPARE_35” = 35
+        POWER_SYSTEM_TIMEOUT=35,                 ///< power system timeout, not from in LabView
+        /// “SPARE_36” = 36
         /// … all SPARE …
         /// “SPARE_54” = 54
         PARAMETER_FILE_READ_FAULT=55,            ///< “configurable parameter file read error fault” = 55
@@ -165,13 +166,13 @@ public:
     /// Set (when `set` == true) or unset (when `set` == false) the bit at `pos` in `bitmap`
     static void setBit8(uint8_t& bitmap, int pos, bool set);
 
-    /// Set the bit in `_bitmap` at `pos`.
+    /// Set the bit in `_bitmap` at `pos` to '1'.
     /// @throws range_error.
-    void setBit(int pos);  // &&& rename setBitAt(pos, val)
+    void setBitAt(int pos);
 
     /// Unset the bit in `_bitmap` at `pos`.
     /// @throws range_error.
-    void unsetBit(int pos); // &&& remove
+    void unsetBitAt(int pos);
 
     /// Return a copy of `_bitmap`.
     uint64_t getBitmap() const { return _bitmap; }

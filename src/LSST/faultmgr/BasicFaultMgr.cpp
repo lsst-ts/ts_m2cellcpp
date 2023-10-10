@@ -42,7 +42,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace faultmgr {
 
-string FaultInfo::getCrioSubsystemStr(CrioSubsystem subSystem) {
+string BasicFaultMgr::getCrioSubsystemStr(CrioSubsystem subSystem) {
     switch (subSystem) {
     case SYSTEM_CONTROLLER: return "SYSTEM_CONTROLLER";
     case FAULT_MANAGER: return "FAULT_MANAGER";
@@ -64,12 +64,12 @@ BasicFaultMgr::BasicFaultMgr() {
     _timeStamp = util::CLOCK::now();
 }
 
-bool BasicFaultMgr::xmitFaults(FaultInfo::CrioSubsystem subsystem) {
+bool BasicFaultMgr::updateFaults(BasicFaultMgr::CrioSubsystem subsystem) {
     uint64_t diff = (_prevFaults.getBitmap() ^ _currentFaults.getBitmap()) & _faultEnableMask.getBitmap();
     if (diff == 0) {
         return false; // nothing needs to be done.
     }
-    _prevFaults = _currentFaults;
+    _prevFaults = _summaryFaults;
 
     // from "BasicFaultManager.lvclass:send_faults.vi"
     // remove warning and info bits
@@ -119,8 +119,8 @@ std::tuple<uint16_t, uint16_t> BasicFaultMgr::updateFaultStatus(
 
 
 void BasicFaultMgr::updateSummary(uint64_t newSummary) {
+    _prevFaults = _summaryFaults;
     _summaryFaults = newSummary;
-    _prevFaults = _currentFaults;
     _currentFaults = _summaryFaults;
 }
 

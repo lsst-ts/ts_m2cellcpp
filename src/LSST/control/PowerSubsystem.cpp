@@ -378,7 +378,7 @@ bool PowerSubsystem::_powerShouldBeOn(faultmgr::FaultStatusBits& faultsSet) {
             return true;
         } else {
             // Set "Fault Status" "interlock fault"
-            faultsSet.setBit(faultmgr::FaultStatusBits::INTERLOCK_FAULT);
+            faultsSet.setBitAt(faultmgr::FaultStatusBits::INTERLOCK_FAULT);
         }
     }
     return false;
@@ -416,7 +416,7 @@ void PowerSubsystem::_setPowerOn() {
 
     if (_checkForFaults()) {
         LERROR(getClassName(), " _setPowerOn cannot turn on due to faults");
-        _sendFaultMgrError(500003, "Internal ERROR: Faults preventing operation to proceed");
+        faultmgr::FaultMgr::get().faultMsg(500003, "Internal ERROR: Faults preventing operation to proceed");
         _setPowerOff("fault during _setPowerOn");
         return;
     }
@@ -515,22 +515,22 @@ bool PowerSubsystem::_checkForPowerOnBreakerFault(double voltage, faultmgr::Faul
         if (breakerStatus <= FAULT) {
             LWARN(getClassName(), " _checkForPowerOnBreakerFault a breakerStatus=", breakerStatus,
                     " ", getSysStatusStr(breakerStatus), " inactiveInputs=", inactiveInputs);
-            faultsSet.setBit(_psCfg.getBreakerFault()); //"breaker fault"
+            faultsSet.setBitAt(_psCfg.getBreakerFault()); //"breaker fault"
             _setPowerOff(string(__func__) + " breaker fault");
             return true;
         }
-        faultsSet.setBit(_psCfg.getBreakerWarn()); //"breaker warning"
+        faultsSet.setBitAt(_psCfg.getBreakerWarn()); //"breaker warning"
         return false; // no faults, just warnings
     }
 
     // The power should be on and stable by this point.
-    _sendBreakerVoltageFault(faultsSet);
+    _updateFaults(faultsSet);
     return true;
 }
 
-void PowerSubsystem::_sendBreakerVoltageFault(faultmgr::FaultStatusBits& faultsSet) {
-    faultsSet.setBit(_psCfg.getVoltageFault()); // "voltage fault"
-    faultsSet.setBit(faultmgr::FaultStatusBits::HARDWARE_FAULT); // "hardware fault"
+void PowerSubsystem::_updateFaults(faultmgr::FaultStatusBits& faultsSet) {
+    faultsSet.setBitAt(_psCfg.getVoltageFault()); // "voltage fault"
+    faultsSet.setBitAt(faultmgr::FaultStatusBits::HARDWARE_FAULT); // "hardware fault"
     _setPowerOff(__func__);
 }
 
@@ -545,13 +545,15 @@ void PowerSubsystem::_processPowerOn(faultmgr::FaultStatusBits& faultsSet) {
     double voltage = getVoltage();
     if (voltage > _psCfg.getMaxVoltageFault()) {
         LERROR(getClassName(), " voltage(", voltage, ") is too high, turning off");
-        _sendFaultMgrError();
+        faultmgr::FaultMgr::get().faultMsg(-1, getClassName() + " voltage(" + to_string(voltage)
+                + ") above fault level " + to_string(_psCfg.getMaxVoltageFault()));
         _setPowerOff(string(__func__) + "voltage too high");
         return;
     }
     if (voltage > _psCfg.getMaxVoltageWarn()) {
         LWARN(getClassName(), " voltage(", voltage, ") above warning level ", _psCfg.getMaxVoltageWarn());
-        _sendFaultMgrWarn();
+        faultmgr::FaultMgr::get().faultMsg(0, getClassName() + " voltage(" + to_string(voltage)
+                + ") above warning level " + to_string(_psCfg.getMaxVoltageWarn()));
     }
 
     util::TIMEPOINT now = util::CLOCK::now();
@@ -583,11 +585,13 @@ void PowerSubsystem::_processPowerOn(faultmgr::FaultStatusBits& faultsSet) {
         } else if (_phase == 2) {
             if (voltage < _psCfg.getMinVoltageWarn()) {
                 LWARN(getClassName(), " voltage(", voltage, ") below warning level ", _psCfg.getMinVoltageWarn());
-                _sendFaultMgrWarn();
+                faultmgr::FaultMgr::get().faultMsg(0, getClassName() + " voltage(" + to_string(voltage)
+                        + ") below warning level " + to_string(_psCfg.getMinVoltageWarn()));
             }
             if (voltage < _psCfg.getMinVoltageFault()) {
                 LWARN(getClassName(), " voltage(", voltage, ") below fault level ", _psCfg.getMinVoltageFault());
-                _sendFaultMgrError();
+                faultmgr::FaultMgr::get().faultMsg(-1, getClassName() + " voltage(" + to_string(voltage)
+                                + ") below fault level " + to_string(_psCfg.getMinVoltageFault()));
                 _setPowerOff(string(__func__) + " voltage too low");
             }
         }
@@ -642,7 +646,7 @@ void PowerSubsystem::_processPowerOn(faultmgr::FaultStatusBits& faultsSet) {
             // If the voltage isn't high enough to read the breakers, give up, turn power off
             if (voltage < _psCfg.getBreakerOperatingVoltage()) {
                 LERROR(getClassName(), " TURNING_ON voltage too low volt=", voltage);
-                _sendBreakerVoltageFault(faultsSet); // calls _setPowerOff()
+                _updateFaults(faultsSet); // calls _setPowerOff()
                 return;
             }
             // If the breakers have any faults or warnings, try to reset them.
@@ -677,7 +681,7 @@ void PowerSubsystem::_processPowerOn(faultmgr::FaultStatusBits& faultsSet) {
             return;
         }
         if (voltage < _psCfg.getBreakerOperatingVoltage()) {
-            _sendBreakerVoltageFault(faultsSet); // calls _setPowerOff()
+            _updateFaults(faultsSet); // calls _setPowerOff()
             return;
         }
         double timeSincePhaseStartInSec = util::timePassedSec(_phaseStartTime, now);
@@ -738,8 +742,8 @@ void PowerSubsystem::_processPowerOff(faultmgr::FaultStatusBits& faultsSet) {
         } else {
             double timeInPhaseSec = util::timePassedSec(_phaseStartTime, now);
             if (timeInPhaseSec > _psCfg.outputOffMaxDelay()) {
-                faultsSet.setBit(_psCfg.getRelayFault()); // "relay fault"
-                faultsSet.setBit(_psCfg.getRelayInUse()); // "relay in use"
+                faultsSet.setBitAt(_psCfg.getRelayFault()); // "relay fault"
+                faultsSet.setBitAt(_psCfg.getRelayInUse()); // "relay in use"
                 _setPowerOff(string(__func__) + " timeout TURNING_OFF");
             }
         }
@@ -759,18 +763,6 @@ bool PowerSubsystem::_checkForFaults() {
     return faultmgr::FaultMgr::get().checkForPowerSubsystemFaults(_psCfg.getSubsystemFaultMask(), getClassName());
 }
 
-void PowerSubsystem::_sendFaultMgrError() {
-    LERROR("PowerSubsystem::", __func__, " PLACEHOLDER NEEDS CODE");
-}
-
-
-void PowerSubsystem::_sendFaultMgrError(int errId, std::string note) {
-    LERROR("PowerSubsystem::", __func__, " PLACEHOLDER NEEDS CODE");
-}
-
-void PowerSubsystem::_sendFaultMgrWarn() {
-    LERROR("PowerSubsystem::", __func__, " PLACEHOLDER NEEDS CODE");
-}
 
 }  // namespace control
 }  // namespace m2cellcpp

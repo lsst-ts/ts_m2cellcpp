@@ -80,7 +80,9 @@ bool PowerSystem::_checkTimeout(double diffInSeconds) {
         string eMsg = string(__func__) + " timed out " + to_string(timedOut);
         _motor.setPowerOff(eMsg);
         _comm.setPowerOff(eMsg);
-        faultmgr::FaultMgr::get().setFault("PowerSystemTimeOut PLACHOLDER");
+        faultmgr::FaultStatusBits cFaults;
+        cFaults.setBitAt(faultmgr::FaultStatusBits::POWER_SYSTEM_TIMEOUT);
+        faultmgr::FaultMgr::get().updatePowerFaults(cFaults, faultmgr::BasicFaultMgr::POWER_SUBSYSTEM);
     }
     return timedOut;
 }
@@ -92,12 +94,14 @@ void PowerSystem::_processDaq(SysInfo info) {
     // If the health check had a fault, update FaultMgr now so motor and comm power
     // can be turned off asap.
     if (currentFaults.getBitmap() != 0) {
-        faultmgr::FaultMgr::get().updatePowerFaults(currentFaults, faultmgr::FaultInfo::POWER_SUBSYSTEM);
+        faultmgr::FaultMgr::get().updatePowerFaults(currentFaults,
+                                                    faultmgr::BasicFaultMgr::POWER_SUBSYSTEM);
     }
 
     SysStatus motorStat = _motor.processDaq(info, currentFaults);
     SysStatus commStat = _comm.processDaq(info, currentFaults);
-    faultmgr::FaultMgr::get().updatePowerFaults(currentFaults, faultmgr::FaultInfo::POWER_SUBSYSTEM);
+    faultmgr::FaultMgr::get().updatePowerFaults(currentFaults,
+                                                faultmgr::BasicFaultMgr::POWER_SUBSYSTEM);
 
     if (_motorStatusPrev != motorStat || _commStatusPrev != commStat) {
         LINFO("Power status change motor:now=", motorStat, " prev=", _motorStatusPrev,
@@ -139,7 +143,7 @@ void PowerSystem::_processDaqHealthTelemetry(SysInfo sInfo, faultmgr::FaultStatu
         LERROR("POWER_SUPPLY_LOAD_SHARE_ERR redundancyOk=",
                 redundancyOk, " loadDistributionOk=", loadDistributionOk);
         // "power supply load share error"
-        currentFaults.setBit(faultmgr::FaultStatusBits::POWER_SUPPLY_LOAD_SHARE_ERR);
+        currentFaults.setBitAt(faultmgr::FaultStatusBits::POWER_SUPPLY_LOAD_SHARE_ERR);
     }
 
     bool anyBoostCurrentOnAndFaultEnabled = _boostCurrentFaultEnabled && (powerSupply1BoostCurrentOn || powerSupply2BoostCurrentOn);
@@ -152,7 +156,7 @@ void PowerSystem::_processDaqHealthTelemetry(SysInfo sInfo, faultmgr::FaultStatu
                 " powerSupply2BoostCurrentOn=", powerSupply2BoostCurrentOn,
                 " powerSupply1DcOk=", powerSupply1DcOk,
                 " powerSupply2DcOk=", powerSupply2DcOk);
-        currentFaults.setBit(faultmgr::FaultStatusBits::POWER_HEALTH_FAULT); // "power supply health fault"
+        currentFaults.setBitAt(faultmgr::FaultStatusBits::POWER_HEALTH_FAULT); // "power supply health fault"
     }
 }
 
