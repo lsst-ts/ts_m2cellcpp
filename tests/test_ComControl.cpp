@@ -58,7 +58,6 @@ TEST_CASE("Test ComControl", "[ComControl]") {
     Config::setup(cfgPath + "unitTestCfg.yaml");
     Globals::setup(Config::get());
 
-
     simulator::SimCore::Ptr simCore(new LSST::m2cellcpp::simulator::SimCore());
     faultmgr::FaultMgr::setup();
     control::FpgaIo::setup(simCore);

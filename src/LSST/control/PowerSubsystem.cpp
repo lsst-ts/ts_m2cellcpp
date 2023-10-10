@@ -378,7 +378,6 @@ bool PowerSubsystem::_powerShouldBeOn(faultmgr::FaultStatusBits& faultsSet) {
             return true;
         } else {
             // Set "Fault Status" "interlock fault"
-            //&&&_sendFaultMgrSetBit(faultmgr::FaultStatusBits::INTERLOCK_FAULT);
             faultsSet.setBit(faultmgr::FaultStatusBits::INTERLOCK_FAULT);
         }
     }
@@ -516,12 +515,10 @@ bool PowerSubsystem::_checkForPowerOnBreakerFault(double voltage, faultmgr::Faul
         if (breakerStatus <= FAULT) {
             LWARN(getClassName(), " _checkForPowerOnBreakerFault a breakerStatus=", breakerStatus,
                     " ", getSysStatusStr(breakerStatus), " inactiveInputs=", inactiveInputs);
-            //&&& _sendFaultMgrSetBit(_psCfg.getBreakerFault()); //"breaker fault"
             faultsSet.setBit(_psCfg.getBreakerFault()); //"breaker fault"
             _setPowerOff(string(__func__) + " breaker fault");
             return true;
         }
-        //&&& _sendFaultMgrSetBit(_psCfg.getBreakerWarn()); //"breaker warning"
         faultsSet.setBit(_psCfg.getBreakerWarn()); //"breaker warning"
         return false; // no faults, just warnings
     }
@@ -532,8 +529,6 @@ bool PowerSubsystem::_checkForPowerOnBreakerFault(double voltage, faultmgr::Faul
 }
 
 void PowerSubsystem::_sendBreakerVoltageFault(faultmgr::FaultStatusBits& faultsSet) {
-    //&&&_sendFaultMgrSetBit(_psCfg.getVoltageFault()); // "voltage fault"
-    //&&&_sendFaultMgrSetBit(faultmgr::FaultStatusBits::HARDWARE_FAULT); // "hardware fault"
     faultsSet.setBit(_psCfg.getVoltageFault()); // "voltage fault"
     faultsSet.setBit(faultmgr::FaultStatusBits::HARDWARE_FAULT); // "hardware fault"
     _setPowerOff(__func__);
@@ -541,9 +536,7 @@ void PowerSubsystem::_sendBreakerVoltageFault(faultmgr::FaultStatusBits& faultsS
 
 
 void PowerSubsystem::_processPowerOn(faultmgr::FaultStatusBits& faultsSet) {
-    // &&& faultmgr::FaultStatusBits& faultsSet
     VMUTEX_HELD(_powerStateMtx);
-
 
     // Check that the outputs are appropriate for turning power on
     // BasePowerOutput->output_should_be_on.vi
@@ -717,7 +710,6 @@ void PowerSubsystem::_processPowerOn(faultmgr::FaultStatusBits& faultsSet) {
 
 
 void PowerSubsystem::_processPowerOff(faultmgr::FaultStatusBits& faultsSet) {
-    // &&& faultmgr::FaultStatusBits& faultsSet
     VMUTEX_HELD(_powerStateMtx);
 
     bool powerOn = _getRelayControlOutputOn();
@@ -746,8 +738,6 @@ void PowerSubsystem::_processPowerOff(faultmgr::FaultStatusBits& faultsSet) {
         } else {
             double timeInPhaseSec = util::timePassedSec(_phaseStartTime, now);
             if (timeInPhaseSec > _psCfg.outputOffMaxDelay()) {
-                //&&&_sendFaultMgrSetBit(_psCfg.getRelayFault()); // "relay fault"
-                //&&&_sendFaultMgrSetBit(_psCfg.getRelayInUse()); // "relay in use"
                 faultsSet.setBit(_psCfg.getRelayFault()); // "relay fault"
                 faultsSet.setBit(_psCfg.getRelayInUse()); // "relay in use"
                 _setPowerOff(string(__func__) + " timeout TURNING_OFF");
@@ -781,12 +771,6 @@ void PowerSubsystem::_sendFaultMgrError(int errId, std::string note) {
 void PowerSubsystem::_sendFaultMgrWarn() {
     LERROR("PowerSubsystem::", __func__, " PLACEHOLDER NEEDS CODE");
 }
-
-/* &&&
-void PowerSubsystem::_sendFaultMgrSetBit(int bitPos) {
-    LERROR("PowerSubsystem::", __func__, " PLACEHOLDER NEEDS CODE");
-}
-*/
 
 }  // namespace control
 }  // namespace m2cellcpp

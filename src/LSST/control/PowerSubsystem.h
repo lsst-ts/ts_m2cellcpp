@@ -445,21 +445,20 @@ private:
     /// Set power off and send the FaultMgr low voltage warnings and faults.
     void _sendBreakerVoltageFault(faultmgr::FaultStatusBits& faultsSet); // &&& rename
 
-    /// PLACEHOLDER to register an error with the fault manager.
-    void _sendFaultMgrError();
+    /// PLACEHOLDER to register an error with the fault manager. // &&&
+    void _sendFaultMgrError(); // &&&
 
-    /// PLACEHOLDER to register an error with the fault manager.
-    void _sendFaultMgrError(int errId, std::string note);
+    /// PLACEHOLDER to register an error with the fault manager. // &&&
+    void _sendFaultMgrError(int errId, std::string note); // &&&
 
-    /// PLACEHOLDER to register a warning with the fault manager.
-    void _sendFaultMgrWarn();
+    /// PLACEHOLDER to register a warning with the fault manager. // &&&
+    void _sendFaultMgrWarn(); // &&&
 
-    /// PLACEHOLDER to set a bit in the FaulMgr FaultStatusBits.
-    void _sendFaultMgrSetBit(int bitPos);
+    /// PLACEHOLDER to set a bit in the FaulMgr FaultStatusBits. // &&&
+    void _sendFaultMgrSetBit(int bitPos); // &&&
 
     /// Return true if the FaultMgr has any faults that affect this PowerSubsystem.
     bool _checkForFaults();
-
 
     PowerSystemType _systemType; ///< indicates if this is the MOTOR or COMM system.
 

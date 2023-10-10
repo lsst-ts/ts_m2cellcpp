@@ -90,23 +90,10 @@ private:
     /// Based on PowerSubsystem->process_DAQ_telemetry.vi
     void _processDaq(SysInfo info);
 
-
-    /// To be implemented in DM-40908, handle faults for some hardware signals related to power. &&&
-    /// PLACEHOLDER DAQ_to_PS_health_telemetry.vi - copy the data into a placeholder structure, &&&
-    ///         but doesn't do any checking. &&&
     /// Handle faults for some hardware signals related to power.
     /// @param sInfo - System hardware information from FpgaIo.
     /// @param currentFaults - Faults detected in this function will be reported here.
     void _processDaqHealthTelemetry(SysInfo sInfo, faultmgr::FaultStatusBits& currentFaults);
-
-
-    /* &&&
-    /// "Current Faults", this initializes to 0, but the LabView code has a mention
-    /// of "Dropout Count", which doesn't seem to apply to this version.
-    faultmgr::FaultStatusBits _currentFaults; // &&& can probably be replaced with local variable
-    */
-
-    //&&& faultmgr::PowerFaultMgr _powerFaultMgr; ///< "Basic Fault Manager" for power system.
 
     PowerSubsystem _motor; ///< Handles MOTOR power control.
     PowerSubsystem _comm; ///< Handles COMM power control.
