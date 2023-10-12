@@ -34,6 +34,7 @@ namespace m2cellcpp {
 namespace control {
 
 Model::Model() {
+    LDEBUG("Model::Model() creating PowerSystem");
     _powerSystem = PowerSystem::Ptr(new PowerSystem());
 }
 

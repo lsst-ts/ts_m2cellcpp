@@ -69,6 +69,14 @@ SimCore::SimCore() {
             _inputPort, commBreakerInBits));
 
     _newOutput = *_outputPort;
+
+    // Set bits in the _inputPort that should normally be high.
+    _inputPort->setBitAtPos(control::InputPortBits::REDUNDANCY_OK, true);
+    _inputPort->setBitAtPos(control::InputPortBits::LOAD_DISTRIBUTION_OK, true);
+    _inputPort->setBitAtPos(control::InputPortBits::POWER_SUPPLY_1_DC_OK, true);
+    _inputPort->setBitAtPos(control::InputPortBits::POWER_SUPPLY_2_DC_OK, true);
+    _inputPort->setBitAtPos(control::InputPortBits::POWER_SUPPLY_1_CURRENT_OK, true);
+    _inputPort->setBitAtPos(control::InputPortBits::POWER_SUPPLY_2_CURRENT_OK, true);
 }
 
 
@@ -91,7 +99,6 @@ void SimCore::_simRun() {
         _motorSub->calcVoltageCurrent(timeDiff);
         _commSub->calcBreakers(timestamp);
         _commSub->calcVoltageCurrent(timeDiff);
-
 
         prevOutput = *_outputPort;
         {

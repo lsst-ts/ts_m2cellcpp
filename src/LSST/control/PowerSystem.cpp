@@ -24,6 +24,7 @@
 #include "control/PowerSystem.h"
 
 // system headers
+#include <ctime>
 
 // project headers
 #include "faultmgr/FaultMgr.h"
@@ -38,15 +39,27 @@ namespace m2cellcpp {
 namespace control {
 
 PowerSystem::PowerSystem() : _motor(MOTOR), _comm(COMM) {
+    LDEBUG("Creating PowerSystem");
     _fpgaIo = FpgaIo::getPtr(); // If FpgaIo hasn't been setup, now is a good time to find out.
     _eThrd.run();
+
+    auto func = [this]() {
+        while (_timeoutLoop) {
+            queueTimeoutCheck();
+            this_thread::sleep_for(1s);
+        }
+    };
+    thread tThrd(func);
+    _timeoutThread = move(tThrd);
 }
 
 PowerSystem::~PowerSystem() {
+    _timeoutLoop = false;
     _motor.setPowerOff(__func__);
     _comm.setPowerOff(__func__);
     _eThrd.queEnd();
     _eThrd.join();
+    _timeoutThread.join();
 }
 
 void PowerSystem::writeCrioInterlockEnable(bool set) {
@@ -59,16 +72,31 @@ void PowerSystem::_daqInfoRead() {
     // Get the latest info, old info is of no use.
     auto sInfo = _fpgaIo->getSysInfo();
     auto diff = (util::timePassedSec(sInfo.timestamp, _daqReadTime));
-    _checkTimeout(diff); // shutoff power if timed out.
+    bool timedOut = _checkTimeout(diff); // shutoff power if timed out.
+    if (timedOut) {
+        stringstream os;
+        time_t tm = util::CLOCK::to_time_t(_daqReadTime);
+        os << "PowerSystem::_daqInfoRead() timedOut last _daq read=" << ctime(&tm)
+                << " seconds since last read=" << diff;
+        LERROR(os.str());
+    }
 
     _processDaq(sInfo);
 }
 
 void PowerSystem::_daqTimeoutCheck() {
-    auto diff = (util::timePassedSec( _daqReadTime, util::CLOCK::now()));
+    auto now = util::CLOCK::now();
+    auto diff = (util::timePassedSec(_daqReadTime, now));
     bool timedOut = _checkTimeout(diff); // shutoff power if timed out.
     if (timedOut) {
+        stringstream os;
+        time_t tm = util::CLOCK::to_time_t(_daqReadTime);
+        os << "PowerSystem::Timeout timedOut last _daq read=" << ctime(&tm)
+                << " seconds since last read=" << diff;
+        LERROR(os.str());
+
         // Run the processing, even if the data is old.
+        // This allows power the off logic to try to run.
         auto sInfo = _fpgaIo->getSysInfo();
         _processDaq(sInfo);
     }
@@ -77,7 +105,7 @@ void PowerSystem::_daqTimeoutCheck() {
 bool PowerSystem::_checkTimeout(double diffInSeconds) {
     bool timedOut = diffInSeconds > _sysInfoTimeoutSecs;
     if (timedOut) {
-        string eMsg = string(__func__) + " timed out " + to_string(timedOut);
+        string eMsg = string(__func__) + " _daq timed out " + to_string(timedOut);
         _motor.setPowerOff(eMsg);
         _comm.setPowerOff(eMsg);
         faultmgr::FaultStatusBits cFaults;

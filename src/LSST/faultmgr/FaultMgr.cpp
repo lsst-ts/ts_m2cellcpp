@@ -191,7 +191,7 @@ bool FaultMgr::checkForPowerSubsystemFaults(FaultStatusBits const& subsystemMask
         /// see PowerSubsystem->set_motor_power.vi and BasicFaultManager->read_faults.vi
         PowerFaultMgr& pfm = _powerFaultMgr;
         faultBitmap.setBitmap(subsystemMask.getBitmap() & pfm.getFaultEnableMask().getBitmap()
-                & pfm.getCurrentFaults().getBitmap());
+                & (pfm.getCurrentFaults().getBitmap() | pfm.getSummaryFaults().getBitmap()));
     }
     if (!faultFound) {
         faultFound = faultBitmap.getBitmap() != 0;

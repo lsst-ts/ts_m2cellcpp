@@ -69,7 +69,7 @@ bool BasicFaultMgr::updateFaults(BasicFaultMgr::CrioSubsystem subsystem) {
     if (diff == 0) {
         return false; // nothing needs to be done.
     }
-    _prevFaults = _summaryFaults;
+    _prevFaults = _currentFaults;
 
     // from "BasicFaultManager.lvclass:send_faults.vi"
     // remove warning and info bits
@@ -119,7 +119,7 @@ std::tuple<uint16_t, uint16_t> BasicFaultMgr::updateFaultStatus(
 
 
 void BasicFaultMgr::updateSummary(uint64_t newSummary) {
-    _prevFaults = _summaryFaults;
+    _prevFaults = _currentFaults;
     _summaryFaults = newSummary;
     _currentFaults = _summaryFaults;
 }

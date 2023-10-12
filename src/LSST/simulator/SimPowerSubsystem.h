@@ -92,6 +92,18 @@ public:
     /// Return a string version of the class name and `_systemType`.
     std::string getClassName() const;
 
+    /// Change the voltage so it goes over the maximum allowable voltage
+    /// and should trip a fault, for testing.
+    /// @param `overVoltage` - when `true`, allow the voltage to go too high,
+    ///                when 'false`, use normal voltage.
+    void forceOverVoltage(bool overVoltage);
+
+    /// Change the current so it goes over the maximum allowable current
+    /// and should trip a fault, for testing.
+    /// @param `overCurrent` - when `true`, allow the current to go too high,
+    ///                when 'false`, use normal current.
+    void forceOverCurrent(bool overCurrent);
+
 private:
     void _setup(); ///< Setup according to `_systemType`.
 
@@ -126,6 +138,10 @@ private:
 
     control::InputPortBits::Ptr _inputPort; ///< Integer value representing simulator status.
     std::vector<int> _breakerBitPositions; ///< Positions indicating breaker ok.
+
+    std::atomic<bool> _overVoltage{false}; ///< When true, allow voltage to run much too high.
+    std::atomic<bool> _overCurrent{false}; ///< When true, allow current to run much too high.
+
 };
 
 

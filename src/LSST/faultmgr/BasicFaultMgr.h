@@ -43,10 +43,14 @@ class FaultMgr;
 /// All systems use the same layout for a uint64_t with the bits mapped
 /// to specific faults (see `FaultStatusBits`).
 /// The purpose of most of the member variables is not well defined.
-/// `_currentFaults` is a record of the most recently set faults.
-/// `_summaryFaults` is a record of all faults that haven't been reset
-/// `_prevFaults` is usually the previous value of `_summaryFaults`,
-///    but often set from `_currentFaults` in LabView code.
+/// `_currentFaults` is a record of the most recently set faults and it
+///    can be completely overwritten during a fault update.
+/// `_summaryFaults` is a record of all faults that haven't been reset.
+///    Values are usually latched to '1' and usually only go back to '0'
+///    when `resetFaults()` is called.
+/// `_prevFaults` is usually the previous value of `_currentFaults`,
+///    which seems to be used to limit message passing in LabView. This
+///    isn't that important in the C++ code and should probably be removed.
 /// `_faultEnableMask` is used enable/disable faults.
 /// `_defaultFaultMask` may be used for the default enable mask.
 /// `_affectedFaultsMask` and `_affectedWarnInfoMask` in subsystems

@@ -51,6 +51,9 @@ public:
     /// Return a pointer to the FpgaIo instance.
     std::shared_ptr<FpgaIo> getFpgaIo() { return _fpgaIo; }
 
+    /// Return a pointer to the `_powerSystem`.
+    std::shared_ptr<PowerSystem> getPowerSystem() { return _powerSystem; }
+
     /// Change the current state to `newState`, taking rquired actions.
     /// @return false in `newState` is invalid.
     bool changeState(std::shared_ptr<State> const& newState);

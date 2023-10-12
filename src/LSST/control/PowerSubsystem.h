@@ -370,7 +370,8 @@ public:
     /// but many things can interrupt the process.
     /// When the process is complete `getActualPowerState()` should return `ON`.
     /// See `_setPowerOn()`
-    void setPowerOn();
+    /// @return true if ok to try to turn power on.
+    bool setPowerOn();
 
     /// Take action to turn the power off, this may be called from nearly anywhere.
     /// @param note - should contain information about the source of
@@ -401,7 +402,8 @@ private:
     /// `_targPowerState` to `ON` and setting the appropriate `OutputPortBits`.
     /// `processDaq` will monitor and complete the task of `TURNING_ON`.
     /// When the process is complete `getActualPowerState()` should return `ON`.
-    void _setPowerOn();
+    /// @return true if ok to try to turn power on.
+    bool _setPowerOn();
 
     /// Turn off the power by setting the appropriate `OutputPortBits`.
     /// `processDaq` will monitor and complete the task of `TURNING_OFF`,

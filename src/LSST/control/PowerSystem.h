@@ -26,6 +26,7 @@
 #include <memory>
 #include <stdint.h>
 #include <string>
+#include <thread>
 #include <vector>
 
 // Project headers
@@ -42,6 +43,7 @@ namespace control {
 
 /// Class is used to contain both the `MOTOR` `PowerSubsystem` and
 /// the `COMM` `PowerSubsystem`.
+/// Synchronization is largely provided by this being an event driven thread.
 /// unit tests: test_PowerSystem.cpp
 class PowerSystem {
 public:
@@ -106,7 +108,7 @@ private:
 
     /// Last time the DAQ information was read. Initialized to now to give
     /// the system a chance to read the DAQ instead of instantly timing out.
-    util::TIMEPOINT _daqReadTime{util::CLOCK::now()};
+    std::atomic<util::TIMEPOINT> _daqReadTime{util::CLOCK::now()};
 
     /// Timeout in seconds for fresh DAQ SystemInfo.
     /// DM-40694 set from config file, also needs a real value
@@ -115,6 +117,9 @@ private:
     /// If true, boost current indicators from the power supplies will cause faults.
     /// DM-40694 set from config file
     bool _boostCurrentFaultEnabled = true;
+
+    std::thread _timeoutThread; ///< calls _checkTimeout on a regular basis.
+    std::atomic<bool> _timeoutLoop{true}; ///< set to false to end _timeoutThread.
 };
 
 

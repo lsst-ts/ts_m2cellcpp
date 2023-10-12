@@ -102,6 +102,9 @@ public:
     /// @param count - minimum number of simulator iterations to wait for.
     void waitForUpdate(int count) const;
 
+    /// Return a pointer to the simulated motor subsystem.
+    SimPowerSubsystem::Ptr getMotorSub() { return _motorSub; }
+
 private:
     double _frequencyHz = 40.0; ///< How many times loop should run per second.
 

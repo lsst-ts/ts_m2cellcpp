@@ -100,7 +100,7 @@ tuple<SysStatus, string> BreakerFeedGroup::Feed::checkBreakers(InputPortBits con
     if (count == 3) breakerStatus = GOOD;
     else if (count == 2) breakerStatus = WARN;
     if (bitmap != _feedBitmap) {
-        LDEBUG("BreakerStatus change to ", (int)bitmap, " from ", (int)_feedBitmap,
+        LDEBUG("BreakerStatus change to ", (int)bitmap, " from ", (int)_feedBitmap, " count=", count,
               " status=", getSysStatusStr(breakerStatus), " low inputs=", inactiveStr);
     }
     _feedBitmap = bitmap;
@@ -404,27 +404,27 @@ PowerSubsystem::PowerState PowerSubsystem::getTargPowerState() const {
 }
 
 
-void PowerSubsystem::setPowerOn() {
+bool PowerSubsystem::setPowerOn() {
     VMUTEX_NOT_HELD(_powerStateMtx);
     auto outputPort = _fpgaIo->getOutputPort();
     lock_guard<util::VMutex> lg(_powerStateMtx);
-    _setPowerOn();
+    return _setPowerOn();
 }
 
-void PowerSubsystem::_setPowerOn() {
+bool PowerSubsystem::_setPowerOn() {
     VMUTEX_HELD(_powerStateMtx);
 
     if (_checkForFaults()) {
         LERROR(getClassName(), " _setPowerOn cannot turn on due to faults");
         faultmgr::FaultMgr::get().faultMsg(500003, "Internal ERROR: Faults preventing operation to proceed");
         _setPowerOff("fault during _setPowerOn");
-        return;
+        return false;
     }
 
     if (!_getCrioReadyOutputOn()) {
         LERROR("_setPowerOn() cannot turn due to CRIO_INTERLOCK_ENABLE");
         _setPowerOff("_setPowerOn called without CRIO_INTERLOCK_ENABLE");
-        return;
+        return false;
     }
 
     LINFO(getClassName(), " Turning power on");
@@ -435,6 +435,7 @@ void PowerSubsystem::_setPowerOn() {
     _powerOnStart = util::CLOCK::now();
     _phaseStartTime = _powerOnStart;
     _telemCounter = 0;
+    return true;
 }
 
 
@@ -545,15 +546,27 @@ void PowerSubsystem::_processPowerOn(faultmgr::FaultStatusBits& faultsSet) {
     double voltage = getVoltage();
     if (voltage > _psCfg.getMaxVoltageFault()) {
         LERROR(getClassName(), " voltage(", voltage, ") is too high, turning off");
+        faultsSet.setBitAt(_psCfg.getVoltageFault());
         faultmgr::FaultMgr::get().faultMsg(-1, getClassName() + " voltage(" + to_string(voltage)
                 + ") above fault level " + to_string(_psCfg.getMaxVoltageFault()));
         _setPowerOff(string(__func__) + "voltage too high");
         return;
     }
     if (voltage > _psCfg.getMaxVoltageWarn()) {
+        faultsSet.setBitAt(_psCfg.getVoltageWarn());
         LWARN(getClassName(), " voltage(", voltage, ") above warning level ", _psCfg.getMaxVoltageWarn());
         faultmgr::FaultMgr::get().faultMsg(0, getClassName() + " voltage(" + to_string(voltage)
                 + ") above warning level " + to_string(_psCfg.getMaxVoltageWarn()));
+    }
+
+    double currentA = getCurrent();
+    if (currentA > _psCfg.getMaxCurrentFault()) {
+        LERROR(getClassName(), " current(", currentA, ") is too high, turning off");
+        faultsSet.setBitAt(_psCfg.getExcessiveCurrent());
+        faultmgr::FaultMgr::get().faultMsg(-1, getClassName() + " current(" + to_string(currentA)
+                + ") above fault level " + to_string(_psCfg.getExcessiveCurrent()));
+        _setPowerOff(string(__func__) + "current too high");
+        return;
     }
 
     util::TIMEPOINT now = util::CLOCK::now();
@@ -585,11 +598,13 @@ void PowerSubsystem::_processPowerOn(faultmgr::FaultStatusBits& faultsSet) {
         } else if (_phase == 2) {
             if (voltage < _psCfg.getMinVoltageWarn()) {
                 LWARN(getClassName(), " voltage(", voltage, ") below warning level ", _psCfg.getMinVoltageWarn());
+                faultsSet.setBitAt(_psCfg.getVoltageWarn());
                 faultmgr::FaultMgr::get().faultMsg(0, getClassName() + " voltage(" + to_string(voltage)
                         + ") below warning level " + to_string(_psCfg.getMinVoltageWarn()));
             }
             if (voltage < _psCfg.getMinVoltageFault()) {
                 LWARN(getClassName(), " voltage(", voltage, ") below fault level ", _psCfg.getMinVoltageFault());
+                faultsSet.setBitAt(_psCfg.getVoltageFault());
                 faultmgr::FaultMgr::get().faultMsg(-1, getClassName() + " voltage(" + to_string(voltage)
                                 + ") below fault level " + to_string(_psCfg.getMinVoltageFault()));
                 _setPowerOff(string(__func__) + " voltage too low");
@@ -755,12 +770,16 @@ void PowerSubsystem::_processPowerOff(faultmgr::FaultStatusBits& faultsSet) {
             LWARN(getClassName(), " voltage high for OFF state voltage=", voltage);
         }
     }
-
 }
 
 
 bool PowerSubsystem::_checkForFaults() {
-    return faultmgr::FaultMgr::get().checkForPowerSubsystemFaults(_psCfg.getSubsystemFaultMask(), getClassName());
+    faultmgr::FaultStatusBits mask = _psCfg.getSubsystemFaultMask();
+    // Shutting power off if the _breaker bit is set makes it impossible to RESET the breakers.
+    // Ignoring this specific fault should not be an issue as the `ON` case tests the breakers
+    // and will turn off power when needed.
+    mask.unsetBitAt(_psCfg.getBreakerFault());
+    return faultmgr::FaultMgr::get().checkForPowerSubsystemFaults(mask, getClassName());
 }
 
 

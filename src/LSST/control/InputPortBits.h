@@ -118,7 +118,15 @@ public:
     /// Return the state of bit in `_bitmap` at `pos`, `pos` out of range returns false,
     /// except for ALWAYS_HIGH, which returns true.
     /// ALWAYS_HIGH is used in cases where missing bits are forced high.
+    ///  i.e. COMM has fewer input used than MOTOR, some some bits
+    ///      in COMM are ALWAYS_HIGH so the same check function can be used.
     bool getBitAtPos(int pos) const;
+
+    /// Set bit at `pos` to 1 if `val` is true, or 0 if `val` is false.
+    /// Trying to set `pos` equal to ALWAYS_HIGH or ALWAYS_LOW only.
+    ///   results in an error log message.
+    /// @throw std::range_error if `pos` is out of range.
+    void setBitAtPos(int pos, bool val);
 
     /// Return all bits that are set in `_bitmap` and in `mask`.
     uint32_t getBitsSetInMask(uint32_t mask) const {

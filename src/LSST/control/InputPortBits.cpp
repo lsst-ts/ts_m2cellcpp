@@ -48,7 +48,7 @@ void InputPortBits::writeBit(int pos, bool set) {
 
 
 bool InputPortBits::getBitAtPos(int pos) const {
-    if (pos < 0 || pos >= 32 ) {
+    if (pos < 0 || pos >= 32) {
         if (pos == InputPortBits::ALWAYS_HIGH) {
             return 1;
         }
@@ -60,6 +60,13 @@ bool InputPortBits::getBitAtPos(int pos) const {
     return getBitsSetInMask(mask);
 }
 
+void InputPortBits::setBitAtPos(int pos, bool val) {
+    if (pos == ALWAYS_HIGH || pos == ALWAYS_LOW) {
+        LERROR("InputPortBits::setBitAtPos cannot set ALWAYS_HIGH or ALWAYS_LOW pos=", pos, " val=", val);
+        return;
+    }
+    faultmgr::FaultStatusBits::setBit32(_bitmap, pos, val);
+}
 
 string InputPortBits::getAllSetBitEnums() const {
     string str;
