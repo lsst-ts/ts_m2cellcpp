@@ -1,7 +1,7 @@
 # Copy and paste the following into http://www.plantuml.com/plantuml/uml/
 
 @startuml
-#&&&
+
 class SysInfo
 class FpgaIo
 class SimCore
@@ -15,7 +15,14 @@ class Feed
 class InputPortBits
 class OutputPortBits
 class PowerSubsystemConfig
+
+class FaultStatusBits
+class FaultMgr
+class BasicFaultMgr
+
 class SimPowerSubsystem
+
+class ComControl
 
 SimCore *-- SimPowerSubsystem
 SimPowerSubsystem *-- InputPortBits
@@ -26,6 +33,13 @@ PowerSystem *-- PowerSubsystem
 PowerSubsystem *-- PowerSubsystemConfig
 PowerSubsystem *-- BreakerFeedGroup
 BreakerFeedGroup *-- Feed
+
+FaultMgr *-- BasicFaultMgr
+BasicFaultMgr *-- FaultStatusBits
+PowerSystem .. FaultMgr : faults
+PowerSubsystem .. FaultMgr : faults
+ComControl .. FaultMgr : faults
+
 
 FpgaIo o.. SysInfo
 FpgaIo o.. SimCore
