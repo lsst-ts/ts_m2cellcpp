@@ -27,6 +27,7 @@
 #include <thread>
 
 // Project headers
+#include "faultmgr/FaultMgr.h"
 #include "system/ComClient.h"
 #include "system/Config.h"
 #include "util/Log.h"
@@ -102,12 +103,16 @@ void ComServer::_beginAccept() {
     }
     auto connId = _connIdSeq++;
     ComConnection::Ptr const connection = newComConnection(_ioContext, connId, shared_from_this());
+    size_t connectionSize;
     {
         lock_guard<mutex> lg(_mapMtx);
         _connections.emplace(connId, connection);
+        connectionSize = _connections.size();
     }
     _acceptor.async_accept(connection->socket(),
                            bind(&ComServer::_handleAccept, shared_from_this(), connection, _1));
+    // If going from 0 to 1, FaultMgr must clear the appropriate fault so the system can be turned on.
+    faultmgr::FaultMgr::get().reportComConnectionCount(connectionSize);
 }
 
 void ComServer::_handleAccept(ComConnection::Ptr const& connection, boost::system::error_code const& ec) {
@@ -144,13 +149,19 @@ void ComServer::shutdown() {
 }
 
 void ComServer::eraseConnection(uint64_t connId) {
-    lock_guard<mutex> lg(_mapMtx);
-    auto iter = _connections.find(connId);
-    if (iter == _connections.end()) {
-        LWARN("connection not found ", to_string(connId));
-        return;
+    size_t connectionSize;
+    {
+        lock_guard<mutex> lg(_mapMtx);
+        auto iter = _connections.find(connId);
+        if (iter == _connections.end()) {
+            LWARN("connection not found ", to_string(connId));
+            return;
+        }
+        _connections.erase(iter);
+        connectionSize = _connections.size();
     }
-    _connections.erase(iter);
+    // If going to 0, FaultMgr must set the appropriate fault to force safe mode.
+    faultmgr::FaultMgr::get().reportComConnectionCount(connectionSize);
 }
 
 int ComServer::connectionCount() const {

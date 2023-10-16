@@ -90,13 +90,18 @@ void SimPowerSubsystem::calcBreakers(util::CLOCK::time_point ts) {
     if (!_breakerClosed) {
         if (_breakerClosedTarg) {
             double timeDiff = chrono::duration<double, std::ratio<1,1>>(ts - _breakerClosedTargTs).count();
+            LDEBUG(getClassName(),"SimPowerSubsystem::calcBreakers not _breakerClosed Targ=", _breakerClosedTarg,
+                    " timeDiff=", timeDiff, " timeTarg=", _breakerCloseTimeSec);
             if (timeDiff > _breakerCloseTimeSec) {
                 _breakerClosed = true;
+                LDEBUG(getClassName(),"SimPowerSubsystem::calcBreakers not _breakerClosed changed to true Targ=", _breakerClosedTarg,
+                        " timeDiff=", timeDiff, " timeTarg=", _breakerCloseTimeSec);
             }
         }
     } else {
         if (!_breakerClosedTarg) {
             _breakerClosed = false; // assuming breaker opens extremely quickly
+            LDEBUG(getClassName(),"SimPowerSubsystem::calcBreakers _breakerClosed changed to false");
         }
     }
 
@@ -122,14 +127,16 @@ void SimPowerSubsystem::calcBreakers(util::CLOCK::time_point ts) {
 void SimPowerSubsystem::calcVoltageCurrent(double timeDiff) {
     double startingVoltage = _voltage;
     if (getPowerOn()) {
-        if (_voltage < _voltageNominal) {
+        // Allow voltage to go very high if _overVoltage is true.
+        double voltNom = (_overVoltage) ? (_voltageNominal * 10.0) : _voltageNominal;
+        if (_voltage < voltNom) {
             _voltage += _voltageChangeRateOn*timeDiff;
-            if (_voltage > _voltageNominal) {
-                _voltage = _voltageNominal;
+            if (_voltage > voltNom) {
+                _voltage = voltNom;
             }
         }
-        if (_voltage > _voltageNominal) {
-            _voltage = _voltageNominal;
+        if (_voltage > voltNom) {
+            _voltage = voltNom;
         }
     } else {
         double voltageMin = 0.0;
@@ -142,6 +149,9 @@ void SimPowerSubsystem::calcVoltageCurrent(double timeDiff) {
     }
     if (_breakerClosed) {
         _current = _voltage*_currentGain;
+        if (_overCurrent) {
+            _current *= 10.0;
+        }
     } else {
         _current = 0.0;
     }
@@ -152,7 +162,15 @@ void SimPowerSubsystem::calcVoltageCurrent(double timeDiff) {
     }
 }
 
+void SimPowerSubsystem::forceOverVoltage(bool overVoltage) {
+    _overVoltage = overVoltage;
+    LWARN("_overVoltage set to ", to_string(_overVoltage));
+}
 
+void SimPowerSubsystem::forceOverCurrent(bool overCurrent) {
+    _overCurrent = overCurrent;
+    LWARN("_overCurrent set to ", to_string(_overCurrent));
+}
 
 }  // namespace simulator
 }  // namespace m2cellcpp

@@ -97,6 +97,11 @@ SysInfo FpgaIo::getSysInfo() const {
 }
 
 void FpgaIo::registerPowerSys(std::shared_ptr<PowerSystem> const& powerSys) {
+    if (powerSys != nullptr) {
+        LINFO("FpgaIo::registerPowerSys power system registered _daq");
+    } else {
+        LERROR("FpgaIo::registerPowerSys got nullptr _daq");
+    }
     _powerSys = powerSys;
 }
 
@@ -111,7 +116,7 @@ void FpgaIo::_readWriteFpga() {
     while (_loop) {
         auto powerSys = _powerSys.lock();
         if (powerSys == nullptr) {
-            LWARN("FpgaIo::_readWriteFpga() No PowerSystemRegistered");
+            LERROR("FpgaIo::_readWriteFpga() No PowerSystemRegistered");
             // With no power system registered, breakers are not being checked, etc,
             // so turn everything off.
             _emergencyTurnOffAllPower();
@@ -131,7 +136,6 @@ void FpgaIo::_readWriteFpga() {
             powerSys->queueDaqInfoRead();
         }
         std::this_thread::sleep_for(std::chrono::duration<double>(_loopSleepSecs));
-
     }
 }
 

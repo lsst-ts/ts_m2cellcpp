@@ -35,8 +35,12 @@ namespace m2cellcpp {
 namespace faultmgr {
 
 /// Class representation of the "Fault Status", which is a bitmap
-/// representing the status of several system items.
+/// representing the status of several system items. In the LabView
+/// code, this class comes from "Faults-Warnings-Info_BitStatus.lvclass"
+/// and has an icon with a box and TelemBit in the label.
 /// Aside from the static mask functions, this class is not thread safe.
+/// "Telemetry Fault Manager", "Fault Manager", and "PowerSubsystems use the
+/// same bitmap bits but have different initialization code.
 /// Unit tests in test_FpgaIo.cpp.
 class FaultStatusBits {
 public:
@@ -90,7 +94,8 @@ public:
         TANGENT_LOAD_CELL_FAULT=32,              ///< “tangent load cell fault” = 32
         ELEVATION_ANGLE_DIFF_FAULT=33,           ///< “elevation angle difference error fault” = 33
         MONITOR_ILC_READ_WARN=34,                ///< “monitoring ILC read error warning” = 34
-        /// “SPARE_35” = 35
+        POWER_SYSTEM_TIMEOUT=35,                 ///< power system timeout, not from in LabView
+        /// “SPARE_36” = 36
         /// … all SPARE …
         /// “SPARE_54” = 54
         PARAMETER_FILE_READ_FAULT=55,            ///< “configurable parameter file read error fault” = 55
@@ -128,10 +133,29 @@ public:
     /// Should match "Info Mask" found in Faults-Warnings-Info_BitStatus.lvclass:masks.vi
     static uint64_t getMaskInfo();
 
+    /// Returns "Affected Fault Mask" used by "TelemetryFaultManager" set in
+    /// "TelemetryFaultManager.lvclass:init_affected_masks.vi"
+    static uint64_t getTelemetryFaultManagerAffectedFaultMask();
+
+    /// Returns "Affected Warning Mask" used by "TelemetryFaultManager" set in
+    /// "TelemetryFaultManager.lvclass:init_affected_masks.vi"
+    static uint64_t getTelemetryFaultManagerAffectedWarningMask();
+
+    /// Returns "Affected Faults Bit Mask" used by "PowerSubsystem" set in
+    /// "PowerSubsystem.lvclass:create_affected_masks.vi"
+    static uint64_t getPowerSubsystemFaultManagerAffectedFaultMask();
+
+    /// Returns "Affected Warnings/Info Bit Mask" used by "PowerSubsystem" set in
+    /// "PowerSubsystem.lvclass:create_affected_masks.vi"
+    static uint64_t getPowerSubsystemFaultManagerAffectedWarningMask();
+
     /// Returns a mask of the faults for the COMM or MOTOR power subsystem, depending on
     /// the value of `sysType`.
     /// Should match "subsystem fault mask" maps found in BasePowerSubsystem.lvclass:set_fault_masks.vi
     static uint64_t getMaskPowerSubsystemFaults(control::PowerSystemType sysType);
+
+    /// Returns a mask of the health faults for the powre system.
+    static uint64_t getMaskHealthFaults();
 
     /// Set (when `set` == true) or unset (when `set` == false) the bit at `pos` in `bitmap`
     static void setBit64(uint64_t& bitmap, int pos, bool set);
@@ -142,13 +166,13 @@ public:
     /// Set (when `set` == true) or unset (when `set` == false) the bit at `pos` in `bitmap`
     static void setBit8(uint8_t& bitmap, int pos, bool set);
 
-    /// Set the bit in `_bitmap` at `pos`.
+    /// Set the bit in `_bitmap` at `pos` to '1'.
     /// @throws range_error.
-    void setBit(int pos);
+    void setBitAt(int pos);
 
     /// Unset the bit in `_bitmap` at `pos`.
     /// @throws range_error.
-    void unsetBit(int pos);
+    void unsetBitAt(int pos);
 
     /// Return a copy of `_bitmap`.
     uint64_t getBitmap() const { return _bitmap; }
@@ -189,6 +213,22 @@ private:
 
     static Ptr _maskSubsystemCommFault; ///< Stored "subsystem fault mask" for COMM.
     static Ptr _maskSubsystemMotorFault; ///< Stored "subsystem fault mask" for MOTOR.
+
+    /// Stored "Telemetry Fault Manager Affected Fault Mask" for TelemetryFaultManager
+    static Ptr _telemetryFaultManagerAffectedFaultMask;
+
+    /// Stored "Telemetry Fault Manager Affected Warning Mask" for TelemetryFaultManager
+    static Ptr _telemetryFaultManagerAffectedWarningMask;
+
+    /// Stored "PowerSubsystem Affected Fault Mask"
+    static Ptr _powerSubsystemFaultManagerAffectedFaultMask;
+
+    /// Stored "PowerSubsystem Affected Fault Mask"
+    static Ptr _powerSubsystemFaultManagerAffectedWarningMask;
+
+    /// Stored health fault mask
+    static Ptr _healthFaultMask;
+
 };
 
 

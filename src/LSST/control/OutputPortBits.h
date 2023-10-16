@@ -63,6 +63,11 @@ public:
         SPARE_D07 = 7,             ///< “Spare D07” = 7
     };
 
+    enum {
+        // Bitmap size, size of uint8_t
+        BM_SZ = 8
+    };
+
     /// Returns the output port bit mask, which is all bits set. This
     /// is from the LabView code and kept as reference.
     static uint8_t getOuputPortMask() { return ~0; }

@@ -19,8 +19,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_FAULTMGR_FAULTMGR_H
-#define LSST_M2CELLCPP_FAULTMGR_FAULTMGR_H
+#ifndef LSST_M2CELLCPP_FAULTMGR_H
+#define LSST_M2CELLCPP_FAULTMGR_H
 
 // System headers
 #include <functional>
@@ -30,15 +30,20 @@
 
 // Project headers
 #include "control/control_defs.h"
+#include "faultmgr/BasicFaultMgr.h"
 #include "faultmgr/FaultStatusBits.h"
+#include "util/clock_defs.h"
 
 namespace LSST {
 namespace m2cellcpp {
 namespace faultmgr {
 
+
 /// This class will track and reset faults encountered in the system.
-/// FUTURE: DM-40909 add functionality to FaultMgr, currently there's just enough here to turn on the power.
-/// Unit tests in test_FaultMgr.cpp.
+/// Instead of sending messages around to all possible systems when faults are triggered, as
+/// the LabView code does, all faults will be stored in a global instance of FaultMgr.
+/// When systems check for faults, they will do so through this central instance.
+/// Unit tests in test_PowerSystem.cpp.
 class FaultMgr {
 public:
     using Ptr = std::shared_ptr<FaultMgr>;
@@ -59,8 +64,18 @@ public:
     /// @param note - identifier for calling class and/or function.
     bool checkForPowerSubsystemFaults(FaultStatusBits const& subsystemMask, std::string const& note);
 
-    /// PLACEHOLDER set a fault until the appropriate way to handle it is determined.
-    void setFault(std::string const& faultNote);
+    /// Update faults based on `currentFaults` provided by `subsystem`.
+    void updatePowerFaults(FaultStatusBits currentFaults, BasicFaultMgr::CrioSubsystem subsystem);
+
+    /// Get the number of TCP/IP connections `count`, triggering a fault if 0.
+    void reportComConnectionCount(size_t count);
+
+    /// Reset the fault bits in `resetMask` and send any required updates.
+    void resetFaults(FaultStatusBits resetMask);
+
+    /// Currently, this just logs an error. Eventually, this should result in a message
+    /// that can be displayed by the GUI.
+    void faultMsg(int errId, std::string const& eMsg);
 
 private:
     static Ptr _thisPtr; ///< pointer to the global instance of FaultMgr.
@@ -69,15 +84,31 @@ private:
     // Private constructor to force use of `setup`;
     FaultMgr();
 
-    FaultStatusBits _currentFaults;    ///< Current faults.
+    /// Update TelemetryCom with `newFsbSummary`, which should be the latest value
+    /// of `_summarySystemFaultsStatus`.
+    void _updateTelemetryCom(BasicFaultMgr const& newFsbSummary);
 
-    /// Mask with '1's at enabled fault positions.
-    FaultStatusBits _faultEnableMask{FaultStatusBits::getMaskFaults()};
+    /// Overall system faults status, Model->systemStatus->summaryFaultsStatus
+    BasicFaultMgr _summarySystemFaultsStatus;
+    std::mutex _summarySystemFaultsMtx; ///< Protects `_summarySystemFaultsStatus`.
 
+    /// Faults, warnings, and info associated with power systems.
+    PowerFaultMgr _powerFaultMgr;
+    std::mutex _powerFaultMtx; ///< Protects `_powerFaultMgr`.
+
+    /// Faults, warnings, and info associated with ILC's.
+    /// FUTURE: complete implementation
+    TelemetryFaultMgr _telemetryFaultMgr;
+    std::mutex _telemetryFaultMtx; ///< Protects `_telemetryFaultMgr`.
+
+    /// True when there are no ComServer Tcp/Ip connections.
+    std::atomic<bool> _commConnectionFault{true};
+
+    FaultStatusBits _healthFaultMask{FaultStatusBits::getMaskHealthFaults()}; ///< "Health Fault Mask"
 };
 
 }  // namespace faultmgr
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_FAULTMGR_FAULTMGR_H
+#endif  // LSST_M2CELLCPP_FAULTMGR_H

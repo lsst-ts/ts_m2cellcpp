@@ -1,5 +1,9 @@
 # Version History
 
+0.3.5
+
+ - Added FaultMgr.
+
 0.3.4
 
  - Added power up, power down, and power system tests

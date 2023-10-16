@@ -25,19 +25,41 @@
 // System headers
 
 // Project headers
+#include "control/PowerSystem.h"
 #include "control/State.h"
+#include "util/Log.h"
 
 namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-Model::Model() {}
+Model::Model() {
+    LDEBUG("Model::Model() creating PowerSystem");
+    _powerSystem = PowerSystem::Ptr(new PowerSystem());
+}
 
 State::Ptr Model::getCurrentState() { return _stateMap.getCurrentState(); }
 
 std::shared_ptr<State> Model::getState(std::string const& stateName) { return _stateMap.getState(stateName); }
 
 bool Model::changeState(std::shared_ptr<State> const& newState) { return _stateMap.changeState(newState); }
+
+bool Model::goToSafeMode(std::string const& note) {
+    if (_powerSystem == nullptr) {
+        LERROR("Model::goToSafeMode _powerSystem is nullptr");
+        return false;
+    }
+    // TODO: DM-40339 Add code to put the system in safe mode,
+    //       If the system is already in safe mode, return false
+    LCRITICAL("Model::goToSafeMode needs code note=", note);
+    // Put the system in safe mode.
+    // This includes setting "Closed loop control" (aka "CLC Mode") to Idle
+    // Turning motor power off
+    _powerSystem->getMotor().setPowerOff("safe mode");
+    // Turning comm power off
+    _powerSystem->getComm().setPowerOff("safe mode");
+    return true;
+}
 
 }  // namespace control
 }  // namespace m2cellcpp

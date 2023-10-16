@@ -26,12 +26,14 @@
 #include <memory>
 #include <stdint.h>
 #include <string>
+#include <thread>
 #include <vector>
 
 // Project headers
 #include "control/FpgaIo.h"
 #include "control/InputPortBits.h"
 #include "control/PowerSubsystem.h"
+#include "faultmgr/FaultMgr.h"
 #include "util/EventThread.h"
 
 
@@ -41,6 +43,7 @@ namespace control {
 
 /// Class is used to contain both the `MOTOR` `PowerSubsystem` and
 /// the `COMM` `PowerSubsystem`.
+/// Synchronization is largely provided by this being an event driven thread.
 /// unit tests: test_PowerSystem.cpp
 class PowerSystem {
 public:
@@ -89,11 +92,10 @@ private:
     /// Based on PowerSubsystem->process_DAQ_telemetry.vi
     void _processDaq(SysInfo info);
 
-
-    /// To be implemented in DM-40908, handle faults for some hardware signals related to power.
-    /// PLACEHOLDER DAQ_to_PS_health_telemetry.vi - copy the data into a placeholder structure,
-    ///         but doesn't do any checking.
-    void _processDaqHealthTelemetry(SysInfo info);
+    /// Handle faults for some hardware signals related to power.
+    /// @param sInfo - System hardware information from FpgaIo.
+    /// @param currentFaults - Faults detected in this function will be reported here.
+    void _processDaqHealthTelemetry(SysInfo sInfo, faultmgr::FaultStatusBits& currentFaults);
 
     PowerSubsystem _motor; ///< Handles MOTOR power control.
     PowerSubsystem _comm; ///< Handles COMM power control.
@@ -106,11 +108,18 @@ private:
 
     /// Last time the DAQ information was read. Initialized to now to give
     /// the system a chance to read the DAQ instead of instantly timing out.
-    util::TIMEPOINT _daqReadTime{util::CLOCK::now()};
+    std::atomic<util::TIMEPOINT> _daqReadTime{util::CLOCK::now()};
 
     /// Timeout in seconds for fresh DAQ SystemInfo.
     /// DM-40694 set from config file, also needs a real value
     std::atomic<double> _sysInfoTimeoutSecs{1.5};
+
+    /// If true, boost current indicators from the power supplies will cause faults.
+    /// DM-40694 set from config file
+    bool _boostCurrentFaultEnabled = true;
+
+    std::thread _timeoutThread; ///< calls _checkTimeout on a regular basis.
+    std::atomic<bool> _timeoutLoop{true}; ///< set to false to end _timeoutThread.
 };
 
 

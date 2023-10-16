@@ -35,6 +35,7 @@ namespace m2cellcpp {
 namespace control {
 
 class FpgaIo;
+class PowerSystem;
 class State;
 
 /// Most of the higher level systems information is contained in this class.
@@ -50,6 +51,9 @@ public:
     /// Return a pointer to the FpgaIo instance.
     std::shared_ptr<FpgaIo> getFpgaIo() { return _fpgaIo; }
 
+    /// Return a pointer to the `_powerSystem`.
+    std::shared_ptr<PowerSystem> getPowerSystem() { return _powerSystem; }
+
     /// Change the current state to `newState`, taking rquired actions.
     /// @return false in `newState` is invalid.
     bool changeState(std::shared_ptr<State> const& newState);
@@ -61,6 +65,11 @@ public:
     /// Get a pointer to the current State.
     /// VI-PH retrieveStateVI  // calls breaks out State and currentStateEnum and returns
     std::shared_ptr<State> getCurrentState();
+
+    /// Go to safe mode, which includes turning off MOTOR and COMM power.
+    /// @param note - Description of reason for safe mode.
+    /// @return true if the system was not already trying to reach.
+    bool goToSafeMode(std::string const& note);
 
     /// Accessors
     // VI-PH readApplicationElementsVI  // can probably skip this one
@@ -157,6 +166,7 @@ private:
 
     // _cellCommRef // systemElement VI-PH
     // _powerStatus // systemElement  _commPowerOn, _motorPowerOn VI-PH
+    std::shared_ptr<PowerSystem> _powerSystem; ///< The PowerSystem control instance, contains power states.
 };
 
 }  // namespace control

@@ -370,7 +370,8 @@ public:
     /// but many things can interrupt the process.
     /// When the process is complete `getActualPowerState()` should return `ON`.
     /// See `_setPowerOn()`
-    void setPowerOn();
+    /// @return true if ok to try to turn power on.
+    bool setPowerOn();
 
     /// Take action to turn the power off, this may be called from nearly anywhere.
     /// @param note - should contain information about the source of
@@ -383,8 +384,12 @@ public:
     /// should be provided by `FpgaIo` and should contain the most recent
     /// data available. `processDaq` will try to attain the `_targPowerState`
     /// but will change the `_targPowerState` to `OFF` if problems occur.
+    /// @param info - Fresh hardware information from FpgaIo.
+    /// @param faultsSet - Faults encountered while processing `info`
+    ///           will be reported here.
+    /// @return the power status for this subsystem after processing `info`.
     /// Based on PowerSubsystem->process_DAQ_telemetry.vi
-    SysStatus processDaq(SysInfo const& info);
+    SysStatus processDaq(SysInfo const& info, faultmgr::FaultStatusBits& faultsSet);
 
     /// Return the actual power state.
     PowerState getActualPowerState() const;
@@ -397,7 +402,8 @@ private:
     /// `_targPowerState` to `ON` and setting the appropriate `OutputPortBits`.
     /// `processDaq` will monitor and complete the task of `TURNING_ON`.
     /// When the process is complete `getActualPowerState()` should return `ON`.
-    void _setPowerOn();
+    /// @return true if ok to try to turn power on.
+    bool _setPowerOn();
 
     /// Turn off the power by setting the appropriate `OutputPortBits`.
     /// `processDaq` will monitor and complete the task of `TURNING_OFF`,
@@ -406,11 +412,13 @@ private:
 
     /// Go through the sequence of events required when `_targPowerState` is ON,
     /// `_powerStateMtx` must be locked before calling.
-    void _processPowerOn();
+    /// @param faultsSet - Faults that occur will be recorded here.
+    void _processPowerOn(faultmgr::FaultStatusBits& faultsSet);
 
     /// Go through the sequence of events required when `_targPowerState` is OFF,
     /// `_powerStateMtx` must be locked before calling.
-    void _processPowerOff();
+    /// @param faultsSet - Faults that occur will be recorded here.
+    void _processPowerOff(faultmgr::FaultStatusBits& faultsSet);
 
     /// Return “Relay Control Output On”.
     bool _getRelayControlOutputOn() const;
@@ -423,7 +431,8 @@ private:
 
     /// Return true if the OutputPort is has the correct bits to turn on this power system.
     /// Sets "interlock fault" if the interlock is preventing power on.
-    bool _powerShouldBeOn();
+    /// @param faultsSet - Faults that occur will be recorded here.
+    bool _powerShouldBeOn(faultmgr::FaultStatusBits& faultsSet);
 
     /// Return a log worth string of the power situation.
     std::string _getPowerShouldBeOnStr();
@@ -432,26 +441,14 @@ private:
     /// be reported if the voltage is over `_breakerOperatingVoltage`.
     /// Faults and warnings will be sent to the FaultMgr.
     /// Faults will result in `_setPowerOff()` being called.
-    bool _checkForPowerOnBreakerFault(double voltage);
+    /// @param faultsSet - Faults that occur will be recorded here.
+    bool _checkForPowerOnBreakerFault(double voltage, faultmgr::FaultStatusBits& faultsSet);
 
-    /// Set power off and send the FaultMgr low voltage warnings and faults.
-    void _sendBreakerVoltageFault();
-
-    /// PLACEHOLDER to register an error with the fault manager.
-    void _sendFaultMgrError();
-
-    /// PLACEHOLDER to register an error with the fault manager.
-    void _sendFaultMgrError(int errId, std::string note);
-
-    /// PLACEHOLDER to register a warning with the fault manager.
-    void _sendFaultMgrWarn();
-
-    /// PLACEHOLDER to set a bit in the FaulMgr FaultStatusBits.
-    void _sendFaultMgrSetBit(int bitPos);
+    /// Update the faults in the FaultMgr with `faultsSet`.
+    void _updateFaults(faultmgr::FaultStatusBits& faultsSet);
 
     /// Return true if the FaultMgr has any faults that affect this PowerSubsystem.
     bool _checkForFaults();
-
 
     PowerSystemType _systemType; ///< indicates if this is the MOTOR or COMM system.
 
