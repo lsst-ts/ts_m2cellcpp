@@ -48,7 +48,7 @@ void InputPortBits::writeBit(int pos, bool set) {
 
 
 bool InputPortBits::getBitAtPos(int pos) const {
-    if (pos < 0 || pos >= 32) {
+    if (pos < 0 || pos >= BM_SZ) {
         if (pos == InputPortBits::ALWAYS_HIGH) {
             return 1;
         }
@@ -71,7 +71,7 @@ void InputPortBits::setBitAtPos(int pos, bool val) {
 string InputPortBits::getAllSetBitEnums() const {
     string str;
     uint32_t mask = 1;
-    for (int j=0; j<32; ++j) {
+    for (int j=0; j<BM_SZ; ++j) {
         if (getBitsSetInMask(mask)) {
             str += getEnumString(j) + ",";
         }
@@ -82,7 +82,7 @@ string InputPortBits::getAllSetBitEnums() const {
 
 string InputPortBits::getBinaryStr(uint32_t val) {
     stringstream os;
-    os << std::bitset<32>(val);
+    os << std::bitset<BM_SZ>(val);
     return os.str();
 }
 

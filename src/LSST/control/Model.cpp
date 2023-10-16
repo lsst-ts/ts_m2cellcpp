@@ -50,10 +50,10 @@ bool Model::goToSafeMode(std::string const& note) {
         return false;
     }
     // TODO: DM-40339 Add code to put the system in safe mode,
-    //   If the system is already in safe mode, return false
+    //       If the system is already in safe mode, return false
     LCRITICAL("Model::goToSafeMode needs code note=", note);
     // Put the system in safe mode.
-    // This includes setting "CLC Mode" to Idle
+    // This includes setting "Closed loop control" (aka "CLC Mode") to Idle
     // Turning motor power off
     _powerSystem->getMotor().setPowerOff("safe mode");
     // Turning comm power off

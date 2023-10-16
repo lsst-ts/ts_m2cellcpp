@@ -66,7 +66,7 @@ public:
     /// VI-PH retrieveStateVI  // calls breaks out State and currentStateEnum and returns
     std::shared_ptr<State> getCurrentState();
 
-    /// Go to safe mode.
+    /// Go to safe mode, which includes turning off MOTOR and COMM power.
     /// @param note - Description of reason for safe mode.
     /// @return true if the system was not already trying to reach.
     bool goToSafeMode(std::string const& note);

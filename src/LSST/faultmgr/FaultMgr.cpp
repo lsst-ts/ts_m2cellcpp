@@ -122,7 +122,7 @@ void FaultMgr::updatePowerFaults(FaultStatusBits currentFaults, BasicFaultMgr::C
         _powerFaultMgr.setCurrentFaults(currentFaults);
         // LabView code would like to OR the 'affected' masks together,
         // but that's always the equivalent of ORing something with itself here.
-        //  see "FaultManager.lvclass:combine_affected_masks.vi
+        // see "FaultManager.lvclass:combine_affected_masks.vi
         // Following merges current faults into _powerFaultMgr._summaryFaults.
         if (!_powerFaultMgr.updateFaults(subsystem)) {
             // no changes, nothing more to do.
@@ -161,7 +161,7 @@ void FaultMgr::updatePowerFaults(FaultStatusBits currentFaults, BasicFaultMgr::C
     {
         // see "SystemStatus.lvclass:updateSummaryFaultsStatus.vi"
         // Note that `FaultMgr::_summarySystemFaultsStatus` is the global
-        //   system status object.
+        // system status object.
         lock_guard<mutex> lgSummary(_summarySystemFaultsMtx);
         auto [nSummary, changedBits] = BasicFaultMgr::updateFaultStatus(
                 _summarySystemFaultsStatus.getSummaryFaults().getBitmap(), bfm.getFaultEnableMask().getBitmap(),

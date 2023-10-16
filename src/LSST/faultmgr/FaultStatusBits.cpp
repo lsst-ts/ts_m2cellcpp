@@ -66,7 +66,7 @@ FaultStatusBits::Ptr FaultStatusBits::_healthFaultMask;
 mutex faultMaskCreationMtx;
 
 void FaultStatusBits::setBit64(uint64_t& bitmap, int pos, bool set)  {
-    if (pos < 0 || pos >= 64 ) {
+    if (pos < 0 || pos >= 64) {
         throw std::range_error("setBit64 out of range pos=" + to_string(pos));
     }
     uint64_t bit = 1;
@@ -79,7 +79,7 @@ void FaultStatusBits::setBit64(uint64_t& bitmap, int pos, bool set)  {
 }
 
 void FaultStatusBits::setBit32(uint32_t& bitmap, int pos, bool set)  {
-    if (pos < 0 || pos >= 32 ) {
+    if (pos < 0 || pos >= 32) {
         throw std::range_error("setBit32 out of range pos=" + to_string(pos));
     }
     uint32_t bit = 1;
@@ -92,7 +92,7 @@ void FaultStatusBits::setBit32(uint32_t& bitmap, int pos, bool set)  {
 }
 
 void FaultStatusBits::setBit8(uint8_t& bitmap, int pos, bool set)  {
-    if (pos < 0 || pos >= 8 ) {
+    if (pos < 0 || pos >= 8) {
         throw std::range_error("setBit8 out of range pos=" + to_string(pos));
     }
     uint8_t bit = 1;
@@ -303,7 +303,7 @@ uint64_t FaultStatusBits::getTelemetryFaultManagerAffectedWarningMask() {
             // - "Affected Warning Mask":
             // warnings
             fsm->setBitAt(MONITOR_ILC_READ_WARN);         // “monitoring ILC read error warning”
-            fsm->setBitAt(ACTUATOR_LIMIT_OL);             // “actuator limit OL”
+            fsm->setBitAt(ACTUATOR_LIMIT_OL);             // “actuator limit OL” opened-loop
             fsm->setBitAt(INCLINOMETER_WO_LUT);           // “inclinometer error w/o lut”
             fsm->setBitAt(DISPLACEMENT_SENSOR_RANGE_ERR); // “displacement sensor range error”
             fsm->setBitAt(MIRROR_TEMP_SENSOR_WARN);       // “mirror temp sensor warning”

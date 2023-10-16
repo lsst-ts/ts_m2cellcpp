@@ -416,6 +416,7 @@ bool PowerSubsystem::_setPowerOn() {
 
     if (_checkForFaults()) {
         LERROR(getClassName(), " _setPowerOn cannot turn on due to faults");
+        // TODO: DM-41195 - get the error idnum and message from a configuration file.
         faultmgr::FaultMgr::get().faultMsg(500003, "Internal ERROR: Faults preventing operation to proceed");
         _setPowerOff("fault during _setPowerOn");
         return false;

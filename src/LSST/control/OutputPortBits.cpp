@@ -47,7 +47,7 @@ void OutputPortBits::writeBit(int pos, bool set) {
 
 
 bool OutputPortBits::getBitAtPos(int pos) const {
-    if (pos < 0 || pos >= 8 ) {
+    if (pos < 0 || pos >= BM_SZ) {
         return 0;
     }
     uint8_t mask = 1;
@@ -60,7 +60,7 @@ string OutputPortBits::getAllSetBitEnums() const {
     string str;
     uint8_t mask = 1;
 
-    for (int j=0; j<8; ++j) {
+    for (int j=0; j<BM_SZ; ++j) {
         if (getBitsSetInMask(mask)) {
             str += getEnumString(j) + ",";
         }
@@ -71,7 +71,7 @@ string OutputPortBits::getAllSetBitEnums() const {
 
 string OutputPortBits::getBinaryStr(uint8_t val) {
     stringstream os;
-    os << std::bitset<8>(val);
+    os << std::bitset<BM_SZ>(val);
     return os.str();
 }
 
