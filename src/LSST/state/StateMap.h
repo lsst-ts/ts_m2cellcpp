@@ -19,34 +19,40 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_CONTROL_STATEMAP_H
-#define LSST_M2CELLCPP_CONTROL_STATEMAP_H
+#ifndef LSST_M2CELLCPP_STATE_STATEMAP_H
+#define LSST_M2CELLCPP_STATE_STATEMAP_H
 
 // System headers
 #include <map>
 #include <memory>
+#include <vector>
 
 // Project headers
-#include "control/State.h"
-#include "control/FaultState.h"
-#include "control/IdleState.h"
-#include "control/InMotionState.h"
-#include "control/OfflineState.h"
-#include "control/PauseState.h"
-#include "control/StandbyState.h"
-#include "control/StartupState.h"
+#include "state/FaultState.h"
+#include "state/IdleState.h"
+#include "state/InMotionState.h"
+#include "state/OfflineState.h"
+#include "state/PauseState.h"
+#include "state/StandbyState.h"
+#include "state/StartupState.h"
+#include "state/State.h"
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace state {
 
 /// This class contains a map of all possible states and the current state.
 /// unit test: test_StateMap.cpp
 class StateMap {
 public:
+    /// The type for the map of states. TODO: it should be an enum instead of string.
     using MapType = std::map<std::string, State::Ptr>;
+
     /// Constructor, initial _currentState is StandByState.
-    StateMap();
+    /// @param `model` pointer to the model.
+    StateMap(Model *const model);
+
+    StateMap() = delete;
     virtual ~StateMap() = default;
 
     /// Return the current state.
@@ -85,11 +91,34 @@ public:
     /// Return a pointer to the pause state.
     PauseState::Ptr getPauseState() { return _pauseState; }
 
+    /// Go to a state that turns off power and motion. Multiple
+    /// states match this criteria.
+    /// @param `desiredState` - This state must be one of the states that has power
+    /// and motion off (see `_safeStates`). If the current
+    /// state is "OfflineState", `desiredState will be ignored and the system
+    /// will stay in "OfflineState".
+    /// @return true if the `desiredState` was used to set `_currentState`.
+    bool goToASafeState(std::string const& desiredState);
+
     /// Insert `state` into the state map.
     void insertIntoMap(State::Ptr const& state);
 
+    /// Returns true is state is in the `_safeStates` list.
+    bool isASafeState(std::string const& state) const;
+
 private:
+    /// Change the state to `newState`, if possible. `newState`
+    /// should have been checked as valid and exisiting in the
+    /// `_stateMap` before this is called.
+    /// @return false if the state could not be changed.
+    bool _changeState(State::Ptr const& newState);
+
+    /// Reference to the global model. Since StateMap only exists
+    /// as a member of the Model, this is always safe.
+    Model *const _model;
+
     /// Map of all possible states with their names as the keys.
+    /// It will only include the items defined below.
     MapType _stateMap;
 
     StartupState::Ptr _startupState;    ///< The Startup state instance.
@@ -100,12 +129,15 @@ private:
     OfflineState::Ptr _offlineState;    ///< The Offline state instance.
     PauseState::Ptr _pauseState;        ///< The Pause state instance.
 
-    /// The current state of the system.
+    /// The current state of the system. This must always point
+    /// one of the elements of `_stateMap`.
     State::Ptr _currentState;
+
+    std::vector<State::Ptr> _safeStates; ///< List of safe states (power and motion off)
 };
 
-}  // namespace control
+}  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_CONTROL_STATEMAP_H
+#endif  // LSST_M2CELLCPP_STATE_STATEMAP_H

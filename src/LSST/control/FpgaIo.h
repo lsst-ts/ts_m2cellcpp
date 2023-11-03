@@ -88,52 +88,6 @@ public:
 
     /// Set the loop sleep time in seconds.
     void setLoopSleepSecs(double seconds) { _loopSleepSecs = seconds; }
-#if 0 //&&&  merge
-    /// Construct the FpgaIo instance, using mocks if `useMocks` is true.
-    /// Mocks are meant for unit testing where no hardware is available.
-    FpgaIo(bool useMocks = false);
-
-    /// Wrtie all outputs, starting with `DaqBoolOutMock`. ILC's not included.
-    void writeAllOutputs();
-
-    /// Returns `_ilcMotorCurrent`
-    DaqInMock::Ptr getIlcMotorCurrent() const { return _ilcMotorCurrent; }
-    /// Returns `_ilcCommCurrent`
-    DaqInMock::Ptr getIlcCommCurrent() const { return _ilcCommCurrent; }
-    /// Returns `_ilcMotorVoltage`
-    DaqInMock::Ptr getIlcMotorVoltage() const { return _ilcMotorVoltage; }
-    /// Returns `_ilcCommVoltage`
-    DaqInMock::Ptr getIlcCommVoltage() const { return _ilcCommVoltage; }
-
-    /// Returns `_ilcMotorPowerOnOut`
-    DaqBoolOutMock::Ptr getIlcMotorPowerOnOut() const { return _ilcMotorPowerOnOut; }
-    /// Returns `_ilcCommPowerOnOut`
-    DaqBoolOutMock::Ptr getIlcCommPowerOnOut() const { return _ilcCommPowerOnOut; }
-    /// Returns `_crioInterlockEnableOut`
-    DaqBoolOutMock::Ptr getCrioInterlockEnableOut() const { return _crioInterlockEnableOut; }
-
-    /// Returns `_ilcMotorPowerOnIn`
-    DaqBoolInMock::Ptr getIlcMotorPowerOnIn() const { return _ilcMotorPowerOnIn; }
-    /// Returns `_ilcCommPowerOnIn`
-    DaqBoolInMock::Ptr getIlcCommPowerOnIn() const { return _ilcCommPowerOnIn; }
-    /// Returns `_crioInterlockEnableIn`
-    DaqBoolInMock::Ptr getCrioInterlockEnableIn() const { return _crioInterlockEnableIn; }
-
-    /// Returns pointer container for all ILC instances.
-    AllIlcs::Ptr getAllIlcs() const { return _ilcs; }
-
-    /// Returns `_testIlcMotorCurrent`
-    DaqOutMock::Ptr getTestIlcMotorCurrent() const { return _testIlcMotorCurrent; }
-    /// Returns `_testIlcCommCurrent`
-    DaqOutMock::Ptr getTestIlcCommCurrent() const { return _testIlcCommCurrent; }
-    /// Returns `_testIlcMotorVoltage`
-    DaqOutMock::Ptr getTestIlcMotorVoltage() const { return _testIlcMotorVoltage; }
-    /// Returns `_testIlcCommVoltage`
-    DaqOutMock::Ptr getTestIlcCommVoltage() const { return _testIlcCommVoltage; }
-
-    /// Return a log string describing the contents of this FpgaIo object.
-    std::string dump();
-#endif // &&&
 
 private:
     static Ptr _thisPtr; ///< Pointer to the global instance of FpgaIo.

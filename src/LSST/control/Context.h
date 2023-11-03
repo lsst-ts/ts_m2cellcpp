@@ -26,9 +26,10 @@
 #include <memory>
 #include <mutex>
 
+
 // Project headers
-#include "control/Model.h"
-#include "control/State.h"
+#include "state/Model.h"
+
 
 namespace LSST {
 namespace m2cellcpp {
@@ -57,7 +58,7 @@ public:
     void reset() { _thisPtr.reset(); }
 
     /// The Model, cRIO control.
-    Model model;
+    state::Model model;
 
 private:
     /// Context requires the Config is setup first.

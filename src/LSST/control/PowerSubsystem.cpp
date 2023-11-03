@@ -440,13 +440,13 @@ bool PowerSubsystem::_setPowerOn() {
 }
 
 
-void PowerSubsystem::setPowerOff(std::string const& note) {
+void PowerSubsystem::setPowerOff(string const& note) {
     VMUTEX_NOT_HELD(_powerStateMtx);
     lock_guard<util::VMutex> lg(_powerStateMtx);
     _setPowerOff(note);
 }
 
-void PowerSubsystem::_setPowerOff(std::string const& note) {
+void PowerSubsystem::_setPowerOff(string const& note) {
     LINFO(getClassName(), " Turning power off ", note);
     VMUTEX_HELD(_powerStateMtx);
 

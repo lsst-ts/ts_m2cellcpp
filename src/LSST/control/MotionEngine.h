@@ -19,38 +19,84 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_MOTIONENGINE_H
-#define LSST_M2CELLCPP_MOTIONENGINE_H
+#ifndef LSST_M2CELLCPP_CONTROL_MOTIONENGINE_H
+#define LSST_M2CELLCPP_CONTROL_MOTIONENGINE_H
 
 // System headers
 #include <memory>
+#include <thread>
 
 // Project headers
+#include "util/clock_defs.h"
+#include "util/EventThread.h"
 
 namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-/// &&& doc.  (is this class poorly named???)
+/// This class is responsible for the MotionEngine control, mostly
+/// following what is found in MotionEngine.lvclass:motionEngineMain.vi.
+/// It's primary function is to generate the step vector and pass that
+/// to the CellCommunication loop.
+/// &&& more doc.
 class MotionEngine {
 public:
     using Ptr = std::shared_ptr<MotionEngine>;
 
-    &&&;
+    /// Create the global MotionEngine instance.
+    static void setup();
+
+    /// Return a reference to the global MotionEngine instance.
+    /// @throws `ConfigException` if `setup` has not already been called.
+    static MotionEngine& get();
+
+    /// Return a shared pointer to the global MotionEngine instance.
+    /// @throws `ConfigException` if `setup` has not already been called.
+    static Ptr getPtr();
 
     /// &&& doc
-    void ctrlStart();
+    void engineStart();
+
+    /// &&& doc
+    bool engineStop();
+
+    /// Called at reasonable intervals to make sure the finite state
+    /// machine advances and/or to turn off power if no DAQ updates
+    /// are being received.
+    void queueTimeoutCheck();
 
 private:
+    static Ptr _thisPtr; ///< pointer to the global instance of MotionEngine.
+    static std::mutex _thisPtrMtx; ///< Protects `_thisPtr`.
 
-    /// This is the function that is run by the `_mCtrlThread`.
-    void _meCtrlAction();
+    // Private constructor to force use of `setup`;
+    MotionEngine();
 
-    std::thread _ctrlThread; ///< &&&
+    /// Check that ILC com info has been arriving in a timely fashion.
+    void _comTimeoutCheck();
+
+    /// doc &&&
+    bool _checkTimeout(double diffInSeconds);
+
+    util::EventThread _eThrd; ///< Thread running ILC processing.
+    std::atomic<bool> _eStarted{false}; ///< Flag indicating threads have been started.
+    std::atomic<bool> _eStopCalled{false}; ///< Flag indicating threads are stopped or stopping.
+
+    /// Last time the ILC information was read. Initialized to now to give
+    /// the system a chance to read instead of instantly timing out.
+    std::atomic<util::TIMEPOINT> _comReadTime{util::CLOCK::now()};
+
+    /// Timeout in seconds for fresh DAQ SystemInfo.
+    /// DM-40694 set from config file, also needs a real value
+    std::atomic<double> _comTimeoutSecs{1.5};
+
+    std::thread _timeoutThread; ///< calls _checkTimeout on a regular basis.
+    std::atomic<bool> _timeoutLoop{true}; ///< set to false to end _timeoutThread.
+
 };
 
 }  // namespace control
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_MOTIONENGINE_H
+#endif  // LSST_M2CELLCPP_CONTROL_MOTIONENGINE_H

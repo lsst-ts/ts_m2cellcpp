@@ -32,6 +32,7 @@
 // Project headers
 #include "control/Context.h"
 #include "control/FpgaIo.h"
+#include "control/MotionEngine.h"
 #include "simulator/SimCore.h"
 #include "system/Config.h"
 #include "util/Bug.h"
@@ -46,13 +47,20 @@ TEST_CASE("Test Csv", "[CSV]") {
 
     LSST::m2cellcpp::simulator::SimCore::Ptr simCore(new LSST::m2cellcpp::simulator::SimCore());
     FpgaIo::setup(simCore);
+    MotionEngine::setup();
     Context::setup();
 
     Context::Ptr context = Context::get();
     REQUIRE(context != nullptr);
     REQUIRE(context->model.getCurrentState() == context->model.getState("StartupState"));
 
-    auto newState = context->model.getState("IdleState");
+    context->model.ctrlSetup();
+
+    auto newState = context->model.getState("StandbyState");
+    REQUIRE(context->model.changeState(newState));
+    REQUIRE(context->model.getCurrentState() == context->model.getState("StandbyState"));
+
+    newState = context->model.getState("IdleState");
     REQUIRE(context->model.changeState(newState));
     REQUIRE(context->model.getCurrentState() == context->model.getState("IdleState"));
 }

@@ -19,8 +19,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_CONTROL_FAULTSTATE_H
-#define LSST_M2CELLCPP_CONTROL_FAULTSTATE_H
+#ifndef LSST_M2CELLCPP_STATE_PAUSESTATE_H
+#define LSST_M2CELLCPP_STATE_PAUSESTATE_H
 
 // System headers
 #include <functional>
@@ -28,34 +28,41 @@
 #include <memory>
 
 // Project headers
-#include "control/State.h"
+#include "state/State.h"
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace state {
 
-/// Class representation of the "FaultState", this state appears to be unused in LabView.
-class FaultState : public State {
+/// Class representation of the "PauseState", aka ReadyPause.
+class PauseState : public State {
 public:
-    using Ptr = std::shared_ptr<FaultState>;
+    using Ptr = std::shared_ptr<PauseState>;
 
     /// Create an instance and insert it into `stateMap`.
     /// @throws Bug if there's already an instance of this class in `stateMap`.
-    static Ptr create(StateMap& stateMap);
+    static Ptr create(StateMap& stateMap, Model *const model);
 
-    FaultState(FaultState const&) = delete;
-    FaultState& operator=(FaultState const&) = delete;
-    virtual ~FaultState() = default;
-    // VI-PH  clearErrorVI   // calls Model::resetErrorCodeVI then Model::changeStateVI(StandbyState)
-    // VI-PH  goToStandbyVI  // calls Model::resetErrorCodeVI then Model::stopVI then
-    // Model::changeStateVI(StandbyState)
+    PauseState() = delete;
+    PauseState(PauseState const&) = delete;
+    PauseState& operator=(PauseState const&) = delete;
+    virtual ~PauseState() = default;
 
+    /// VI-PH  goToIdleReadyVI // calls Model::changeStateVI(ReadyIdle)
+    void goToIdleReadyVI() override;
+
+    /// VI-PH  goToInMotionVI // calls Model::changeStateVI(ReadyInMotion)
+    void goToInMotionVI() override;
+
+    // VI-PH  resumeVI // calls Model::resumeMotionVI
+    // VI-PH  shutdownMotionEngineVI // calls Model::shutdownMotionEngineVI
+    // VI-PH  stopMotionVI // calls Model::stopMotionVI
 private:
-    FaultState() : State("FaultState") {}
+    PauseState(Model *const model) : State("PauseState", model) {}
 };
 
-}  // namespace control
+}  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_CONTROL_FAULTSTATE_H
+#endif  // LSST_M2CELLCPP_STATE_PAUSESTATE_H

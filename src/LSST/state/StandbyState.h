@@ -19,8 +19,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_CONTROL_PAUSESTATE_H
-#define LSST_M2CELLCPP_CONTROL_PAUSESTATE_H
+#ifndef LSST_M2CELLCPP_STATE_STANDBYSTATE_H
+#define LSST_M2CELLCPP_STATE_STANDBYSTATE_H
 
 // System headers
 #include <functional>
@@ -28,40 +28,39 @@
 #include <memory>
 
 // Project headers
-#include "control/State.h"
+#include "state/State.h"
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace state {
 
-/// Class representation of the "PauseState", aka ReadyPause.
-class PauseState : public State {
+/// This class represents the "StandbyState".
+class StandbyState : public State {
 public:
-    using Ptr = std::shared_ptr<PauseState>;
+    using Ptr = std::shared_ptr<StandbyState>;
 
     /// Create an instance and insert it into `stateMap`.
     /// @throws Bug if there's already an instance of this class in `stateMap`.
-    static Ptr create(StateMap& stateMap);
+    static Ptr create(StateMap& stateMap, Model *const model);
 
-    PauseState(PauseState const&) = delete;
-    PauseState& operator=(PauseState const&) = delete;
-    virtual ~PauseState() = default;
+    StandbyState() = delete;
+    StandbyState(StandbyState const&) = delete;
+    StandbyState& operator=(StandbyState const&) = delete;
+    virtual ~StandbyState() = default;
 
-    /// VI-PH  goToIdleReadyVI // calls Model::changeStateVI(ReadyIdle)
-    void goToIdleReadyVI() override;
+    /// VI-PH  exitVI // calls Model::changeStateVI(OfflineState)
+    void exitVI();
 
-    /// VI-PH  goToInMotionVI // calls Model::changeStateVI(ReadyInMotion)
-    void goToInMotionVI() override;
+    /// VI-PH  startVI // calls Model::startVI  then  Model::stopMotionVI  then
+    /// Model::changeStateVI(ReadyIdle)
+    void startVI();
 
-    // VI-PH  resumeVI // calls Model::resumeMotionVI
-    // VI-PH  shutdownMotionEngineVI // calls Model::shutdownMotionEngineVI
-    // VI-PH  stopMotionVI // calls Model::stopMotionVI
 private:
-    PauseState() : State("PauseState") {}
+    StandbyState(Model *const model) : State("StandbyState", model) {}
 };
 
-}  // namespace control
+}  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_CONTROL_PAUSESTATE_H
+#endif  // LSST_M2CELLCPP_STATE_STANDBYSTATE_H

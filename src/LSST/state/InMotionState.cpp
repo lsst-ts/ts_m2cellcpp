@@ -20,11 +20,9 @@
  */
 
 // Class header
-#include "control/OfflineState.h"
-
-// Project headers
-#include "control/Model.h"
-#include "control/StateMap.h"
+#include "state/Model.h"
+#include "state/State.h"
+#include "state/StateMap.h"
 #include "util/Bug.h"
 #include "util/Log.h"
 
@@ -32,14 +30,18 @@ using namespace std;
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace state {
 
-OfflineState::Ptr OfflineState::create(StateMap& stateMap) {
-    auto state = shared_ptr<OfflineState>(new OfflineState());
+InMotionState::Ptr InMotionState::create(StateMap& stateMap, Model *const model) {
+    auto state = shared_ptr<InMotionState>(new InMotionState(model));
     stateMap.insertIntoMap(state);
     return state;
 }
 
-}  // namespace control
+void InMotionState::goToIdleReadyVI() { throw util::Bug(ERR_LOC, "goToInMotion PLACEHOLDER"); }
+
+void InMotionState::goToPauseVI() { throw util::Bug(ERR_LOC, "goToPauseVI PLACEHOLDER"); }
+
+}  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST

@@ -45,6 +45,15 @@ namespace control {
 /// the `COMM` `PowerSubsystem`.
 /// Synchronization is largely provided by this being an event driven thread.
 /// unit tests: test_PowerSystem.cpp
+//
+// &&& Controller->InitializeFunctionalGlobals.vi - The individual items should be done in a separate class/function
+// &&&   - System Config FG:SystemConfigurationFG.vi  ****** power up configuration values ********
+// &&&     There are a lot of configuration values in here having to do with power supply very specific,
+// &&&     probably best to open up the vi and look at the set values. Elements set listed below
+// &&&     - "Power Subsystem Configuration Parameters.Power Subsystem Common Configuration Parameters"
+// &&&     - "Power Subsystem Configuration Parameters.Comm Power Bus Configuration Parameters"
+// &&&     - "Power Subsystem Configuration Parameters.Motor Power Bus Configuration Parameters"
+// &&&     - "Power Subsystem Configuration Parameters.Boost Current Fault Enabled" - this is set to false.
 class PowerSystem {
 public:
     using Ptr = std::shared_ptr<PowerSystem>;

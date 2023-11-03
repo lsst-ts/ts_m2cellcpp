@@ -33,6 +33,7 @@
 // Project headers
 #include "control/Context.h"
 #include "control/FpgaIo.h"
+#include "control/MotionEngine.h"
 #include "control/PowerSubsystem.h"
 #include "control/PowerSystem.h"
 #include "faultmgr/FaultMgr.h"
@@ -75,10 +76,14 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
     simulator::SimCore::Ptr simCore(new simulator::SimCore());
     faultmgr::FaultMgr::setup();
     control::FpgaIo::setup(simCore);
+    control::MotionEngine::setup();
     control::Context::setup();
 
     LDEBUG("test_SimCore start");
     simCore->start();
+
+    control::Context::Ptr context = control::Context::get();
+    context->model.ctrlSetup();
 
     while (simCore->getIterations() < 1) {
         this_thread::sleep_for(0.1s);
@@ -282,6 +287,7 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         faultmgr::FaultMgr::get().reportComConnectionCount(0);
         simCore->waitForUpdate(simWait);
         sInfo = simCore->getSysInfo();
+        LCRITICAL("&&& sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON)=", sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON));
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) == 0);
         // verify power off
         simCore->waitForUpdate(simWaitLong); // need to wait for voltage fall

@@ -19,8 +19,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_CONTROL_IDLESTATE_H
-#define LSST_M2CELLCPP_CONTROL_IDLESTATE_H
+#ifndef LSST_M2CELLCPP_STATE_IDLESTATE_H
+#define LSST_M2CELLCPP_STATE_IDLESTATE_H
 
 // System headers
 #include <functional>
@@ -28,13 +28,16 @@
 #include <memory>
 
 // Project headers
-#include "control/State.h"
+#include "state/State.h"
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace state {
 
 /// Class representation of the "IdleState", aka ReadyIdle.
+/// "System Status Telem":
+///    "cRIO State" should be set to "standby".
+///    "MotionEngineState" should be set to "idle".
 /// &&& what should the system output be in this state ???
 /// &&& Is this the "Safe mode" state ???
 class IdleState : public State {
@@ -43,24 +46,32 @@ public:
 
     /// Create an instance and insert it into `stateMap`.
     /// @throws Bug if there's already an instance of this class in `stateMap`.
-    static Ptr create(StateMap& stateMap);
+    static Ptr create(StateMap& stateMap, Model *const model);
 
+    IdleState() = delete;
     IdleState(IdleState const&) = delete;
     IdleState& operator=(IdleState const&) = delete;
     virtual ~IdleState() = default;
 
-    /// VI-PH  goToInMotionVI // calls Model::changeStateVI(ReadyInMotion)
-    void goToInMotionVI() override;
+    // VI-PH  goToInMotionVI // calls Model::changeStateVI(ReadyInMotion)
+    // Handled by calling StateMap::changeState(StandbyState);
+    // &&& void goToInMotionVI() override;
 
-    /// VI-PH  goToStandbyVI // calls Model::stopVI then Model::changeStateVI(StandbyState)
-    void goToStandbyVI() override;
+    // VI-PH  goToStandbyVI // calls Model::stopVI then Model::changeStateVI(StandbyState)
+    // Handled by calling StateMap::changeState(StandbyState);
+    // &&& void goToStandbyVI() override;
 
     // VI-PH  initScriptEngineVI // calls Model::initScriptEngineVI
     // VI-PH  loadScriptVI // calls Model::loadScriptVI(scriptFilename)
     // VI-PH  pauseScriptVI // calls Model::pauseScriptVI
     // VI-PH  resumeScriptVI // calls Model::resumeScriptVI
-    // VI-PH  setPowerVI // calls Model::setPowerVI(CommPowerControl, MotorPowerControl)   (both power
-    // controls are enums) VI-PH  shutdownCellCommVI // calls Model::shutdownCellComm VI-PH
+
+    /// VI-PH  setPowerVI // calls Model::setPowerVI(CommPowerControl, MotorPowerControl)   (both power
+    /// controls are enums)
+    bool setPower(bool on) override;
+
+
+    // VI-PH  shutdownCellCommVI // calls Model::shutdownCellComm VI-PH
     // shutdownMotionEngineVI   // calls Model::shutdownMotionEngine VI-PH  shutdownNetworkInterfaceVI  //
     // calls Model::shutdownNetworkInterfaceVI VI-PH  shutdownScriptEngineVI // calls
     // Model::shutdownScriptEngineVI VI-PH  startMotionVI // calls Model::startMotionVI(startMotionParam)
@@ -68,11 +79,11 @@ public:
     // Model::startScriptVI VI-PH stopScriptVI
     // // call Model::stopScriptVI
 private:
-    IdleState() : State("IdleState") {}
+    IdleState(Model *const model) : State("IdleState", model) {}
 };
 
-}  // namespace control
+}  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_CONTROL_IDLESTATE_H
+#endif  // LSST_M2CELLCPP_STATE_IDLESTATE_H

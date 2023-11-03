@@ -43,12 +43,12 @@ PowerSystem::PowerSystem() : _motor(MOTOR), _comm(COMM) {
     _fpgaIo = FpgaIo::getPtr(); // If FpgaIo hasn't been setup, now is a good time to find out.
     _eThrd.run();
 
-    // This function will be run in a separate thread until the destructor is called. IT
-    // sets _timeoutLoop false and then joins the thread.
+    // This function will be run in a separate thread until the destructor is called.
+    // The destructor sets _timeoutLoop false and then joins the thread.
     auto func = [this]() {
         while (_timeoutLoop) {
             queueTimeoutCheck();
-            this_thread::sleep_for(1s);
+            this_thread::sleep_for(1s); // &&& timeoutSleep
         }
     };
     thread tThrd(func);

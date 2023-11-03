@@ -20,11 +20,11 @@
  */
 
 // Class header
-#include "control/State.h"
+#include "state/State.h"
 
 // Project headers
-#include "control/Model.h"
-#include "control/StateMap.h"
+#include "state/Model.h"
+#include "state/StateMap.h"
 #include "util/Bug.h"
 #include "util/Log.h"
 
@@ -32,7 +32,28 @@ using namespace std;
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace state {
+
+void State::errorMsg(std::string const& msg) {
+    LERROR("State error ", msg);
+}
+
+/// Log a message indicating a problem that this `action` cannot be performed
+/// in the current `State`
+void State::errorWrongStateMsg(std::string const& action) {
+    stringstream os;
+    os << action << " is not a valid option while in State " << getName();
+    errorMsg(os.str());
+}
+
+void State::enterState(State::Ptr const& oldState) {
+    if (modelPtr == nullptr) {
+        LERROR("State::enterState ignoring due to unit test.");
+        return;
+    }
+    modelPtr->_turnOffAll("entering state " + getName());
+}
+
 
 void State::onEnterState(State::Ptr const& oldState) {
     LINFO("Entering state=", getName(), " from oldState=", oldState->getName());
@@ -44,6 +65,6 @@ void State::onExitState(State::Ptr const& newState) {
     exitState(newState);
 }
 
-}  // namespace control
+}  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST

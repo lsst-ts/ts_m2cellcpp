@@ -19,8 +19,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_CONTROL_OFFLINESTATE_H
-#define LSST_M2CELLCPP_CONTROL_OFFLINESTATE_H
+#ifndef LSST_M2CELLCPP_STATE_INMOTIONSTATE_H
+#define LSST_M2CELLCPP_STATE_INMOTIONSTATE_H
 
 // System headers
 #include <functional>
@@ -28,32 +28,43 @@
 #include <memory>
 
 // Project headers
-#include "control/State.h"
+#include "state/State.h"
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace state {
 
-/// Class representation of the OfflineState, which leads to program termination.
-class OfflineState : public State {
+/// Class representation of the "InMotionState", aka ReadyInMotion.
+class InMotionState : public State {
 public:
-    using Ptr = std::shared_ptr<OfflineState>;
+    using Ptr = std::shared_ptr<InMotionState>;
 
     /// Create an instance and insert it into `stateMap`.
     /// @throws Bug if there's already an instance of this class in `stateMap`.
-    static Ptr create(StateMap& stateMap);
+    static Ptr create(StateMap& stateMap, Model *const model);
 
-    OfflineState(OfflineState const&) = delete;
-    OfflineState& operator=(OfflineState const&) = delete;
-    virtual ~OfflineState() = default;
+    InMotionState() = delete;
+    InMotionState(InMotionState const&) = delete;
+    InMotionState& operator=(InMotionState const&) = delete;
+    virtual ~InMotionState() = default;
 
-    // nothing here in LabView
+    /// VI-PH  goToIdleReadyVI // calls Model::changeStateVI(ReadyIdle)
+    void goToIdleReadyVI() override;
+
+    /// VI-PH  goToPauseVI // calls Model::changeStateVI(ReadyPause)
+    void goToPauseVI() override;
+
+    // VI-PH  pauseVI // calls Model::pauseVI
+    // VI-PH  shutdownMotionEngineVI // calls Model::shutdownMotionEngineVI
+    // VI-PH  stopMotionVI // calls Model::stopMotionVI
+    // VI-PH  shutdownMotionEngineVI // calls Model::shutdownMotionEngineVI
+    // VI-PH  stopMotionVI // calls Model::stopMotionVI
 private:
-    OfflineState() : State("OfflineState") {}
+    InMotionState(Model *const model) : State("InMotionState", model) {}
 };
 
-}  // namespace control
+}  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_CONTROL_OFFLINESTATE_H
+#endif  // LSST_M2CELLCPP_STATE_INMOTIONSTATE_H

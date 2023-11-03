@@ -19,40 +19,35 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_CONTROL_STARTUPSTATE_H
-#define LSST_M2CELLCPP_CONTROL_STARTUPSTATE_H
-
-// System headers
-#include <functional>
-#include <map>
-#include <memory>
+// Class header
+#include "state/StartupState.h"
 
 // Project headers
-#include "control/State.h"
+#include "state/Model.h"
+#include "state/StateMap.h"
+#include "util/Bug.h"
+#include "util/Log.h"
+
+using namespace std;
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace state {
 
-/// This class represents the state when the system is started.
-class StartupState : public State {
-public:
-    using Ptr = std::shared_ptr<StartupState>;
+StartupState::Ptr StartupState::create(StateMap& stateMap, Model *const model) {
+    auto state = shared_ptr<StartupState>(new StartupState(model));
+    stateMap.insertIntoMap(state);
+    return state;
+}
 
-    /// Create an instance and insert it into `stateMap`.
-    /// @throws Bug if there's already an instance of this class in `stateMap`.
-    static Ptr create(StateMap& stateMap);
+bool StartupState::isStartupFinished() const {
+    if (modelPtr == nullptr) {
+        /// It's a unit test, return true;
+        return true;
+    }
+    return modelPtr->isSetupFinished();
+}
 
-    StartupState(StartupState const&) = delete;
-    StartupState& operator=(StartupState const&) = delete;
-    virtual ~StartupState() = default;
-
-private:
-    StartupState() : State("StartupState") {}
-};
-
-}  // namespace control
+}  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST
-
-#endif  // LSST_M2CELLCPP_CONTROL_STARTUPSTATE_H

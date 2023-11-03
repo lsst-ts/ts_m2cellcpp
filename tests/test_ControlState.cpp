@@ -24,12 +24,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_session.hpp>
 
-#include "control/StateMap.h"
+#include "state/StateMap.h"
 #include "system/Config.h"
 #include "util/Log.h"
 
 using namespace std;
-using namespace LSST::m2cellcpp::control;
+using namespace LSST::m2cellcpp::state;
 using namespace LSST::m2cellcpp;
 
 TEST_CASE("Test ControlState", "[ControlState]") {
@@ -37,7 +37,7 @@ TEST_CASE("Test ControlState", "[ControlState]") {
     string cfgPath = system::Config::getEnvironmentCfgPath("../configs");
     system::Config::setup(cfgPath + "unitTestCfg.yaml");
 
-    StateMap sMap;
+    StateMap sMap(nullptr);
     State::Ptr currentState = sMap.getCurrentState();
     StartupState::Ptr startupState = dynamic_pointer_cast<StartupState>(currentState);
     REQUIRE(currentState->getName() == "StartupState");
@@ -100,9 +100,19 @@ TEST_CASE("Test ControlState", "[ControlState]") {
     REQUIRE(sMap.getCurrentState()->getName() == "OfflineState");
     REQUIRE(sMap.getCurrentState() == sMap.getOfflineState());
 
-    // Check FaultState. While not used, it seems like it
-    // would be useful.
+    // Check FaultState.
     REQUIRE(sMap.changeState("FaultState"));
     REQUIRE(sMap.getCurrentState()->getName() == "FaultState");
     REQUIRE(sMap.getCurrentState() == sMap.getFaultState());
+
+    // goToASafeState tests (starts with currentState being FaultState
+    REQUIRE(sMap.goToASafeState("StandbyState") == false);
+    REQUIRE(sMap.goToASafeState("FaultState") == true);
+    REQUIRE(sMap.changeState("IdleState")); // change to IdleState for next test
+    REQUIRE(sMap.goToASafeState("StandbyState") == true);
+    REQUIRE(sMap.goToASafeState("InMotionState") == false);
+    REQUIRE(sMap.getCurrentState()->getName() == "StandbyState");
+
+
+
 }

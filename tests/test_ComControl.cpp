@@ -27,6 +27,7 @@
 // Project headers
 #include "control/Context.h"
 #include "control/FpgaIo.h"
+#include "control/MotionEngine.h"
 #include "faultmgr/FaultMgr.h"
 #include "simulator/SimCore.h"
 #include "system/ComClient.h"
@@ -61,6 +62,7 @@ TEST_CASE("Test ComControl", "[ComControl]") {
     simulator::SimCore::Ptr simCore(new LSST::m2cellcpp::simulator::SimCore());
     faultmgr::FaultMgr::setup();
     control::FpgaIo::setup(simCore);
+    control::MotionEngine::setup();
     control::Context::setup();
 
     // Start a ComControlServer
