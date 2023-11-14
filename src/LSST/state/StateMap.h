@@ -76,8 +76,10 @@ public:
     /// Return a pointer to the standby state.
     StandbyState::Ptr getStandbyState() { return _standbyState; }
 
+    /* &&&
     /// Return a pointer to the fault state.
     FaultState::Ptr getFaultState() { return _faultState; }
+    */
 
     /// Return a pointer to the Idle state.
     IdleState::Ptr getIdleState() { return _idleState; }
@@ -97,8 +99,9 @@ public:
     /// and motion off (see `_safeStates`). If the current
     /// state is "OfflineState", `desiredState will be ignored and the system
     /// will stay in "OfflineState".
+    /// @param `note` - A note to indicate what called this function.
     /// @return true if the `desiredState` was used to set `_currentState`.
-    bool goToASafeState(std::string const& desiredState);
+    bool goToASafeState(std::string const& desiredState, std::string const& note);
 
     /// Insert `state` into the state map.
     void insertIntoMap(State::Ptr const& state);
@@ -123,7 +126,7 @@ private:
 
     StartupState::Ptr _startupState;    ///< The Startup state instance.
     StandbyState::Ptr _standbyState;    ///< The Standby state instance.
-    FaultState::Ptr _faultState;        ///< The Fault state instance.
+    // &&& FaultState::Ptr _faultState;        ///< The Fault state instance.
     IdleState::Ptr _idleState;          ///< The Idle state instance.
     InMotionState::Ptr _inMotionState;  ///< The InMotion state instance.
     OfflineState::Ptr _offlineState;    ///< The Offline state instance.

@@ -54,11 +54,18 @@ public:
     /// @throws `ConfigException` if `setup` has not already been called.
     static Ptr getPtr();
 
-    /// &&& doc
+    /// Start the event thread and timeout thread.
     void engineStart();
 
-    /// &&& doc
+    /// Wait for `_eThrd` to be running.
+    void  waitForEngine() const;
+
+    /// Stop all threads in this object.
+    /// @return false if the threads were already stopped.
     bool engineStop();
+
+    /// Join all threads in this object.
+    void engineJoin();
 
     /// Called at reasonable intervals to make sure the finite state
     /// machine advances and/or to turn off power if no DAQ updates
@@ -81,6 +88,7 @@ private:
     util::EventThread _eThrd; ///< Thread running ILC processing.
     std::atomic<bool> _eStarted{false}; ///< Flag indicating threads have been started.
     std::atomic<bool> _eStopCalled{false}; ///< Flag indicating threads are stopped or stopping.
+    std::atomic<bool> _eJoinCalled{false}; ///< Flag indicating `engineJoin()` has been called.
 
     /// Last time the ILC information was read. Initialized to now to give
     /// the system a chance to read instead of instantly timing out.

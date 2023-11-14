@@ -74,12 +74,15 @@ void PowerSystem::_daqInfoRead() {
     // Get the latest info, old info is of no use.
     auto sInfo = _fpgaIo->getSysInfo();
     auto diff = (util::timePassedSec(sInfo.timestamp, _daqReadTime));
+
     bool timedOut = _checkTimeout(diff); // shutoff power if timed out.
     if (timedOut) {
         stringstream os;
-        time_t tm = util::CLOCK::to_time_t(_daqReadTime);
-        os << "PowerSystem::_daqInfoRead() timedOut last _daq read=" << ctime(&tm)
-                << " seconds since last read=" << diff;
+        time_t nowTm = util::CLOCK::to_time_t(_daqReadTime);
+        time_t infoTm = util::CLOCK::to_time_t(sInfo.timestamp);
+        os << "PowerSystem::_daqInfoRead() timedOut last _daq read=" << ctime(&nowTm)
+            << " infoTm=" << ctime(&infoTm)
+            << " seconds since last read=" << diff;
         LERROR(os.str());
     }
 
@@ -170,8 +173,15 @@ void PowerSystem::_processDaqHealthTelemetry(SysInfo sInfo, faultmgr::FaultStatu
     bool powerLoadOk = redundancyOk && loadDistributionOk;
 
     if (!powerLoadOk) {
+        /* &&&
+        stringstream os;
+        os << "POWER_SUPPLY_LOAD_SHARE_ERR redundancyOk=" << redundancyOk
+           << " loadDistributionOk=" << loadDistributionOk;
+        // Wait until the power is ON or TURNING_ON to set the fault.
+         */
         LERROR("POWER_SUPPLY_LOAD_SHARE_ERR redundancyOk=",
                 redundancyOk, " loadDistributionOk=", loadDistributionOk);
+        // Only set the fault if power is ON
         // "power supply load share error"
         currentFaults.setBitAt(faultmgr::FaultStatusBits::POWER_SUPPLY_LOAD_SHARE_ERR);
     }

@@ -77,6 +77,12 @@ public:
     /// that can be displayed by the GUI.
     void faultMsg(int errId, std::string const& eMsg);
 
+    /// &&&
+    FaultStatusBits getSummaryFaults() const;
+
+    /// &&&
+    FaultStatusBits getFaultEnableMask() const;
+
 private:
     static Ptr _thisPtr; ///< pointer to the global instance of FaultMgr.
     static std::mutex _thisPtrMtx; ///< Protects `_thisPtr`.
@@ -89,6 +95,8 @@ private:
     void _updateTelemetryCom(BasicFaultMgr const& newFsbSummary);
 
     /// Overall system faults status, Model->systemStatus->summaryFaultsStatus
+    /// FUTURE: It is hoped that this will be the only BasicFaultMgr needed after
+    /// including ILC faults. Individual systems will probably still need `affect` members.
     BasicFaultMgr _summarySystemFaultsStatus;
     std::mutex _summarySystemFaultsMtx; ///< Protects `_summarySystemFaultsStatus`.
 

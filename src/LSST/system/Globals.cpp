@@ -29,6 +29,7 @@
 #include "util/Log.h"
 
 using namespace std;
+using json = nlohmann::json;
 
 namespace LSST {
 namespace m2cellcpp {
@@ -87,6 +88,15 @@ bool Globals::getTcpIpConnected() const {
     lock_guard<mutex> lock(_tcpIpConnectedMtx);
     return (_tcpIpConnectedCount > 0);
 }
+
+json Globals::getCommandableByDdsJson() const {
+    json js;
+    js["id"] = "commandableByDDS";
+    bool state = _commandableByDds; // json cannot convert atomic<bool> to bool directly.
+    js["state"] = state;
+    return js;
+}
+
 
 }  // namespace system
 }  // namespace m2cellcpp

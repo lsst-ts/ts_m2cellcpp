@@ -92,7 +92,7 @@ TEST_CASE("Test ComControl", "[ComControl]") {
         ComClient client(ioContext, "127.0.0.1", port);
         int welcomeCount = client.readWelcomeMsg();
         LDEBUG("welcomeCount=", welcomeCount);
-        REQUIRE(welcomeCount == 13);
+        REQUIRE(welcomeCount == 16);
         {
             string note("Correct NCmdAck");
             LDEBUG(note);

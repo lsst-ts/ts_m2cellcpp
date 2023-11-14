@@ -47,11 +47,13 @@ void State::errorWrongStateMsg(std::string const& action) {
 }
 
 void State::enterState(State::Ptr const& oldState) {
+    string msg("State::enterState " + getName());
+    LINFO(msg);
     if (modelPtr == nullptr) {
         LERROR("State::enterState ignoring due to unit test.");
         return;
     }
-    modelPtr->_turnOffAll("entering state " + getName());
+    modelPtr->_turnOffAll(msg);
 }
 
 

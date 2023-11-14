@@ -39,9 +39,19 @@ namespace LSST {
 namespace m2cellcpp {
 namespace system {
 
+std::weak_ptr<ComControlServer> ComControlServer::_globalComControlServer;
+
 ComControlServer::Ptr ComControlServer::create(IoContextPtr const& ioContext, int port,
-                                               control::NetCommandFactory::Ptr const& cmdFactory) {
-    return ComControlServer::Ptr(new ComControlServer(ioContext, port, cmdFactory));
+                                               control::NetCommandFactory::Ptr const& cmdFactory,
+                                               bool makeGlobal) {
+    Ptr comControlServ = Ptr(new ComControlServer(ioContext, port, cmdFactory));
+    if (makeGlobal) {
+        if (_globalComControlServer.use_count() > 0) {
+            LWARN("Reseting _globalComControlServer while existing is still in use.");
+        }
+        _globalComControlServer = comControlServ;
+    }
+    return comControlServ;
 }
 
 ComConnection::Ptr ComControlServer::newComConnection(IoContextPtr const& ioContext, uint64_t connId,

@@ -35,7 +35,7 @@ namespace m2cellcpp {
 namespace state {
 
 class Model;
-
+#if 0 // &&&
 /// Class representation of the "FaultState", which allows errors to be cleared.
 class FaultState : public State {
 public:
@@ -56,6 +56,7 @@ public:
 private:
     FaultState(Model *const model) : State("FaultState", model) {}
 };
+#endif
 
 }  // namespace state
 }  // namespace m2cellcpp

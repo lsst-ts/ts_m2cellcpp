@@ -53,21 +53,21 @@ public:
     IdleState& operator=(IdleState const&) = delete;
     virtual ~IdleState() = default;
 
-    // VI-PH  goToInMotionVI // calls Model::changeStateVI(ReadyInMotion)
-    // Handled by calling StateMap::changeState(StandbyState);
-    // &&& void goToInMotionVI() override;
+    /// Do not stop motion or turn off power when entering this state.
+    void enterState(State::Ptr const& oldName) override;
 
-    // VI-PH  goToStandbyVI // calls Model::stopVI then Model::changeStateVI(StandbyState)
+    // VI  goToInMotionVI // calls Model::changeStateVI(ReadyInMotion)
     // Handled by calling StateMap::changeState(StandbyState);
-    // &&& void goToStandbyVI() override;
+
+    // VI  goToStandbyVI // calls Model::stopVI then Model::changeStateVI(StandbyState)
+    // Handled by calling StateMap::changeState(StandbyState);
 
     // VI-PH  initScriptEngineVI // calls Model::initScriptEngineVI
     // VI-PH  loadScriptVI // calls Model::loadScriptVI(scriptFilename)
     // VI-PH  pauseScriptVI // calls Model::pauseScriptVI
     // VI-PH  resumeScriptVI // calls Model::resumeScriptVI
 
-    /// VI-PH  setPowerVI // calls Model::setPowerVI(CommPowerControl, MotorPowerControl)   (both power
-    /// controls are enums)
+    /// VI setPowerVI // calls Model::setPowerVI(CommPowerControl, MotorPowerControl)
     bool setPower(bool on) override;
 
 

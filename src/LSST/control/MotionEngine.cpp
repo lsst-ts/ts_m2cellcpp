@@ -61,7 +61,6 @@ MotionEngine& MotionEngine::get() {
 MotionEngine::MotionEngine() {
 }
 
-/// &&& doc
 void MotionEngine::engineStart() {
     LINFO("MotionEngine::mCtrlStart() running threads");
     if ((_eStarted.exchange(true) == true) || _eStopCalled == true) {
@@ -84,6 +83,14 @@ void MotionEngine::engineStart() {
     _timeoutThread = move(tThrd);
 }
 
+void MotionEngine::waitForEngine() const {
+    // If _eStarted is true, the event queue exists, so messages won't be lost,
+    // and the thread should actually be running very soon.
+    while (!_eStarted) {
+        this_thread::sleep_for(100ms);
+    }
+}
+
 bool MotionEngine::engineStop() {
     if (_eStopCalled.exchange(true) == true) {
         LWARN("MotionEngine::engineStop() has already been called");
@@ -92,9 +99,19 @@ bool MotionEngine::engineStop() {
 
     _timeoutLoop = false;
     _eThrd.queEnd();
-    _eThrd.join();
     return true;
 }
+
+void MotionEngine::engineJoin() {
+    if (_eJoinCalled.exchange(true) == true) {
+        LWARN("MotionEngine::engineJoin() has already been called");
+        return;
+    }
+
+    _eThrd.join();
+    _timeoutThread.join();
+}
+
 
 void MotionEngine::queueTimeoutCheck() {
     auto cmdTimeoutCheck = std::make_shared<util::Command>([&](util::CmdData*) { _comTimeoutCheck(); });
@@ -110,7 +127,7 @@ void MotionEngine::_comTimeoutCheck() {
         time_t tm = util::CLOCK::to_time_t(_comReadTime);
         os << "MotionEngine::_comTimeoutCheck timedOut last read=" << ctime(&tm)
            << " seconds since last read=" << diff;
-        LERROR(os.str());
+        // &&& LERROR(os.str()); re-enable
     }
 }
 

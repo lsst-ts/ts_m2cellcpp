@@ -85,15 +85,17 @@ public:
     ///     the `runAction()` thread finally finishes.
     virtual std::tuple<std::string, util::Command::Ptr> interpretCommand(std::string const& commandStr);
 
+    uint64_t getConnId() const { return _connId; }
+
+    /// New connections will receive the `_sendWelcomeMsg()` when `doSend` is set
+    /// to true.
+    void setDoSendWelcomeMsg(bool doSend) { _doSendWelcomeMsg = doSend; }
+
     /// @return the ack string, used for unit testing only.
     static std::string makeTestAck(std::string const& msg);
 
     /// @return the final string, used for unit testing only.
     static std::string makeTestFinal(std::string const& msg);
-
-    /// New connections will receive the `_sendWelcomeMsg()` when `doSend` is set
-    /// to true. This is only expected to be used for unit tests.
-    void setDoSendWelcomeMsg(bool doSend) { _doSendWelcomeMsg = doSend; }
 
 protected:
     /// @see ComConnection::create()
@@ -140,7 +142,7 @@ private:
     IoContextPtr _ioContext;
 
     /// Identifier for this connection
-    uint64_t _connId;
+    uint64_t const _connId;
 
     /// Weak pointer to the server so it can be informed that this
     /// connection is done.

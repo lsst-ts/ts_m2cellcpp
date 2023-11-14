@@ -28,6 +28,9 @@
 #include <mutex>
 #include <vector>
 
+// Third party headers
+#include "nlohmann/json.hpp"
+
 // Project headers
 
 namespace LSST {
@@ -94,6 +97,9 @@ public:
     /// Returns true when system is commandable by DDS. PLACEHOLDER
     bool getCommandableByDds() const { return _commandableByDds; }
 
+    /// Returns a json msg string suitable to be read by clients.
+    nlohmann::json getCommandableByDdsJson() const;
+
     /// Returns the value of interlock. PLACEHOLDER
     bool getInterlock() const { return _interlock; }
 
@@ -103,6 +109,9 @@ public:
     /// Return summary system state. PLACEHOLDER
     int getSummaryState() const { return _summaryState; }
 
+    /// Set summary system state to `val`. PLACEHOLDER
+    void setSummaryState(int val) { _summaryState = val; }
+
     /// Return model digital input. PLACEHOLDER
     uint32_t getDigitalInput() const { return _digitalInput; }
 
@@ -110,7 +119,7 @@ public:
     uint32_t getDigitalOutput() const { return _digitalOutput; }
 
     /// Return model enabled fault mask. PLACEHOLDER
-    uint64_t getEnabledFaultMask() const { return _enabledFaultMask; }
+    //&&& uint64_t getEnabledFaultMask() const { return _enabledFaultMask; }
 
     /// Return the closed loop control mode identifier. PLACEHOLDER
     int getClosedLoopControlMode() const { return _closedLoopControlMode; }
@@ -119,6 +128,7 @@ public:
     /// @return true if the command source was set successfully.
     bool setCommandSourceIsRemote(bool isRemote) {
         _commandSourceIsRemote = isRemote;
+        _commandableByDds = isRemote;
         return true;
     }
 
@@ -162,7 +172,7 @@ private:
 
     std::atomic<uint32_t> _digitalInput{0x9F00FFFF}; ///< Model digital input PLACEHOLDER from python = 2667642879
     std::atomic<uint32_t> _digitalOutput{0x1C}; ///< Model digital output PLACEHOLDER from python = 28
-    std::atomic<uint64_t> _enabledFaultMask{0xff800007ffffffff}; ///< Model enabled fault mask. PLACEHOLDER from python = 18410715311050326015
+    //&&&std::atomic<uint64_t> _enabledFaultMask{0xff800007ffffffff}; ///< Model enabled fault mask. PLACEHOLDER from python = 18410715311050326015
 
     std::atomic<int> _closedLoopControlMode{1}; ///< Closed loop control mode. PLACEHOLDER from python 1=ClosedLoopControlMode.Idle
 

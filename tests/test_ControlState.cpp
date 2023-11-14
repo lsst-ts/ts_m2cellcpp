@@ -100,19 +100,11 @@ TEST_CASE("Test ControlState", "[ControlState]") {
     REQUIRE(sMap.getCurrentState()->getName() == "OfflineState");
     REQUIRE(sMap.getCurrentState() == sMap.getOfflineState());
 
-    // Check FaultState.
-    REQUIRE(sMap.changeState("FaultState"));
-    REQUIRE(sMap.getCurrentState()->getName() == "FaultState");
-    REQUIRE(sMap.getCurrentState() == sMap.getFaultState());
-
-    // goToASafeState tests (starts with currentState being FaultState
-    REQUIRE(sMap.goToASafeState("StandbyState") == false);
-    REQUIRE(sMap.goToASafeState("FaultState") == true);
+    // goToASafeState tests (starts with currentState being OfflineState
+    REQUIRE(sMap.goToASafeState("StandbyState", "test") == false); // should stay in OfflineState.
     REQUIRE(sMap.changeState("IdleState")); // change to IdleState for next test
-    REQUIRE(sMap.goToASafeState("StandbyState") == true);
-    REQUIRE(sMap.goToASafeState("InMotionState") == false);
+    REQUIRE(sMap.goToASafeState("StandbyState", "test") == true);
+    REQUIRE(sMap.goToASafeState("InMotionState", "test") == false);
     REQUIRE(sMap.getCurrentState()->getName() == "StandbyState");
-
-
 
 }

@@ -36,7 +36,7 @@ namespace state {
 StateMap::StateMap(Model *const model) : _model(model) {
     _startupState = StartupState::create(*this, _model);
     _standbyState = StandbyState::create(*this, _model);
-    _faultState = FaultState::create(*this, _model);
+    //&&&_faultState = FaultState::create(*this, _model);
     _idleState = IdleState::create(*this, _model);
     _inMotionState = InMotionState::create(*this, _model);
     _offlineState = OfflineState::create(*this, _model);
@@ -47,7 +47,7 @@ StateMap::StateMap(Model *const model) : _model(model) {
     /// Add safe states to the list.
     _safeStates.push_back(_offlineState);
     _safeStates.push_back(_standbyState);
-    _safeStates.push_back(_faultState);
+    //&&&_safeStates.push_back(_faultState);
 }
 
 void StateMap::insertIntoMap(State::Ptr const& state) {
@@ -132,7 +132,7 @@ bool StateMap::_changeState(State::Ptr const& newState) {
     } else if (currentStateName == "IdleState") {
         if (newState->getName() == "InMotionState"
             || newState->getName() == "PauseState") {
-            // Motion states are accesible from IdleState.
+            // Motion states are accessible from IdleState.
             acceptable = true;
         }
     } else if (currentStateName == "InMotionState") {
@@ -185,15 +185,18 @@ bool StateMap::isASafeState(std::string const& state) const {
     return false;
 }
 
-bool StateMap::goToASafeState(std::string const& desiredState) {
+bool StateMap::goToASafeState(string const& desiredState, string const& note) {
+    LDEBUG("StateMap::goToASafeState ", desiredState, " ", note);
     if (_currentState == _offlineState || desiredState == _offlineState->getName()) {
         changeState(_offlineState);
         return (desiredState == _offlineState->getName());
     }
+    /* &&&
     if (_currentState == _faultState || desiredState == _faultState->getName()) {
             changeState(_faultState);
             return (desiredState == _faultState->getName());
         }
+        */
     if (isASafeState(desiredState)) {
         changeState(desiredState);
         return true;

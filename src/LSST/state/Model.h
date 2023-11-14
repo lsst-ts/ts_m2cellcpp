@@ -59,16 +59,26 @@ public:
 
     /// Return a pointer to the `_powerSystem`.
     std::shared_ptr<control::PowerSystem> getPowerSystem() { return _powerSystem; }
-    // &&& =======
+
     /// &&& doc
     void ctrlSetup();
 
     /// Return true if sytem setup has finished.
     bool isSetupFinished() const { return _setupFinished; }
 
-    /// &&& doc
+    /// Start MotionEngine and other threads that aen't started in their constructors.
+    /// These are generally objects that require the essential services to  already
+    /// be running.
     void ctrlStart();
-    /// &&& >>>>>>> Added class framework.
+
+    /// Wait for threads started in `ctrlStart()` to be ready.
+    void waitForCtrlReady() const;
+
+    /// Stop threads started in `ctrlStart()`.
+    void ctrlStop();
+
+    /// Join threads started in `ctrlStart()`.
+    void ctrlJoin();
 
     /// Change the current state to `newState`, taking rquired actions.
     /// @return false in `newState` is invalid.

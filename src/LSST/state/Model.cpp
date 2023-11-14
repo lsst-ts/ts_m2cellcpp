@@ -65,7 +65,7 @@ bool Model::goToSafeMode(std::string const& note) {
 
 bool Model::_goToSafeMode(std::string const& note) {
     VMUTEX_HELD(_mtx);
-    return _stateMap.goToASafeState("StandbyState");
+    return _stateMap.goToASafeState("StandbyState", note);
 }
 
 bool Model::_turnOffAll(string const& note) {
@@ -180,29 +180,47 @@ void Model::ctrlSetup() {
 
 void Model::ctrlStart() {
     std::lock_guard<util::VMutex> lockg(_mtx);
-    // &&&I   - Controller->startupFaultManager.vi - starts the fault manager in a separate thread
-    //&&& _faultMgr.ctrlStart();
-    //&&& _faultMgr.waitForRunning();
-#if 0 //&&&
-    _motionCtrl.ctrlStart();
-    _motionCtrl.waitForRunning();
 
-    // &&&I   - Controller->startupMotionEngine.vi - starts the motion engine (see MotionEngine->motionEngineMain.vi)
-    _motionEngine.ctrlStart();
-    _motionEngine.waitForRunning();
+    // Start MotionEngine threads
+    auto mEngine = _motionEngine.lock();
+    if (mEngine == nullptr) {
+        throw util::Bug(ERR_LOC, "Model _motionEngine is nullptr");
+    }
 
-    _fpgaCtrl.ctrlStart();
-    _fpgaCtrl.waitForRunning();
+    mEngine->engineStart();
 
-    // &&&I   - Controller->startScriptEngine.vi - start the script engine - putting this on the back burner FUTURE-FAR
-    _scriptEngine.ctrlStart();
-    _scriptEngine.waitForRunning();
+    // TODO: Add the following to this and `waitForCtrlReady()` and `joinCtrl()`.
+    // - _scriptEngine - Controller->startScriptEngine.vi - start the script engine - FUTURE-FAR
+    // - _cellCtrlComm - Controller->startupCellCommunications
+    // - Do not need to start - _faultMgr[no threads], _fpgaCtrl[started in constructor],
+}
 
-    // &&&I   - Controller->startupCellCommunications - Sets several initial states, listed below.
-    _cellCtrlComm.ctrlStart();
-    _cellCtrlComm.waitForRunning();
-    ///&&&>>>>>>> Added class framework.
-#endif //&&&
+void Model::waitForCtrlReady() const {
+
+    auto mEngine = _motionEngine.lock();
+    if (mEngine == nullptr) {
+        throw util::Bug(ERR_LOC, "Model _motionEngine is nullptr");
+    }
+
+    mEngine->waitForEngine();
+}
+
+void Model::ctrlStop() {
+    auto mEngine = _motionEngine.lock();
+    if (mEngine == nullptr) {
+        throw util::Bug(ERR_LOC, "Model _motionEngine is nullptr");
+    }
+
+    mEngine->engineStop();
+}
+
+void Model::ctrlJoin() {
+    auto mEngine = _motionEngine.lock();
+    if (mEngine == nullptr) {
+        throw util::Bug(ERR_LOC, "Model _motionEngine is nullptr");
+    }
+
+    mEngine->engineJoin();
 }
 
 }  // namespace state

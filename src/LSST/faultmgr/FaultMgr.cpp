@@ -206,9 +206,16 @@ bool FaultMgr::checkForPowerSubsystemFaults(FaultStatusBits const& subsystemMask
 FaultMgr::FaultMgr() {
 }
 
+FaultStatusBits FaultMgr::getSummaryFaults() const {
+    return _summarySystemFaultsStatus.getSummaryFaults();
+}
+
+FaultStatusBits FaultMgr::getFaultEnableMask() const {
+    return _summarySystemFaultsStatus.getFaultEnableMask();
+}
 
 void FaultMgr::_updateTelemetryCom(BasicFaultMgr const& newFsbSummary) {
-    // TODO: DM-40339 send information to telemetry TCP/IP server
+    // TODO: DM-40339 send information to telemetry TCP/IP server &&&
     LCRITICAL("FaultMgr::_updateTelemetry NEEDS CODE");
 }
 

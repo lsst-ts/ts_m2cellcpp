@@ -34,6 +34,7 @@
 #include "nlohmann/json.hpp"
 
 // Project headers
+#include "faultmgr/FaultMgr.h"
 #include "system/ComServer.h"
 #include "system/Config.h"
 #include "system/Globals.h"
@@ -89,9 +90,6 @@ void ComConnection::_syncWrite(string const& inMsg) {
 }
 
 void ComConnection::beginProtocol() {
-    // FUTURE:? This likely needs to indicate there's at least one active ComConnection
-    //          which is slightly tricky as ComConnection can exist for a while after they
-    //          are dead. How important is this?
     _connectionActive = true;
     Globals::get().setTcpIpConnected(true); // This seems a bit early to set this, but it's what the gui expects.
     _sendWelcomeMsg();
@@ -116,13 +114,7 @@ void ComConnection::_sendWelcomeMsg() {
         _syncWrite(to_string(js));
     }
 
-    // FUTURE: Setting to true to make the gui happy, not sure what the real conditions are.
-    {
-        json js;
-        js["id"] = "commandableByDDS";
-        js["state"] = globals.getCommandableByDds();
-        _syncWrite(to_string(js));
-    }
+    _syncWrite(to_string(globals.getCommandableByDdsJson()));
 
     // send hardpoint information mock_server.py:281 await self._message_event.write_hardpoint_list(hardpoints)
     {
@@ -162,6 +154,7 @@ void ComConnection::_sendWelcomeMsg() {
     {
         json js;
         js["id"] = "summaryState";
+        globals.setSummaryState(5);
         js["summaryState"] = globals.getSummaryState();
         _syncWrite(to_string(js));
     }
@@ -226,7 +219,8 @@ void ComConnection::_sendWelcomeMsg() {
     {
         json js;
         js["id"] = "enabledFaultsMask";
-        js["mode"] = globals.getEnabledFaultMask();
+        //&&&js["mask"] = globals.getEnabledFaultMask();
+        js["mask"] = faultmgr::FaultMgr::get().getFaultEnableMask().getBitmap();
         _syncWrite(to_string(js));
     }
 
@@ -242,6 +236,38 @@ void ComConnection::_sendWelcomeMsg() {
                        "Configurable_File_Description_PLACEHOLDER_surrogate_handling.csv"};
         _syncWrite(to_string(js));
     }
+
+    // FUTURE: This is only for backward compatibility and will not be needed if the final version
+    // PLACEHOLDER
+    {
+        json js;
+        js["id"] = "summaryState";
+        globals.setSummaryState(3);
+        js["summaryState"] = globals.getSummaryState();
+        _syncWrite(to_string(js));
+    }
+
+    // FUTURE: This is only for backward compatibility and will not be needed if the final version
+    // PLACEHOLDER
+    {
+        json js;
+        js["id"] = "forceBalanceSystemStatus";
+        js["status"] = false;
+        _syncWrite(to_string(js));
+    }
+
+
+    // FUTURE: This is only for backward compatibility and will not be needed if the final version
+    // PLACEHOLDER
+    {
+        json js;
+        js["id"] = "summaryFaultsStatus";
+        // &&&js["status"] = 144115188075855872;
+        js["status"] = faultmgr::FaultMgr::get().getSummaryFaults().getBitmap();
+        _syncWrite(to_string(js));
+    }
+
+
 }
 
 void ComConnection::_receiveCommand() {

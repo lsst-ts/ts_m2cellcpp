@@ -91,6 +91,9 @@ public:
     /// Setting `doSend` to false is only meant for unit tests.
     void setDoSendWelcomeMsgServ(bool doSend) { _doSendWelcomeMsgServ = doSend; }
 
+    /// Async write the `msg` to all existing ComConnections for this ComServer.
+    void asyncWriteToAllComConn(std::string const& msg);
+
 protected:
     /// Protected constructor to force use of create().
     ComServer(IoContextPtr const& ioContext, int port);

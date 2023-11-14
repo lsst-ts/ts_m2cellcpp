@@ -40,9 +40,10 @@ IdleState::Ptr IdleState::create(StateMap& stateMap, Model *const model) {
     return state;
 }
 
-//&&&void IdleState::goToInMotionVI() { throw util::Bug(ERR_LOC, "IdleState::goToInMotion PLACEHOLDER"); }
-
-//&&&void IdleState::goToStandbyVI() { throw util::Bug(ERR_LOC, "IdleState::goToInMotion PLACEHOLDER"); }
+void IdleState::enterState(State::Ptr const& oldState) {
+    string msg("IdleState::enterState " + getName());
+    LINFO(msg);
+}
 
 bool IdleState::setPower(bool on) {
     if (modelPtr == nullptr) {
