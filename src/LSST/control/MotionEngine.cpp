@@ -151,10 +151,6 @@ bool MotionEngine::_checkTimeout(double diffInSeconds) {
     return false;
 }
 
-
-
-
-
 }  // namespace control
 }  // namespace m2cellcpp
 }  // namespace LSST

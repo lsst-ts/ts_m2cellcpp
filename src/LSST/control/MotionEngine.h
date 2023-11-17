@@ -117,7 +117,6 @@ private:
     std::thread _timeoutThread; ///< calls _checkTimeout on a regular basis.
     std::atomic<bool> _timeoutLoop{true}; ///< set to false to end _timeoutThread.
 
-
 };
 
 }  // namespace control

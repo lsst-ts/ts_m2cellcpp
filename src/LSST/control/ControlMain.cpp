@@ -74,9 +74,6 @@ ControlMain::~ControlMain() {
 
 }
 
-
-
-
 }  // namespace control
 }  // namespace m2cellcpp
 }  // namespace LSST
