@@ -66,7 +66,7 @@ ComServer::~ComServer() {
     try {
         // The server must be on this host.
         ComClient client(_ioContext, "127.0.0.1", _port);
-        string cmd("ComServer destructor shuting down");
+        string cmd("ComServer destructor shutting down");
         client.writeCommand(cmd);
         LDEBUG("wrote cmd=", cmd);
     } catch (std::exception const& ex) {
@@ -115,10 +115,8 @@ void ComServer::_handleAccept(ComConnection::Ptr const& connection, boost::syste
     size_t connectionSize;
     {
         lock_guard<mutex> lg(_mapMtx);
-        LERROR("&&& ComServer::_beginAccept() a _connections.size()=", _connections.size());
         _connections.emplace(connection->getConnId(), connection);
         connectionSize = _connections.size();
-        LERROR("&&& ComServer::_beginAccept() b _connections.size()=", _connections.size());
     }
     // If going from 0 to 1, FaultMgr must clear the appropriate fault so the system can be turned on.
     faultmgr::FaultMgr::get().reportComConnectionCount(connectionSize);
@@ -194,12 +192,9 @@ ComConnection::Ptr ComServer::newComConnection(IoContextPtr const& ioContext, ui
 
 void ComServer::asyncWriteToAllComConn(std::string const& msg) {
     lock_guard<mutex> lg(_mapMtx);
-    LERROR("&&& ComServer::asyncWriteToAllComConn _connections.size=", _connections.size());
-    int count = 0; // &&&
     for (auto&& elem:_connections) {
         auto conn = elem.second.lock();
         if (conn != nullptr) {
-            LERROR("&&& ComServer::asyncWriteToAllComConn ", count++, " msg=", msg);
             conn->asyncWrite(msg);
         }
     }

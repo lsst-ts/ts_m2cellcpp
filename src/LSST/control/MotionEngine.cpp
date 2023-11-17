@@ -21,6 +21,9 @@
 
 // Class header
 #include "control/MotionEngine.h"
+
+// Project headers
+#include "faultmgr/FaultMgr.h"
 #include "system/Config.h"
 #include "util/Bug.h"
 #include "util/Log.h"
@@ -72,11 +75,11 @@ void MotionEngine::engineStart() {
     _eThrd.run();
 
     // This function will be run in a separate thread until the destructor is called.
-    // The destructor sets _timeoutLoop false and then joins the thread.
+    // The destructor sets _timeoutLoop false and then joins this thread.
     auto func = [this]() {
         while (_timeoutLoop) {
             queueTimeoutCheck();
-            this_thread::sleep_for(1s); // &&& timeoutSleep
+            this_thread::sleep_for(_timeoutSleep);
         }
     };
     thread tThrd(func);
@@ -87,7 +90,7 @@ void MotionEngine::waitForEngine() const {
     // If _eStarted is true, the event queue exists, so messages won't be lost,
     // and the thread should actually be running very soon.
     while (!_eStarted) {
-        this_thread::sleep_for(100ms);
+        this_thread::sleep_for(50ms);
     }
 }
 
@@ -127,20 +130,25 @@ void MotionEngine::_comTimeoutCheck() {
         time_t tm = util::CLOCK::to_time_t(_comReadTime);
         os << "MotionEngine::_comTimeoutCheck timedOut last read=" << ctime(&tm)
            << " seconds since last read=" << diff;
-        // &&& LERROR(os.str()); re-enable
+        LDEBUG(os.str());
     }
 }
 
 bool MotionEngine::_checkTimeout(double diffInSeconds) {
-    bool timedOut = diffInSeconds > _comTimeoutSecs;
-    if (timedOut) {
-        string eMsg = string("MotionEngine") + __func__ + " _daq timed out " + to_string(timedOut);
-        // &&& TODO: what should be done on timeout?
-        //&&& faultmgr::FaultStatusBits cFaults;
-        //&&& cFaults.setBitAt(faultmgr::FaultStatusBits::POWER_SYSTEM_TIMEOUT);
-        //&&& faultmgr::FaultMgr::get().updatePowerFaults(cFaults, faultmgr::BasicFaultMgr::POWER_SUBSYSTEM);
+    bool timedOutErr = diffInSeconds > _comTimeoutErrorSecs;
+    if (timedOutErr) {
+        string eMsg = string("MotionEngine") + __func__ + " _daq timed out ERROR" + to_string(timedOutErr);
+        LDEBUG(eMsg);
+        faultmgr::FaultMgr::get().reportMotionEngineTimeout(true, eMsg);
+        return true;
     }
-    return timedOut;
+    bool timedOutWarn = diffInSeconds > _comTimeoutWarnSecs;
+    if (timedOutWarn) {
+        string eMsg = string("MotionEngine") + __func__ + " _daq timed out WARN" + to_string(timedOutWarn);
+        LDEBUG(eMsg);
+        faultmgr::FaultMgr::get().reportMotionEngineTimeout(false, eMsg);
+    }
+    return false;
 }
 
 

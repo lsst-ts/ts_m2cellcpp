@@ -90,8 +90,6 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
     }
 
     {
-        FpgaIo::setup(simCore);
-
         PowerSystem::Ptr powerSys = control::Context::get()->model.getPowerSystem();
         PowerSubsystem& motorSubSys = powerSys->getMotor();
         PowerSubsystem& commSubSys = powerSys->getComm();
@@ -287,7 +285,6 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         faultmgr::FaultMgr::get().reportComConnectionCount(0);
         simCore->waitForUpdate(simWait);
         sInfo = simCore->getSysInfo();
-        LCRITICAL("&&& sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON)=", sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON));
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) == 0);
         // verify power off
         simCore->waitForUpdate(simWaitLong); // need to wait for voltage fall

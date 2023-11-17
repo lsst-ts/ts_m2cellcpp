@@ -178,6 +178,29 @@ public:
     /// to the old `_currentFaults` value;
     void updateSummary(uint64_t newSummary);
 
+    /// Merge FaultStatusBits in `bits` into `_summaryFaults`, but only those
+    /// bits that are enabled.
+    /// @param - `bits` a mask containing the bits to set.
+    /// @return - a mask containing the changed bits.
+    ///
+    /// Note: Is hoped that once ILC related faults have been added to the
+    /// the code base that `mergeFaults` (or some version of it) can replace
+    /// `updateFaultStatus`. The individual systems should only need
+    /// `_affectedFaultsMask` so they can mask out faults that do not affect them.
+    /// Most of the logic in `updateFaultStatus` LabView's version seems to be
+    /// focused on avoiding resending messages. The C++ code doesn't send
+    /// messages for faults, so that complexity can be removed.
+    FaultStatusBits mergeFaults(FaultStatusBits bits);
+
+    /// Enable the fault bits set in `mask` in `_faultEnableMask`.
+    /// @param `mask` - bitmap of faults to be enabled.
+    /// @return FaultsStatusBits object with the changed bits from
+    ///         `_faultEnableMask`.
+    FaultStatusBits enableFaultsInMask(FaultStatusBits mask);
+
+    /// Return a log worthy string version of this object.
+    std::string dump() const;
+
 private:
     FaultStatusBits _summaryFaults;        ///< "Summary Faults Status"
     FaultStatusBits _prevFaults;           ///< "Previous Faults Status"

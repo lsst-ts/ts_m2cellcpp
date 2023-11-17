@@ -118,9 +118,6 @@ public:
     /// Return model digital output. PLACEHOLDER
     uint32_t getDigitalOutput() const { return _digitalOutput; }
 
-    /// Return model enabled fault mask. PLACEHOLDER
-    //&&& uint64_t getEnabledFaultMask() const { return _enabledFaultMask; }
-
     /// Return the closed loop control mode identifier. PLACEHOLDER
     int getClosedLoopControlMode() const { return _closedLoopControlMode; }
 
@@ -172,7 +169,6 @@ private:
 
     std::atomic<uint32_t> _digitalInput{0x9F00FFFF}; ///< Model digital input PLACEHOLDER from python = 2667642879
     std::atomic<uint32_t> _digitalOutput{0x1C}; ///< Model digital output PLACEHOLDER from python = 28
-    //&&&std::atomic<uint64_t> _enabledFaultMask{0xff800007ffffffff}; ///< Model enabled fault mask. PLACEHOLDER from python = 18410715311050326015
 
     std::atomic<int> _closedLoopControlMode{1}; ///< Closed loop control mode. PLACEHOLDER from python 1=ClosedLoopControlMode.Idle
 

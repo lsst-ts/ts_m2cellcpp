@@ -184,13 +184,13 @@ public:
     static std::string getEnumString(int enumVal);
 
     /// Return a string containing the string version of all set bit enums
-    std::string getAllSetBitEnums();
+    std::string getAllSetBitEnums() const;
 
     /// Return the bit in `_bitmap` at `pos`, `pos` out of range returns 0.
     uint64_t getBit(int pos);
 
     /// Return all bits that are set in `_bitmap` and in `mask`.
-    uint64_t getBitsSetInMask(uint64_t mask) {
+    uint64_t getBitsSetInMask(uint64_t mask)  const {
         return _bitmap & mask;
     }
 

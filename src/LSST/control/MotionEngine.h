@@ -23,6 +23,7 @@
 #define LSST_M2CELLCPP_CONTROL_MOTIONENGINE_H
 
 // System headers
+#include <chrono>
 #include <memory>
 #include <thread>
 
@@ -37,8 +38,9 @@ namespace control {
 /// This class is responsible for the MotionEngine control, mostly
 /// following what is found in MotionEngine.lvclass:motionEngineMain.vi.
 /// It's primary function is to generate the step vector and pass that
-/// to the CellCommunication loop.
-/// &&& more doc.
+/// to the CellCommunication loop in CellCtrlComm.
+/// Largely a PLACEHOLDER at this point.
+/// Unit tests in tests/test_MotionEngine.cpp
 class MotionEngine {
 public:
     using Ptr = std::shared_ptr<MotionEngine>;
@@ -72,6 +74,12 @@ public:
     /// are being received.
     void queueTimeoutCheck();
 
+    /// Return timeout time for communication faults in seconds.
+    double comTimeoutError() const { return _comTimeoutErrorSecs; }
+
+    /// Return timeout time for communication warning in seconds.
+    double comTimeoutWarn() const { return _comTimeoutWarnSecs; }
+
 private:
     static Ptr _thisPtr; ///< pointer to the global instance of MotionEngine.
     static std::mutex _thisPtrMtx; ///< Protects `_thisPtr`.
@@ -82,7 +90,7 @@ private:
     /// Check that ILC com info has been arriving in a timely fashion.
     void _comTimeoutCheck();
 
-    /// doc &&&
+    /// Return true if a timeout error has occurred.
     bool _checkTimeout(double diffInSeconds);
 
     util::EventThread _eThrd; ///< Thread running ILC processing.
@@ -94,12 +102,21 @@ private:
     /// the system a chance to read instead of instantly timing out.
     std::atomic<util::TIMEPOINT> _comReadTime{util::CLOCK::now()};
 
-    /// Timeout in seconds for fresh DAQ SystemInfo.
+    /// Timeout in seconds for fresh DAQ SystemInfo, for error.
     /// DM-40694 set from config file, also needs a real value
-    std::atomic<double> _comTimeoutSecs{1.5};
+    std::atomic<double> _comTimeoutErrorSecs{2.5};
+
+    /// Timeout in seconds for fresh DAQ SystemInfo, for warning.
+    /// DM-40694 set from config file, also needs a real value
+    std::atomic<double> _comTimeoutWarnSecs{1.5};
+
+    /// Sleep time between timeout checks in milliseconds.
+    /// DM-40694 set from config file, also needs a real value
+    std::chrono::milliseconds _timeoutSleep{500};
 
     std::thread _timeoutThread; ///< calls _checkTimeout on a regular basis.
     std::atomic<bool> _timeoutLoop{true}; ///< set to false to end _timeoutThread.
+
 
 };
 

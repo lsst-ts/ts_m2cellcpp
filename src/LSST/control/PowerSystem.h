@@ -46,14 +46,17 @@ namespace control {
 /// Synchronization is largely provided by this being an event driven thread.
 /// unit tests: test_PowerSystem.cpp
 //
-// &&& Controller->InitializeFunctionalGlobals.vi - The individual items should be done in a separate class/function
-// &&&   - System Config FG:SystemConfigurationFG.vi  ****** power up configuration values ********
-// &&&     There are a lot of configuration values in here having to do with power supply very specific,
-// &&&     probably best to open up the vi and look at the set values. Elements set listed below
-// &&&     - "Power Subsystem Configuration Parameters.Power Subsystem Common Configuration Parameters"
-// &&&     - "Power Subsystem Configuration Parameters.Comm Power Bus Configuration Parameters"
-// &&&     - "Power Subsystem Configuration Parameters.Motor Power Bus Configuration Parameters"
-// &&&     - "Power Subsystem Configuration Parameters.Boost Current Fault Enabled" - this is set to false.
+// DM-40694 set from config file,
+//  Controller->InitializeFunctionalGlobals.vi - The individual items should be done in a separate class/function
+//    - System Config FG:SystemConfigurationFG.vi  ****** power up configuration values ********
+//      There are a lot of configuration values in here having to do with power supply very specific,
+//      probably best to open up the vi and look at the set values. Elements set listed below
+//      - "Power Subsystem Configuration Parameters.Power Subsystem Common Configuration Parameters"
+//      - "Power Subsystem Configuration Parameters.Comm Power Bus Configuration Parameters"
+//      - "Power Subsystem Configuration Parameters.Motor Power Bus Configuration Parameters"
+//      - "Power Subsystem Configuration Parameters.Boost Current Fault Enabled" - this is set to false.
+//    - There's an interesting comment in Context.lvclass:loadConfiguration.vi related to the loading of
+//      these values in LabView.
 class PowerSystem {
 public:
     using Ptr = std::shared_ptr<PowerSystem>;
@@ -129,6 +132,10 @@ private:
 
     std::thread _timeoutThread; ///< calls _checkTimeout on a regular basis.
     std::atomic<bool> _timeoutLoop{true}; ///< set to false to end _timeoutThread.
+
+    /// Sleep time between timeout checks in milliseconds.
+    /// DM-40694 set from config file, also needs a real value
+    std::chrono::milliseconds _timeoutSleep{1000};
 };
 
 

@@ -219,7 +219,6 @@ void ComConnection::_sendWelcomeMsg() {
     {
         json js;
         js["id"] = "enabledFaultsMask";
-        //&&&js["mask"] = globals.getEnabledFaultMask();
         js["mask"] = faultmgr::FaultMgr::get().getFaultEnableMask().getBitmap();
         _syncWrite(to_string(js));
     }
@@ -256,13 +255,13 @@ void ComConnection::_sendWelcomeMsg() {
         _syncWrite(to_string(js));
     }
 
-
-    // FUTURE: This is only for backward compatibility and will not be needed if the final version
-    // PLACEHOLDER
     {
         json js;
         js["id"] = "summaryFaultsStatus";
-        // &&&js["status"] = 144115188075855872;
+        // The value from the ts_m2gui simulator produces this value for
+        // 'js["status"] = 144115188075855872;'.
+        // FUTURE: Should see how this compares to the simulator as
+        // more systems are implemented.
         js["status"] = faultmgr::FaultMgr::get().getSummaryFaults().getBitmap();
         _syncWrite(to_string(js));
     }

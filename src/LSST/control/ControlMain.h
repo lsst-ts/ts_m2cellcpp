@@ -34,7 +34,7 @@ namespace m2cellcpp {
 namespace control {
 
 
-/// &&& doc
+/// PLACEHOLDER This class will contain a thread running the main instance of the program.
 class ControlMain {
 public:
     using Ptr = std::shared_ptr<ControlMain>;
@@ -57,25 +57,13 @@ public:
     /// @throws `ConfigException` if `setup` has not already been called.
     static Ptr getPtr();
 
-    /// &&& doc
-    void startThrd();
-
-    /// &&& doc
-    void stopThrd();
-
-    /// &&& doc
-    void joinThrd();
 
 private:
     static Ptr _thisPtr; ///< Pointer to the global instance of ControlMain.
     static std::mutex _thisPtrMtx; ///< Protects `_thisPtr`.
 
-    /// &&& doc
+    /// Private constructor to force the use of `setup()`.
     ControlMain();
-
-    util::EventThread _evCThrd; /// Event thread, primariliy meant to wait for shutdown.
-    std::atomic<bool> _evCThrdStarted{false}; /// Set to true when started.
-    std::atomic<bool> _evCthrdJoinCalled{false}; /// Set to true when join is called.
 
 };
 

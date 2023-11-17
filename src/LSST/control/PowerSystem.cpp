@@ -48,7 +48,7 @@ PowerSystem::PowerSystem() : _motor(MOTOR), _comm(COMM) {
     auto func = [this]() {
         while (_timeoutLoop) {
             queueTimeoutCheck();
-            this_thread::sleep_for(1s); // &&& timeoutSleep
+            this_thread::sleep_for(_timeoutSleep);
         }
     };
     thread tThrd(func);
@@ -141,7 +141,7 @@ void PowerSystem::_processDaq(SysInfo info) {
                 " comm=", commStat, " prev=", _commStatusPrev);
         _motorStatusPrev = motorStat;
         _commStatusPrev = commStat;
-        // TODO: DM-40339 send information to telemetry server
+        // TODO: DM-41751 send information to telemetry server
     }
 }
 
@@ -173,16 +173,10 @@ void PowerSystem::_processDaqHealthTelemetry(SysInfo sInfo, faultmgr::FaultStatu
     bool powerLoadOk = redundancyOk && loadDistributionOk;
 
     if (!powerLoadOk) {
-        /* &&&
-        stringstream os;
-        os << "POWER_SUPPLY_LOAD_SHARE_ERR redundancyOk=" << redundancyOk
-           << " loadDistributionOk=" << loadDistributionOk;
-        // Wait until the power is ON or TURNING_ON to set the fault.
-         */
         LERROR("POWER_SUPPLY_LOAD_SHARE_ERR redundancyOk=",
                 redundancyOk, " loadDistributionOk=", loadDistributionOk);
-        // Only set the fault if power is ON
-        // "power supply load share error"
+        // Only set the fault if power is ON, otherwise it's nearly always set and
+        // difficult to clear. "power supply load share error"
         currentFaults.setBitAt(faultmgr::FaultStatusBits::POWER_SUPPLY_LOAD_SHARE_ERR);
     }
 

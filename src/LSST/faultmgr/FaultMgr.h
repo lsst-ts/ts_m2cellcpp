@@ -60,8 +60,8 @@ public:
     static Ptr getPtr();
 
     /// Return true if there are any faults that the subsystem cares about.
-    /// @param subsystemMask - mask of bits for the specific subsystem.
-    /// @param note - identifier for calling class and/or function.
+    /// @param `subsystemMask` - mask of bits for the specific subsystem.
+    /// @param `note` - identifier for calling class and/or function.
     bool checkForPowerSubsystemFaults(FaultStatusBits const& subsystemMask, std::string const& note);
 
     /// Update faults based on `currentFaults` provided by `subsystem`.
@@ -77,11 +77,28 @@ public:
     /// that can be displayed by the GUI.
     void faultMsg(int errId, std::string const& eMsg);
 
-    /// &&&
+    /// Enable the fault bits set in `mask` in all `_faultEnableMask` found in
+    /// this instance.
+    /// @param `mask` - bitmap of faults to be enabled.
+    /// @return FaultsStatusBits object with the changed bits from
+    ///         `_summarySystemFaultsStatus._faultEnableMask`.
+    FaultStatusBits enableFaultsInMask(FaultStatusBits mask);
+
+    /// Report a motion engine data timeout and flag the appropriate fault.
+    /// @param `errorLvl` - `true` indicates an error while `false` indicates a warning.
+    /// @param `msg` - a test message with more information about the error.
+    void reportMotionEngineTimeout(bool errorLvl, std::string const& msg);
+
+    /// Returns the system summary faults from `_summarySystemFaultsStatus`,
+    /// this is the primary copy of the system summary faults.
     FaultStatusBits getSummaryFaults() const;
 
-    /// &&&
+    /// Returns the system enabled faults mask, which contains a mask
+    /// of the system wide enabled faults.
     FaultStatusBits getFaultEnableMask() const;
+
+    /// Return a log worthy string version of this object.
+    std::string dump() const;
 
 private:
     static Ptr _thisPtr; ///< pointer to the global instance of FaultMgr.
@@ -98,16 +115,18 @@ private:
     /// FUTURE: It is hoped that this will be the only BasicFaultMgr needed after
     /// including ILC faults. Individual systems will probably still need `affect` members.
     BasicFaultMgr _summarySystemFaultsStatus;
-    std::mutex _summarySystemFaultsMtx; ///< Protects `_summarySystemFaultsStatus`.
+    mutable std::mutex _summarySystemFaultsMtx; ///< Protects `_summarySystemFaultsStatus`.
 
     /// Faults, warnings, and info associated with power systems.
+    /// FUTURE: Hopefully, all elements except `affected` can be removed.
     PowerFaultMgr _powerFaultMgr;
-    std::mutex _powerFaultMtx; ///< Protects `_powerFaultMgr`.
+    mutable std::mutex _powerFaultMtx; ///< Protects `_powerFaultMgr`.
 
     /// Faults, warnings, and info associated with ILC's.
     /// FUTURE: complete implementation
+    /// FUTURE: Hopefully, all elements except `affected` can be removed.
     TelemetryFaultMgr _telemetryFaultMgr;
-    std::mutex _telemetryFaultMtx; ///< Protects `_telemetryFaultMgr`.
+    mutable std::mutex _telemetryFaultMtx; ///< Protects `_telemetryFaultMgr`.
 
     /// True when there are no ComServer Tcp/Ip connections.
     std::atomic<bool> _commConnectionFault{true};

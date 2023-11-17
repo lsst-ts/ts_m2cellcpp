@@ -117,6 +117,23 @@ std::tuple<uint16_t, uint16_t> BasicFaultMgr::updateFaultStatus(
     return make_tuple(updatedSummaryFaults, changedBits);
 }
 
+FaultStatusBits BasicFaultMgr::mergeFaults(FaultStatusBits bits) {
+    FaultStatusBits bitsMask = _faultEnableMask.getBitmap() & bits.getBitmap();
+    if (bitsMask.getBitmap() == 0) {
+        // not enabled, nothing to change
+        return bitsMask;
+    }
+
+    FaultStatusBits previous(_summaryFaults);
+    _summaryFaults.setBitmap(_summaryFaults.getBitmap() | bitsMask.getBitmap());
+    // FUTURE: _currentFaults should be able to be removed...
+    _currentFaults.setBitmap(_currentFaults.getBitmap() | bitsMask.getBitmap());
+    FaultStatusBits changed(_summaryFaults.getBitmap() ^ previous.getBitmap());
+    _prevFaults.setBitmap(previous.getBitmap()); // FUTURE: _prevFaults should be able to be removed...
+
+    return changed;
+}
+
 
 void BasicFaultMgr::updateSummary(uint64_t newSummary) {
     _prevFaults = _currentFaults;
@@ -140,6 +157,28 @@ void BasicFaultMgr::setMaskComm(FaultStatusBits newFaultMask) {
     _currentFaults = _summaryFaults;
 
     _timeStamp = util::CLOCK::now();
+}
+
+
+FaultStatusBits BasicFaultMgr::enableFaultsInMask(FaultStatusBits mask) {
+    auto enabled = _faultEnableMask.getBitmap();
+    auto changed = enabled;
+    enabled = enabled | mask.getBitmap();
+    _faultEnableMask.setBitmap(enabled);
+    FaultStatusBits changedBits(enabled ^ changed);
+    return changedBits;
+}
+
+std::string BasicFaultMgr::dump() const {
+    stringstream os;
+    os << "[summaryFaults{" << _summaryFaults.getAllSetBitEnums() << "}";
+    os << ", prevFaults{" << _prevFaults.getAllSetBitEnums() << "}";
+    os << ", currentFaults{" << _currentFaults.getAllSetBitEnums() << "}";
+    os << ", faultEnableMask{" << _faultEnableMask.getAllSetBitEnums() << "}";
+    os << ", defaultFaultMask{" << _defaultFaultMask.getAllSetBitEnums() << "}";
+    os << ", affectedFaultsMask{" << _affectedFaultsMask.getAllSetBitEnums() << "}";
+    os << ", affectedWarnInfoMask{" << _affectedWarnInfoMask.getAllSetBitEnums() << "}]";
+    return os.str();
 }
 
 PowerFaultMgr::PowerFaultMgr() : BasicFaultMgr() {

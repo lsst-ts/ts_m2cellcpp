@@ -38,8 +38,6 @@ namespace state {
 /// "System Status Telem":
 ///    "cRIO State" should be set to "standby".
 ///    "MotionEngineState" should be set to "idle".
-/// &&& what should the system output be in this state ???
-/// &&& Is this the "Safe mode" state ???
 class IdleState : public State {
 public:
     using Ptr = std::shared_ptr<IdleState>;

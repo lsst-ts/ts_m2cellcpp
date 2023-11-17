@@ -71,24 +71,10 @@ ControlMain::ControlMain() {
 }
 
 ControlMain::~ControlMain() {
-    LTRACE("ControlMain::~ControlMain");
-    stopThrd();
-    joinThrd();
+
 }
 
-void ControlMain::startThrd() {
-    _evCThrd.run();
-}
 
-void ControlMain::stopThrd() {
-    _evCThrd.queEnd();
-}
-
-void ControlMain::joinThrd() {
-    if(_evCthrdJoinCalled.exchange(true) == false) {
-        _evCThrd.join();
-    }
-}
 
 
 }  // namespace control

@@ -31,22 +31,13 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-/// &&& doc.  (is this class poorly named???)
+/// PLACEHOLDER for ScriptEngine.vi - a complex control loop for running scripts.
 class ScriptEngine {
 public:
     using Ptr = std::shared_ptr<ScriptEngine>;
 
-    &&&;
-
-    /// &&& doc
-    void ctrlStart();
-
 private:
 
-    /// This is the function that is run by the `_mCtrlThread`.
-    void _seCtrlAction();
-
-    std::thread _ctrlThread; ///< &&&
 };
 
 }  // namespace control

@@ -378,7 +378,7 @@ uint64_t FaultStatusBits::getMaskHealthFaults() {
     return _healthFaultMask->_bitmap;
 }
 
-string FaultStatusBits::getAllSetBitEnums() {
+string FaultStatusBits::getAllSetBitEnums() const {
     string str;
     uint64_t mask = 1;
 

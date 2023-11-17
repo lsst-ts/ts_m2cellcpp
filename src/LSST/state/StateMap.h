@@ -28,7 +28,6 @@
 #include <vector>
 
 // Project headers
-#include "state/FaultState.h"
 #include "state/IdleState.h"
 #include "state/InMotionState.h"
 #include "state/OfflineState.h"
@@ -76,11 +75,6 @@ public:
     /// Return a pointer to the standby state.
     StandbyState::Ptr getStandbyState() { return _standbyState; }
 
-    /* &&&
-    /// Return a pointer to the fault state.
-    FaultState::Ptr getFaultState() { return _faultState; }
-    */
-
     /// Return a pointer to the Idle state.
     IdleState::Ptr getIdleState() { return _idleState; }
 
@@ -126,7 +120,6 @@ private:
 
     StartupState::Ptr _startupState;    ///< The Startup state instance.
     StandbyState::Ptr _standbyState;    ///< The Standby state instance.
-    // &&& FaultState::Ptr _faultState;        ///< The Fault state instance.
     IdleState::Ptr _idleState;          ///< The Idle state instance.
     InMotionState::Ptr _inMotionState;  ///< The InMotion state instance.
     OfflineState::Ptr _offlineState;    ///< The Offline state instance.

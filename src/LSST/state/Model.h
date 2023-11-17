@@ -54,13 +54,11 @@ public:
     Model& operator=(Model const&) = delete;
     virtual ~Model() = default;
 
-    /// Return a pointer to the FpgaIo instance.
-    std::shared_ptr<control::FpgaIo> getFpgaIo() { return _fpgaIo.lock(); } // &&& probably delete
-
     /// Return a pointer to the `_powerSystem`.
     std::shared_ptr<control::PowerSystem> getPowerSystem() { return _powerSystem; }
 
-    /// &&& doc
+    /// Read configuration files that haven't yet been read and use those
+    /// values to setup various aspects of the system.
     void ctrlSetup();
 
     /// Return true if sytem setup has finished.
@@ -190,7 +188,7 @@ private:
     /// @return true if the system was not already trying to reach.
     bool _goToSafeMode(std::string const& note);
 
-    /// &&& doc
+    /// Stop motion and turn off all power that can be turned off.
     bool _turnOffAll(std::string const& note);
 
     /// Return true if power could be set, this affects both MOTOR and COMM power.

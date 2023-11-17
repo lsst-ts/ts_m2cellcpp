@@ -115,6 +115,25 @@ void FaultMgr::reportComConnectionCount(size_t count) {
 }
 
 
+void FaultMgr::reportMotionEngineTimeout(bool errorLvl, std::string const& msg) {
+    FaultStatusBits timeoutMask;
+    if (errorLvl) {
+        timeoutMask.setBitAt(FaultStatusBits::STALE_DATA_FAULT);
+    } else {
+        timeoutMask.setBitAt(FaultStatusBits::STALE_DATA_WARN);
+    }
+    FaultStatusBits changed;
+    {
+        lock_guard<mutex> lgSummary(_summarySystemFaultsMtx);
+        changed = _summarySystemFaultsStatus.mergeFaults(timeoutMask);
+    }
+    if (changed.getBitmap() != 0) {
+        LERROR("FaultMgr::reportMotionEngineTimeout errorLvl=", errorLvl,
+               " changed=", changed.getAllSetBitEnums(), " msg=", msg);
+    }
+}
+
+
 void FaultMgr::updatePowerFaults(FaultStatusBits currentFaults, BasicFaultMgr::CrioSubsystem subsystem) {
     BasicFaultMgr bfm;
     {
@@ -215,12 +234,51 @@ FaultStatusBits FaultMgr::getFaultEnableMask() const {
 }
 
 void FaultMgr::_updateTelemetryCom(BasicFaultMgr const& newFsbSummary) {
-    // TODO: DM-40339 send information to telemetry TCP/IP server &&&
+    // TODO: DM-41751 send information to telemetry TCP/IP server
     LCRITICAL("FaultMgr::_updateTelemetry NEEDS CODE");
 }
 
 void FaultMgr::faultMsg(int errId, std::string const& eMsg) {
     LERROR("FaultMgr::faultMsg id=", errId, " msg=", eMsg);
+}
+
+/// Enable the fault bits set in `mask` in all `_faultEnableMask` found in
+/// this instance.
+/// @param `mask` - bitmap of faults to be enabled.
+/// @return FaultsStatusBits object with the changed bits from
+///         `_summarySystemFaultsStatus._faultEnableMask`.
+FaultStatusBits FaultMgr::enableFaultsInMask(FaultStatusBits mask) {
+    FaultStatusBits changed;
+    {
+        lock_guard<mutex> lg(_summarySystemFaultsMtx);
+        changed = _summarySystemFaultsStatus.enableFaultsInMask(mask);
+    }
+    {
+        lock_guard<mutex> lg(_powerFaultMtx);
+        _powerFaultMgr.enableFaultsInMask(mask);
+    }
+    {
+        lock_guard<mutex> lg(_telemetryFaultMtx);
+        _telemetryFaultMgr.enableFaultsInMask(mask);
+    }
+    return changed;
+}
+
+std::string FaultMgr::dump() const {
+    stringstream os;
+    {
+        lock_guard<mutex> lg(_summarySystemFaultsMtx);
+        os << "[_summarySystemFaultsStatus{" << _summarySystemFaultsStatus.dump() << "}";
+    }
+    {
+        lock_guard<mutex> lg(_powerFaultMtx);
+        os << " << _powerFaultMgr{" << _powerFaultMgr.dump() << "}";
+    }
+    {
+        lock_guard<mutex> lg(_telemetryFaultMtx);
+        os << " << _telemetryFaultMgr{" << _telemetryFaultMgr.dump() << "}";
+    }
+    return os.str();
 }
 
 }  // namespace faultmgr

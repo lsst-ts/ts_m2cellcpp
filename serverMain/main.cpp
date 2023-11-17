@@ -96,12 +96,12 @@ int main(int argc, char* argv[]) {
     context->model.ctrlSetup();
 
 
-    // &&& At this point, MotionCtrl and FpgaCtrl should be configured. Start the control loops
+    // At this point, MotionCtrl and FpgaCtrl should be configured. Start the control loops
     context->model.ctrlStart();
 
-    // &&& At this point, the LabView code seems to want to put the system into
-    // &&& ReadyIdle. We're NOT doing that. The system is going into StandbyState
-    // &&& until it gets an explicit command to do something else.
+    // At this point, the LabView code seems to want to put the system into
+    // ReadyIdle. We're NOT doing that. The system is going into StandbyState
+    // until it gets an explicit command to do something else.
 
 
 
@@ -119,10 +119,10 @@ int main(int argc, char* argv[]) {
     telemetryServ->startServer();
     if (!telemetryServ->waitForServerRunning(5)) {
         LCRITICAL("Telemetry server failed to start.");
-        exit(-1); // &&& change to powerdown and exit
+        exit(-1); // change to powerdown and exit
     }
 
-    // &&& wait for MotionCtrl to be ready
+    // Wait for MotionCtrl to be ready
     context->model.waitForCtrlReady();
 
     // Start a ComControlServer
@@ -146,8 +146,9 @@ int main(int argc, char* argv[]) {
         comServerDone = true;
     });
 
-    // &&& send shutdown  to ComServer.
-    // &&& send shutdown  to TelemetryServer
+    // FUTURE: Add a NetCommand to terminate the service which will
+    //   - send shutdown  to ComServer.
+    //   - send shutdown  to TelemetryServer
 
     // Wait as long as the server is running. At some point,
     // something should call comServ->shutdown().
