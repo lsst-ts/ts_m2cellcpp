@@ -35,37 +35,35 @@ namespace control {
 /// Status enum, 0 indicates everything is GOOD,
 /// Values less than 0 indicate problems,
 /// Values above 0 indicate a state where nothing is wrong, but GOOD does not apply.
-enum SysStatus {
-    CRITICAL = -3,
-    FAULT = -2,
-    WARN = -1,
-    GOOD = 0,
-    WAITING = 1
-};
+enum SysStatus { CRITICAL = -3, FAULT = -2, WARN = -1, GOOD = 0, WAITING = 1 };
 
 /// Return a string representation of the SysStatus enum `sta`.
 inline std::string getSysStatusStr(SysStatus sta) {
     switch (sta) {
-    case GOOD: return "GOOD";
-    case WAITING: return "WATIING";
-    case WARN: return "WARN";
-    case FAULT: return "FAULT";
-    case CRITICAL: return "CRITICAL";
+        case GOOD:
+            return "GOOD";
+        case WAITING:
+            return "WATIING";
+        case WARN:
+            return "WARN";
+        case FAULT:
+            return "FAULT";
+        case CRITICAL:
+            return "CRITICAL";
     }
     return "unknown";
 }
 
 /// Power system type enum.
-enum PowerSystemType {
-    MOTOR = 0,
-    COMM = 1
-};
+enum PowerSystemType { MOTOR = 0, COMM = 1 };
 
 /// Return a string version of `sysT`.
 inline std::string getPowerSystemTypeStr(PowerSystemType sysT) {
-    switch(sysT) {
-    case MOTOR: return "MOTOR";
-    case COMM: return "COMM";
+    switch (sysT) {
+        case MOTOR:
+            return "MOTOR";
+        case COMM:
+            return "COMM";
     }
     return "unknown ";
 }

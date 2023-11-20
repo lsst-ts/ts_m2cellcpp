@@ -33,18 +33,13 @@
 // project headers
 #include "faultmgr/FaultStatusBits.h"
 
-
 using namespace std;
 
 namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-
-void OutputPortBits::writeBit(int pos, bool set) {
-    faultmgr::FaultStatusBits::setBit8(_bitmap, pos, set);
-}
-
+void OutputPortBits::writeBit(int pos, bool set) { faultmgr::FaultStatusBits::setBit8(_bitmap, pos, set); }
 
 bool OutputPortBits::getBitAtPos(int pos) const {
     if (pos < 0 || pos >= BM_SZ) {
@@ -55,16 +50,15 @@ bool OutputPortBits::getBitAtPos(int pos) const {
     return getBitsSetInMask(mask);
 }
 
-
 string OutputPortBits::getAllSetBitEnums() const {
     string str;
     uint8_t mask = 1;
 
-    for (int j=0; j<BM_SZ; ++j) {
+    for (int j = 0; j < BM_SZ; ++j) {
         if (getBitsSetInMask(mask)) {
             str += getEnumString(j) + ",";
         }
-         mask <<= 1;
+        mask <<= 1;
     }
     return str;
 }
@@ -76,15 +70,23 @@ string OutputPortBits::getBinaryStr(uint8_t val) {
 }
 
 string OutputPortBits::getEnumString(int enumVal) {
-    switch(enumVal) {
-    case MOTOR_POWER_ON: return "MOTOR_POWER_ON " + to_string(enumVal);
-    case ILC_COMM_POWER_ON: return "ILC_COMM_POWER_ON " + to_string(enumVal);
-    case CRIO_INTERLOCK_ENABLE: return "CRIO_INTERLOCK_ENABLE " + to_string(enumVal);
-    case RESET_MOTOR_BREAKERS: return "RESET_MOTOR_BREAKERS " + to_string(enumVal);
-    case RESET_COMM_BREAKERS: return "RESET_COMM_BREAKERS " + to_string(enumVal);
-    case SPARE_D05: return "SPARE_D05 " + to_string(enumVal);
-    case SPARE_D06: return "SPARE_D06 " + to_string(enumVal);
-    case SPARE_D07: return "SPARE_D07 " + to_string(enumVal);
+    switch (enumVal) {
+        case MOTOR_POWER_ON:
+            return "MOTOR_POWER_ON " + to_string(enumVal);
+        case ILC_COMM_POWER_ON:
+            return "ILC_COMM_POWER_ON " + to_string(enumVal);
+        case CRIO_INTERLOCK_ENABLE:
+            return "CRIO_INTERLOCK_ENABLE " + to_string(enumVal);
+        case RESET_MOTOR_BREAKERS:
+            return "RESET_MOTOR_BREAKERS " + to_string(enumVal);
+        case RESET_COMM_BREAKERS:
+            return "RESET_COMM_BREAKERS " + to_string(enumVal);
+        case SPARE_D05:
+            return "SPARE_D05 " + to_string(enumVal);
+        case SPARE_D06:
+            return "SPARE_D06 " + to_string(enumVal);
+        case SPARE_D07:
+            return "SPARE_D07 " + to_string(enumVal);
     }
     return "unknown " + to_string(enumVal);
 }

@@ -46,8 +46,6 @@ using namespace std;
 using namespace LSST::m2cellcpp::control;
 using namespace LSST::m2cellcpp;
 
-
-
 TEST_CASE("Test MotionEngine", "[MotionEngine]") {
     util::Log::getLog().useEnvironmentLogLvl();
     string cfgPath = system::Config::getEnvironmentCfgPath("../configs");
@@ -85,7 +83,7 @@ TEST_CASE("Test MotionEngine", "[MotionEngine]") {
         // Require the stale data bits are not set.
         auto faultMgr = faultmgr::FaultMgr::getPtr();
         REQUIRE(faultMgr != nullptr);
-        faultmgr::FaultStatusBits summary =  faultMgr->getSummaryFaults();
+        faultmgr::FaultStatusBits summary = faultMgr->getSummaryFaults();
         LDEBUG("summary=", summary.getBitmap(), " bit = ", faultmgr::FaultStatusBits::STALE_DATA_WARN);
         faultmgr::FaultStatusBits wMask;
         wMask.setBitAt(faultmgr::FaultStatusBits::STALE_DATA_WARN);
@@ -107,12 +105,12 @@ TEST_CASE("Test MotionEngine", "[MotionEngine]") {
         this_thread::sleep_for(errDur);
 
         // Require the stale data bits have been set.
-        summary =  faultMgr->getSummaryFaults();
+        summary = faultMgr->getSummaryFaults();
         LDEBUG("summary=", summary.getAllSetBitEnums(), " bit = ", faultmgr::FaultStatusBits::STALE_DATA_WARN,
                " mask=", wMask.getAllSetBitEnums());
         REQUIRE(summary.getBitmap() & wMask.getBitmap());
-        LDEBUG("summary=", summary.getAllSetBitEnums(), " bit = ", faultmgr::FaultStatusBits::STALE_DATA_FAULT,
-               " mask=", eMask.getAllSetBitEnums());
+        LDEBUG("summary=", summary.getAllSetBitEnums(),
+               " bit = ", faultmgr::FaultStatusBits::STALE_DATA_FAULT, " mask=", eMask.getAllSetBitEnums());
         REQUIRE(summary.getBitmap() & eMask.getBitmap());
 
         LDEBUG("end faultMgr=", faultMgr->dump());

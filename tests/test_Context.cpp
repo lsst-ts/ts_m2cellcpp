@@ -53,15 +53,17 @@ TEST_CASE("Test Csv", "[CSV]") {
 
     Context::Ptr context = Context::get();
     REQUIRE(context != nullptr);
-    REQUIRE(context->model.getCurrentState() == context->model.getState(State::STARTUPSTATE)); // "StartupState"
+    REQUIRE(context->model.getCurrentState() ==
+            context->model.getState(State::STARTUPSTATE));  // "StartupState"
 
     context->model.ctrlSetup();
 
-    auto newState = context->model.getState(State::STANDBYSTATE); // "StandbyState"
+    auto newState = context->model.getState(State::STANDBYSTATE);  // "StandbyState"
     REQUIRE(context->model.changeState(newState));
-    REQUIRE(context->model.getCurrentState() == context->model.getState(State::STANDBYSTATE)); //"StandbyState"
+    REQUIRE(context->model.getCurrentState() ==
+            context->model.getState(State::STANDBYSTATE));  //"StandbyState"
 
-    newState = context->model.getState(State::IDLESTATE); //"IdleState"
+    newState = context->model.getState(State::IDLESTATE);  //"IdleState"
     REQUIRE(context->model.changeState(newState));
-    REQUIRE(context->model.getCurrentState() == context->model.getState(State::IDLESTATE)); //"IdleState"
+    REQUIRE(context->model.getCurrentState() == context->model.getState(State::IDLESTATE));  //"IdleState"
 }

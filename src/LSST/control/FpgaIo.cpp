@@ -54,7 +54,6 @@ void FpgaIo::setup(std::shared_ptr<simulator::SimCore> const& simCore) {
     _thisPtr = Ptr(new FpgaIo(simCore));
 }
 
-
 FpgaIo::Ptr FpgaIo::getPtr() {
     if (_thisPtr == nullptr) {
         throw system::ConfigException(ERR_LOC, "FpgaIo has not been setup.");
@@ -68,7 +67,6 @@ FpgaIo& FpgaIo::get() {
     }
     return *_thisPtr;
 }
-
 
 FpgaIo::FpgaIo(std::shared_ptr<simulator::SimCore> const& simCore) : _simCore(simCore) {
     std::thread thrd(&FpgaIo::_readWriteFpga, this);
@@ -106,7 +104,7 @@ void FpgaIo::registerPowerSys(std::shared_ptr<PowerSystem> const& powerSys) {
 }
 
 void FpgaIo::_emergencyTurnOffAllPower() {
-    VMUTEX_NOT_HELD(_portMtx); // Following function calls need to lock it.
+    VMUTEX_NOT_HELD(_portMtx);  // Following function calls need to lock it.
     LWARN("FpgaIo::_emergencyTurnOffAllPower()");
     writeOutputPortBitPos(OutputPortBits::MOTOR_POWER_ON, false);
     writeOutputPortBitPos(OutputPortBits::ILC_COMM_POWER_ON, false);
@@ -139,12 +137,9 @@ void FpgaIo::_readWriteFpga() {
     }
 }
 
-
 /// Return `_outputPort`
 OutputPortBits FpgaIo::getOutputPort() const { return _outputPort; }
 
 }  // namespace control
 }  // namespace m2cellcpp
 }  // namespace LSST
-
-

@@ -38,7 +38,6 @@ namespace LSST {
 namespace m2cellcpp {
 namespace faultmgr {
 
-
 /// This class will track and reset faults encountered in the system.
 /// Instead of sending messages around to all possible systems when faults are triggered, as
 /// the LabView code does, all faults will be stored in a global instance of FaultMgr.
@@ -101,8 +100,8 @@ public:
     std::string dump() const;
 
 private:
-    static Ptr _thisPtr; ///< pointer to the global instance of FaultMgr.
-    static std::mutex _thisPtrMtx; ///< Protects `_thisPtr`.
+    static Ptr _thisPtr;            ///< pointer to the global instance of FaultMgr.
+    static std::mutex _thisPtrMtx;  ///< Protects `_thisPtr`.
 
     // Private constructor to force use of `setup`;
     FaultMgr();
@@ -115,23 +114,23 @@ private:
     /// FUTURE: It is hoped that this will be the only BasicFaultMgr needed after
     /// including ILC faults. Individual systems will probably still need `affect` members.
     BasicFaultMgr _summarySystemFaultsStatus;
-    mutable std::mutex _summarySystemFaultsMtx; ///< Protects `_summarySystemFaultsStatus`.
+    mutable std::mutex _summarySystemFaultsMtx;  ///< Protects `_summarySystemFaultsStatus`.
 
     /// Faults, warnings, and info associated with power systems.
     /// FUTURE: Hopefully, all elements except `affected` can be removed.
     PowerFaultMgr _powerFaultMgr;
-    mutable std::mutex _powerFaultMtx; ///< Protects `_powerFaultMgr`.
+    mutable std::mutex _powerFaultMtx;  ///< Protects `_powerFaultMgr`.
 
     /// Faults, warnings, and info associated with ILC's.
     /// FUTURE: complete implementation
     /// FUTURE: Hopefully, all elements except `affected` can be removed.
     TelemetryFaultMgr _telemetryFaultMgr;
-    mutable std::mutex _telemetryFaultMtx; ///< Protects `_telemetryFaultMgr`.
+    mutable std::mutex _telemetryFaultMtx;  ///< Protects `_telemetryFaultMgr`.
 
     /// True when there are no ComServer Tcp/Ip connections.
     std::atomic<bool> _commConnectionFault{true};
 
-    FaultStatusBits _healthFaultMask{FaultStatusBits::getMaskHealthFaults()}; ///< "Health Fault Mask"
+    FaultStatusBits _healthFaultMask{FaultStatusBits::getMaskHealthFaults()};  ///< "Health Fault Mask"
 };
 
 }  // namespace faultmgr

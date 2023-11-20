@@ -52,8 +52,7 @@ public:
     ///             be the global instance (default is false).
     /// @return A pointer to the created ComControlServer object.
     static Ptr create(IoContextPtr const& ioContext, int port,
-                      control::NetCommandFactory::Ptr const& cmdFactory,
-                      bool makeGlobal = false);
+                      control::NetCommandFactory::Ptr const& cmdFactory, bool makeGlobal = false);
 
     /// Return a weak pointer to `_globalComControlServer`.
     static std::weak_ptr<ComControlServer> get() { return _globalComControlServer; }

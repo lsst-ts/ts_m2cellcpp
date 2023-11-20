@@ -34,7 +34,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace state {
 
-OfflineState::Ptr OfflineState::create(StateMap& stateMap, Model *const model) {
+OfflineState::Ptr OfflineState::create(StateMap& stateMap, Model* const model) {
     auto state = shared_ptr<OfflineState>(new OfflineState(model));
     stateMap.insertIntoMap(state);
     return state;

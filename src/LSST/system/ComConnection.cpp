@@ -67,7 +67,7 @@ namespace system {
 
 ComConnection::Ptr ComConnection::create(IoContextPtr const& ioContext, uint64_t connId,
                                          shared_ptr<ComServer> const& server) {
-    auto ptr =  ComConnection::Ptr(new ComConnection(ioContext, connId, server));
+    auto ptr = ComConnection::Ptr(new ComConnection(ioContext, connId, server));
 
     return ptr;
 }
@@ -86,12 +86,12 @@ void ComConnection::_syncWrite(string const& inMsg) {
         size_t bytesToSend = msg.length() - bytesWritten;
         bytesWritten += _socket.write_some(boost::asio::buffer(msg.c_str() + bytesWritten, bytesToSend));
     }
-
 }
 
 void ComConnection::beginProtocol() {
     _connectionActive = true;
-    Globals::get().setTcpIpConnected(true); // This seems a bit early to set this, but it's what the gui expects.
+    Globals::get().setTcpIpConnected(
+            true);  // This seems a bit early to set this, but it's what the gui expects.
     _sendWelcomeMsg();
     _receiveCommand();
 }
@@ -116,7 +116,8 @@ void ComConnection::_sendWelcomeMsg() {
 
     _syncWrite(to_string(globals.getCommandableByDdsJson()));
 
-    // send hardpoint information mock_server.py:281 await self._message_event.write_hardpoint_list(hardpoints)
+    // send hardpoint information mock_server.py:281 await
+    // self._message_event.write_hardpoint_list(hardpoints)
     {
         json js;
         js["id"] = "hardpointList";
@@ -132,7 +133,8 @@ void ComConnection::_sendWelcomeMsg() {
         _syncWrite(to_string(js));
     }
 
-    // elev external source  mock_server.py:290 await self._message_event.write_inclination_telemetry_source(is_external_source)
+    // elev external source  mock_server.py:290 await
+    // self._message_event.write_inclination_telemetry_source(is_external_source)
     {
         json js;
         js["id"] = "inclinationTelemetrySource";
@@ -169,7 +171,6 @@ void ComConnection::_sendWelcomeMsg() {
         _syncWrite(to_string(js));
     }
 
-
     // digital_output = self.model.get_digital_output()
     // await self._message_event.write_digital_output(digital_output)
     {
@@ -181,7 +182,8 @@ void ComConnection::_sendWelcomeMsg() {
 
     // await self._message_event.write_config()
     // TODO: It looks like all of these values should come out of the configuration PLACEHOLDER DM-40317
-    // FUTURE: Also, can the gui (and future systems) be capable of handling a dump of the entire config in the json msg? Probably useful.
+    // FUTURE: Also, can the gui (and future systems) be capable of handling a dump of the entire config in
+    // the json msg? Probably useful.
     {
         json js;
         js["id"] = "config";
@@ -265,8 +267,6 @@ void ComConnection::_sendWelcomeMsg() {
         js["status"] = faultmgr::FaultMgr::get().getSummaryFaults().getBitmap();
         _syncWrite(to_string(js));
     }
-
-
 }
 
 void ComConnection::_receiveCommand() {

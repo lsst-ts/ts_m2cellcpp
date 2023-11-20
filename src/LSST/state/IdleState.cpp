@@ -34,7 +34,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace state {
 
-IdleState::Ptr IdleState::create(StateMap& stateMap, Model *const model) {
+IdleState::Ptr IdleState::create(StateMap& stateMap, Model* const model) {
     auto state = shared_ptr<IdleState>(new IdleState(model));
     stateMap.insertIntoMap(state);
     return state;
@@ -52,7 +52,6 @@ bool IdleState::setPower(bool on) {
     }
     return modelPtr->_setPower(on);
 }
-
 
 }  // namespace state
 }  // namespace m2cellcpp

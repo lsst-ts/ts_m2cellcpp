@@ -36,19 +36,23 @@ namespace state {
 
 std::string State::getStateEnumStr(StateEnum stEnum) {
     switch (stEnum) {
-    case OFFLINESTATE: return string("OfflineState");
-    case STARTUPSTATE: return string("StartupState");
-    case STANDBYSTATE: return string("StandbyState");
-    case IDLESTATE: return string("IdleState");
-    case PAUSESTATE: return string("PauseState");
-    case INMOTIONSTATE: return string("InMotionState");
+        case OFFLINESTATE:
+            return string("OfflineState");
+        case STARTUPSTATE:
+            return string("StartupState");
+        case STANDBYSTATE:
+            return string("StandbyState");
+        case IDLESTATE:
+            return string("IdleState");
+        case PAUSESTATE:
+            return string("PauseState");
+        case INMOTIONSTATE:
+            return string("InMotionState");
     }
-    throw util::Bug(ERR_LOC, "State::getStateEnumStr unknown state " +  to_string(stEnum));
+    throw util::Bug(ERR_LOC, "State::getStateEnumStr unknown state " + to_string(stEnum));
 }
 
-void State::errorMsg(std::string const& msg) {
-    LERROR("State error ", msg);
-}
+void State::errorMsg(std::string const& msg) { LERROR("State error ", msg); }
 
 /// Log a message indicating a problem that this `action` cannot be performed
 /// in the current `State`
@@ -67,7 +71,6 @@ void State::enterState(State::Ptr const& oldState) {
     }
     modelPtr->_turnOffAll(msg);
 }
-
 
 void State::onEnterState(State::Ptr const& oldState) {
     LINFO("Entering state=", getName(), " from oldState=", oldState->getName());

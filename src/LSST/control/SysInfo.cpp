@@ -36,15 +36,11 @@ namespace control {
 string SysInfo::dump() const {
     stringstream os;
     os << "SysInfo"
-            << " outputPort=" << outputPort.getAllSetBitEnums()
-            << " inputPort=" << inputPort.getAllSetBitEnums()
-            << " motorVoltage=" << motorVoltage
-            << " motorCurrent=" << motorCurrent
-            << " motorBreakerClosed=" << motorBreakerClosed
-            << " commVoltage=" << commVoltage
-            << " commCurrent=" << commCurrent
-            << " commBreakerClosed=" << commBreakerClosed
-            << " iterations=" << iterations;
+       << " outputPort=" << outputPort.getAllSetBitEnums() << " inputPort=" << inputPort.getAllSetBitEnums()
+       << " motorVoltage=" << motorVoltage << " motorCurrent=" << motorCurrent
+       << " motorBreakerClosed=" << motorBreakerClosed << " commVoltage=" << commVoltage
+       << " commCurrent=" << commCurrent << " commBreakerClosed=" << commBreakerClosed
+       << " iterations=" << iterations;
     return os.str();
 }
 

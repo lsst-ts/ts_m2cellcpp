@@ -37,7 +37,6 @@ public:
     using Ptr = std::shared_ptr<ScriptEngine>;
 
 private:
-
 };
 
 }  // namespace control

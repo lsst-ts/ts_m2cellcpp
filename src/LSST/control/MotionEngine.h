@@ -60,7 +60,7 @@ public:
     void engineStart();
 
     /// Wait for `_eThrd` to be running.
-    void  waitForEngine() const;
+    void waitForEngine() const;
 
     /// Stop all threads in this object.
     /// @return false if the threads were already stopped.
@@ -81,8 +81,8 @@ public:
     double comTimeoutWarn() const { return _comTimeoutWarnSecs; }
 
 private:
-    static Ptr _thisPtr; ///< pointer to the global instance of MotionEngine.
-    static std::mutex _thisPtrMtx; ///< Protects `_thisPtr`.
+    static Ptr _thisPtr;            ///< pointer to the global instance of MotionEngine.
+    static std::mutex _thisPtrMtx;  ///< Protects `_thisPtr`.
 
     // Private constructor to force use of `setup`;
     MotionEngine();
@@ -93,10 +93,10 @@ private:
     /// Return true if a timeout error has occurred.
     bool _checkTimeout(double diffInSeconds);
 
-    util::EventThread _eThrd; ///< Thread running ILC processing.
-    std::atomic<bool> _eStarted{false}; ///< Flag indicating threads have been started.
-    std::atomic<bool> _eStopCalled{false}; ///< Flag indicating threads are stopped or stopping.
-    std::atomic<bool> _eJoinCalled{false}; ///< Flag indicating `engineJoin()` has been called.
+    util::EventThread _eThrd;               ///< Thread running ILC processing.
+    std::atomic<bool> _eStarted{false};     ///< Flag indicating threads have been started.
+    std::atomic<bool> _eStopCalled{false};  ///< Flag indicating threads are stopped or stopping.
+    std::atomic<bool> _eJoinCalled{false};  ///< Flag indicating `engineJoin()` has been called.
 
     /// Last time the ILC information was read. Initialized to now to give
     /// the system a chance to read instead of instantly timing out.
@@ -114,9 +114,8 @@ private:
     /// DM-40694 set from config file, also needs a real value
     std::chrono::milliseconds _timeoutSleep{500};
 
-    std::thread _timeoutThread; ///< calls _checkTimeout on a regular basis.
-    std::atomic<bool> _timeoutLoop{true}; ///< set to false to end _timeoutThread.
-
+    std::thread _timeoutThread;            ///< calls _checkTimeout on a regular basis.
+    std::atomic<bool> _timeoutLoop{true};  ///< set to false to end _timeoutThread.
 };
 
 }  // namespace control

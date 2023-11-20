@@ -32,7 +32,6 @@
 #include "util/Bug.h"
 #include "util/Log.h"
 
-
 using namespace std;
 
 namespace LSST {
@@ -51,7 +50,6 @@ void ControlMain::setup() {
     _thisPtr = Ptr(new ControlMain());
 }
 
-
 ControlMain::Ptr ControlMain::getPtr() {
     if (_thisPtr == nullptr) {
         throw system::ConfigException(ERR_LOC, "ControlMain has not been setup.");
@@ -66,13 +64,9 @@ ControlMain& ControlMain::get() {
     return *_thisPtr;
 }
 
+ControlMain::ControlMain() {}
 
-ControlMain::ControlMain() {
-}
-
-ControlMain::~ControlMain() {
-
-}
+ControlMain::~ControlMain() {}
 
 }  // namespace control
 }  // namespace m2cellcpp

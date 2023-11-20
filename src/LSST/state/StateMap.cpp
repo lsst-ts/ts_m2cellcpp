@@ -33,7 +33,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace state {
 
-StateMap::StateMap(Model *const model) : _model(model) {
+StateMap::StateMap(Model* const model) : _model(model) {
     _startupState = StartupState::create(*this, _model);
     _standbyState = StandbyState::create(*this, _model);
     _idleState = IdleState::create(*this, _model);
@@ -68,7 +68,6 @@ bool StateMap::changeState(State::StateEnum newState) {
     auto& newStatePtr = iter->second;
     return _changeState(newStatePtr);
 }
-
 
 bool StateMap::changeState(State::Ptr const& newState) {
     if (newState == nullptr) {
@@ -129,26 +128,22 @@ bool StateMap::_changeState(State::Ptr const& newState) {
         // turn off power and motion.
         acceptable = true;
     } else if (currentStateId == State::IDLESTATE) {
-        if (newState->getId() == State::INMOTIONSTATE
-            || newState->getId() == State::PAUSESTATE) {
+        if (newState->getId() == State::INMOTIONSTATE || newState->getId() == State::PAUSESTATE) {
             // Motion states are accessible from IdleState.
             acceptable = true;
         }
     } else if (currentStateId == State::INMOTIONSTATE) {
-        if (newState->getId() == State::INMOTIONSTATE
-            || newState->getId() == State::PAUSESTATE
-            || newState->getId() == State::IDLESTATE) {
+        if (newState->getId() == State::INMOTIONSTATE || newState->getId() == State::PAUSESTATE ||
+            newState->getId() == State::IDLESTATE) {
             // InMotion state can go to idle or pause.
             acceptable = true;
         }
     } else if (currentStateId == State::PAUSESTATE) {
-        if (newState->getId() == State::INMOTIONSTATE
-            || newState->getId() == State::IDLESTATE) {
+        if (newState->getId() == State::INMOTIONSTATE || newState->getId() == State::IDLESTATE) {
             // pause can go to idle or motion.
             acceptable = true;
         }
-    } else if (isASafeState(currentStateId)
-            || currentStateId == State::STARTUPSTATE) {
+    } else if (isASafeState(currentStateId) || currentStateId == State::STARTUPSTATE) {
         if (newState->getId() == State::IDLESTATE) {
             // Any safe state can go to idle.
             acceptable = true;
@@ -176,7 +171,7 @@ State::Ptr StateMap::getState(State::StateEnum stateId) {
 }
 
 bool StateMap::isASafeState(State::StateEnum stateId) const {
-    for (auto const& safe:_safeStates) {
+    for (auto const& safe : _safeStates) {
         if (stateId == safe->getId()) {
             return true;
         }

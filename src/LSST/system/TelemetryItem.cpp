@@ -38,7 +38,7 @@ namespace m2cellcpp {
 namespace system {
 
 bool TelemetryItem::compareTelemetryItemMaps(TelemetryItemMap const& mapA, TelemetryItemMap const& mapB,
-                                            string const& note) {
+                                             string const& note) {
     if (mapA.size() != mapB.size()) {
         LWARN(note, "::compare sizes different mapA=", mapA.size(), " mapB=", mapB.size());
         return false;

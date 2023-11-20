@@ -41,7 +41,7 @@ public:
 
     /// Create an instance and insert it into `stateMap`.
     /// @throws Bug if there's already an instance of this class in `stateMap`.
-    static Ptr create(StateMap& stateMap, Model *const model);
+    static Ptr create(StateMap& stateMap, Model* const model);
 
     OfflineState() = delete;
     OfflineState(OfflineState const&) = delete;
@@ -50,7 +50,7 @@ public:
 
     // nothing here in LabView
 private:
-    OfflineState(Model *const model) : State(OFFLINESTATE, model) {}
+    OfflineState(Model* const model) : State(OFFLINESTATE, model) {}
 };
 
 }  // namespace state

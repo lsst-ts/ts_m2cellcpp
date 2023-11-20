@@ -36,19 +36,22 @@ namespace m2cellcpp {
 namespace simulator {
 
 SimPowerSubsystem::SimPowerSubsystem(control::PowerSystemType systemType,
-        control::OutputPortBits::Ptr const& outputPort, int powerOnBitPos, int breakerResetPos,
-        control::InputPortBits::Ptr const& inputPort,  std::vector<int> const& breakerBitPositions)
-        : _systemType(systemType) ,_outputPort(outputPort),  _powerOnBitPos(powerOnBitPos), _breakerResetPos(breakerResetPos),
-          _inputPort(inputPort), _breakerBitPositions(breakerBitPositions) {
+                                     control::OutputPortBits::Ptr const& outputPort, int powerOnBitPos,
+                                     int breakerResetPos, control::InputPortBits::Ptr const& inputPort,
+                                     std::vector<int> const& breakerBitPositions)
+        : _systemType(systemType),
+          _outputPort(outputPort),
+          _powerOnBitPos(powerOnBitPos),
+          _breakerResetPos(breakerResetPos),
+          _inputPort(inputPort),
+          _breakerBitPositions(breakerBitPositions) {
     _setup();
 }
-
 
 string SimPowerSubsystem::getClassName() const {
     string str = string("SimPowerSubsystem ") + getPowerSystemTypeStr(_systemType);
     return str;
 }
-
 
 void SimPowerSubsystem::_setup() {
     control::PowerSubsystemConfig psc(_systemType);
@@ -62,21 +65,20 @@ void SimPowerSubsystem::_setup() {
 
     /// Once powered on, voltage should reach an acceptable level
     /// before outputOnMaxDelay() time has past. See PowerSubsystemCommonConfig.vi
-    _voltageChangeRateOn = (_voltageNominal/psc.outputOnMaxDelay())*rateIncrease;
+    _voltageChangeRateOn = (_voltageNominal / psc.outputOnMaxDelay()) * rateIncrease;
     /// Similar to on change rate
-    _voltageChangeRateOff = (_voltageNominal/psc.outputOffMaxDelay())*rateIncrease;
+    _voltageChangeRateOff = (_voltageNominal / psc.outputOffMaxDelay()) * rateIncrease;
 
-    _currentMax = psc.getMaxCurrentFault(); ///< max current, amps. "maximum output current" 20A
+    _currentMax = psc.getMaxCurrentFault();  ///< max current, amps. "maximum output current" 20A
 
     /// Current based on `_voltage`, amp/volt. 0.75 as the system shouldn't normally be running at
     /// maximum current levels.
-    _currentGain = 0.75 * (_currentMax/_voltageNominal);
+    _currentGain = 0.75 * (_currentMax / _voltageNominal);
 
     /// Assuming "breaker on time" is related to how long it takes for the breaker to close.
     /// 0.5 as closing the breaker shouldn't normally take the maximum amount of time.
     _breakerCloseTimeSec = psc.getBreakerOnTime() * 0.5;
 }
-
 
 void SimPowerSubsystem::calcBreakers(util::CLOCK::time_point ts) {
     // breaker reset opens the breaker.
@@ -89,25 +91,27 @@ void SimPowerSubsystem::calcBreakers(util::CLOCK::time_point ts) {
 
     if (!_breakerClosed) {
         if (_breakerClosedTarg) {
-            double timeDiff = chrono::duration<double, std::ratio<1,1>>(ts - _breakerClosedTargTs).count();
-            LDEBUG(getClassName(),"SimPowerSubsystem::calcBreakers not _breakerClosed Targ=", _breakerClosedTarg,
-                    " timeDiff=", timeDiff, " timeTarg=", _breakerCloseTimeSec);
+            double timeDiff = chrono::duration<double, std::ratio<1, 1>>(ts - _breakerClosedTargTs).count();
+            LDEBUG(getClassName(),
+                   "SimPowerSubsystem::calcBreakers not _breakerClosed Targ=", _breakerClosedTarg,
+                   " timeDiff=", timeDiff, " timeTarg=", _breakerCloseTimeSec);
             if (timeDiff > _breakerCloseTimeSec) {
                 _breakerClosed = true;
-                LDEBUG(getClassName(),"SimPowerSubsystem::calcBreakers not _breakerClosed changed to true Targ=", _breakerClosedTarg,
-                        " timeDiff=", timeDiff, " timeTarg=", _breakerCloseTimeSec);
+                LDEBUG(getClassName(),
+                       "SimPowerSubsystem::calcBreakers not _breakerClosed changed to true Targ=",
+                       _breakerClosedTarg, " timeDiff=", timeDiff, " timeTarg=", _breakerCloseTimeSec);
             }
         }
     } else {
         if (!_breakerClosedTarg) {
-            _breakerClosed = false; // assuming breaker opens extremely quickly
-            LDEBUG(getClassName(),"SimPowerSubsystem::calcBreakers _breakerClosed changed to false");
+            _breakerClosed = false;  // assuming breaker opens extremely quickly
+            LDEBUG(getClassName(), "SimPowerSubsystem::calcBreakers _breakerClosed changed to false");
         }
     }
 
     /// Only set the bits once per _breakerClosed change. This allows so bits to be
     // changed individually elsewhere for testing.
-    if(_breakerClosed != _breakerClosedPrev) {
+    if (_breakerClosed != _breakerClosedPrev) {
         _breakerClosedPrev = _breakerClosed;
         // This is more for testing purposes so that something affects the `_inputPort`.
         // there's no evidence this logic exists in the hardware. The next ticket
@@ -120,9 +124,7 @@ void SimPowerSubsystem::calcBreakers(util::CLOCK::time_point ts) {
         bitset<32> inp(_inputPort->getBitmap());
         LDEBUG("SimPowerSubsystem::calcBreakers _inputPort=", inp);
     }
-
 }
-
 
 void SimPowerSubsystem::calcVoltageCurrent(double timeDiff) {
     double startingVoltage = _voltage;
@@ -130,7 +132,7 @@ void SimPowerSubsystem::calcVoltageCurrent(double timeDiff) {
         // Allow voltage to go very high if _overVoltage is true.
         double voltNom = (_overVoltage) ? (_voltageNominal * 10.0) : _voltageNominal;
         if (_voltage < voltNom) {
-            _voltage += _voltageChangeRateOn*timeDiff;
+            _voltage += _voltageChangeRateOn * timeDiff;
             if (_voltage > voltNom) {
                 _voltage = voltNom;
             }
@@ -141,14 +143,14 @@ void SimPowerSubsystem::calcVoltageCurrent(double timeDiff) {
     } else {
         double voltageMin = 0.0;
         if (_voltage > voltageMin) {
-            _voltage -= _voltageChangeRateOff*timeDiff;
+            _voltage -= _voltageChangeRateOff * timeDiff;
         }
         if (_voltage < voltageMin) {
             _voltage = voltageMin;
         }
     }
     if (_breakerClosed) {
-        _current = _voltage*_currentGain;
+        _current = _voltage * _currentGain;
         if (_overCurrent) {
             _current *= 10.0;
         }
@@ -157,8 +159,7 @@ void SimPowerSubsystem::calcVoltageCurrent(double timeDiff) {
     }
 
     if (_voltage != startingVoltage) {
-        LINFO(getClassName(),
-           " _current=", _current, " _voltage=", _voltage);
+        LINFO(getClassName(), " _current=", _current, " _voltage=", _voltage);
     }
 }
 

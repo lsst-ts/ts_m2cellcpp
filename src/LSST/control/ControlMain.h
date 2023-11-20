@@ -33,7 +33,6 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-
 /// PLACEHOLDER This class will contain a thread running the main instance of the program.
 class ControlMain {
 public:
@@ -41,7 +40,6 @@ public:
 
     /// Create the global ControlMain object.
     static void setup();
-
 
     ControlMain(ControlMain const&) = delete;
     ControlMain& operator=(ControlMain const&) = delete;
@@ -57,14 +55,12 @@ public:
     /// @throws `ConfigException` if `setup` has not already been called.
     static Ptr getPtr();
 
-
 private:
-    static Ptr _thisPtr; ///< Pointer to the global instance of ControlMain.
-    static std::mutex _thisPtrMtx; ///< Protects `_thisPtr`.
+    static Ptr _thisPtr;            ///< Pointer to the global instance of ControlMain.
+    static std::mutex _thisPtrMtx;  ///< Protects `_thisPtr`.
 
     /// Private constructor to force the use of `setup()`.
     ControlMain();
-
 };
 
 }  // namespace control

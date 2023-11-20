@@ -49,18 +49,19 @@ public:
 
     /// Enum for the state name, one for each possible state.
     enum StateEnum {
-        OFFLINESTATE  = 0,
-        STARTUPSTATE  = 1,
-        STANDBYSTATE  = 2,
-        IDLESTATE     = 3,
-        PAUSESTATE    = 4,
+        OFFLINESTATE = 0,
+        STARTUPSTATE = 1,
+        STANDBYSTATE = 2,
+        IDLESTATE = 3,
+        PAUSESTATE = 4,
         INMOTIONSTATE = 5
     };
 
     /// Return the string version of `stEnum`.
     static std::string getStateEnumStr(StateEnum stEnum);
 
-    State(StateEnum stateId,  Model *const model_) : modelPtr(model_), _stateId(stateId), _name(getStateEnumStr(_stateId)) {}
+    State(StateEnum stateId, Model* const model_)
+            : modelPtr(model_), _stateId(stateId), _name(getStateEnumStr(_stateId)) {}
     State() = delete;
     State(State const&) = delete;
     State& operator=(State const&) = delete;
@@ -162,12 +163,11 @@ public:
 
 protected:
     /// Constant pointer to the model, which can be nullptr in unit tests.
-    Model *const modelPtr;
+    Model* const modelPtr;
 
 private:
-    StateEnum const _stateId; ///< The type of this state.
-    std::string const _name;  ///< Name of this state.
-
+    StateEnum const _stateId;  ///< The type of this state.
+    std::string const _name;   ///< Name of this state.
 };
 
 }  // namespace state

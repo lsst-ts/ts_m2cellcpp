@@ -31,7 +31,6 @@
 #include "util/Bug.h"
 #include "util/Log.h"
 
-
 using namespace std;
 
 namespace LSST {
@@ -40,7 +39,7 @@ namespace control {
 
 PowerSystem::PowerSystem() : _motor(MOTOR), _comm(COMM) {
     LDEBUG("Creating PowerSystem");
-    _fpgaIo = FpgaIo::getPtr(); // If FpgaIo hasn't been setup, now is a good time to find out.
+    _fpgaIo = FpgaIo::getPtr();  // If FpgaIo hasn't been setup, now is a good time to find out.
     _eThrd.run();
 
     // This function will be run in a separate thread until the destructor is called.
@@ -75,15 +74,14 @@ void PowerSystem::_daqInfoRead() {
     auto sInfo = _fpgaIo->getSysInfo();
     auto diff = (util::timePassedSec(sInfo.timestamp, _daqReadTime));
 
-    bool timedOut = _checkTimeout(diff); // shutoff power if timed out.
+    bool timedOut = _checkTimeout(diff);  // shutoff power if timed out.
     if (timedOut) {
         stringstream os;
         time_t nowTm = util::steadyToTimeT(_daqReadTime);
         time_t infoTm = util::steadyToTimeT(sInfo.timestamp);
 
         os << "PowerSystem::_daqInfoRead() timedOut last _daq read=" << ctime(&nowTm)
-            << " infoTm=" << ctime(&infoTm)
-            << " seconds since last read=" << diff;
+           << " infoTm=" << ctime(&infoTm) << " seconds since last read=" << diff;
         LERROR(os.str());
     }
 
@@ -93,7 +91,7 @@ void PowerSystem::_daqInfoRead() {
 void PowerSystem::_daqTimeoutCheck() {
     auto now = util::CLOCK::now();
     auto diff = (util::timePassedSec(_daqReadTime, now));
-    bool timedOut = _checkTimeout(diff); // shutoff power if timed out.
+    bool timedOut = _checkTimeout(diff);  // shutoff power if timed out.
     if (timedOut) {
         stringstream os;
         time_t tm = util::steadyToTimeT(_daqReadTime);
@@ -128,18 +126,16 @@ void PowerSystem::_processDaq(SysInfo info) {
     // If the health check had a fault, update FaultMgr now so motor and comm power
     // can be turned off as soon as possible.
     if (currentFaults.getBitmap() != 0) {
-        faultmgr::FaultMgr::get().updatePowerFaults(currentFaults,
-                                                    faultmgr::BasicFaultMgr::POWER_SUBSYSTEM);
+        faultmgr::FaultMgr::get().updatePowerFaults(currentFaults, faultmgr::BasicFaultMgr::POWER_SUBSYSTEM);
     }
 
     SysStatus motorStat = _motor.processDaq(info, currentFaults);
     SysStatus commStat = _comm.processDaq(info, currentFaults);
-    faultmgr::FaultMgr::get().updatePowerFaults(currentFaults,
-                                                faultmgr::BasicFaultMgr::POWER_SUBSYSTEM);
+    faultmgr::FaultMgr::get().updatePowerFaults(currentFaults, faultmgr::BasicFaultMgr::POWER_SUBSYSTEM);
 
     if (_motorStatusPrev != motorStat || _commStatusPrev != commStat) {
-        LINFO("Power status change motor:now=", motorStat, " prev=", _motorStatusPrev,
-                " comm=", commStat, " prev=", _commStatusPrev);
+        LINFO("Power status change motor:now=", motorStat, " prev=", _motorStatusPrev, " comm=", commStat,
+              " prev=", _commStatusPrev);
         _motorStatusPrev = motorStat;
         _commStatusPrev = commStat;
         // TODO: DM-41751 send information to telemetry server
@@ -151,12 +147,10 @@ void PowerSystem::queueDaqInfoRead() {
     _eThrd.queCmd(cmdDaqInfoRead);
 }
 
-
 void PowerSystem::queueTimeoutCheck() {
     auto cmdDaqTimeoutCheck = std::make_shared<util::Command>([&](util::CmdData*) { _daqTimeoutCheck(); });
     _eThrd.queCmd(cmdDaqTimeoutCheck);
 }
-
 
 void PowerSystem::_processDaqHealthTelemetry(SysInfo sInfo, faultmgr::FaultStatusBits& currentFaults) {
     //  - DAQ_to_PS_health_telemetry.vi - assemble vi output “Power Subsystem Common Telemetry”
@@ -168,34 +162,35 @@ void PowerSystem::_processDaqHealthTelemetry(SysInfo sInfo, faultmgr::FaultStatu
     bool powerSupply2DcOk = sInfo.inputPort.getBitAtPos(InputPortBits::POWER_SUPPLY_2_DC_OK);
 
     // Active low inputs, see PowerSubsystem.lvclass:DAQ_to_PS_health_telemetry.vi
-    bool powerSupply1BoostCurrentOn = !(sInfo.inputPort.getBitAtPos(InputPortBits::POWER_SUPPLY_1_CURRENT_OK));
-    bool powerSupply2BoostCurrentOn = !(sInfo.inputPort.getBitAtPos(InputPortBits::POWER_SUPPLY_2_CURRENT_OK));
+    bool powerSupply1BoostCurrentOn =
+            !(sInfo.inputPort.getBitAtPos(InputPortBits::POWER_SUPPLY_1_CURRENT_OK));
+    bool powerSupply2BoostCurrentOn =
+            !(sInfo.inputPort.getBitAtPos(InputPortBits::POWER_SUPPLY_2_CURRENT_OK));
 
     bool powerLoadOk = redundancyOk && loadDistributionOk;
 
     if (!powerLoadOk) {
-        LERROR("POWER_SUPPLY_LOAD_SHARE_ERR redundancyOk=",
-                redundancyOk, " loadDistributionOk=", loadDistributionOk);
+        LERROR("POWER_SUPPLY_LOAD_SHARE_ERR redundancyOk=", redundancyOk,
+               " loadDistributionOk=", loadDistributionOk);
         // Only set the fault if power is ON, otherwise it's nearly always set and
         // difficult to clear. "power supply load share error"
         currentFaults.setBitAt(faultmgr::FaultStatusBits::POWER_SUPPLY_LOAD_SHARE_ERR);
     }
 
-    bool anyBoostCurrentOnAndFaultEnabled = _boostCurrentFaultEnabled && (powerSupply1BoostCurrentOn || powerSupply2BoostCurrentOn);
+    bool anyBoostCurrentOnAndFaultEnabled =
+            _boostCurrentFaultEnabled && (powerSupply1BoostCurrentOn || powerSupply2BoostCurrentOn);
     bool allDcOk = powerSupply1DcOk && powerSupply2DcOk;
     bool powerSupplyOk = allDcOk && !anyBoostCurrentOnAndFaultEnabled;
 
     if (!powerSupplyOk) {
         LERROR("POWER_HEALTH_FAULT _boostCurrentFaultEnabled=", _boostCurrentFaultEnabled,
-                " powerSupply1BoostCurrentOn=", powerSupply1BoostCurrentOn,
-                " powerSupply2BoostCurrentOn=", powerSupply2BoostCurrentOn,
-                " powerSupply1DcOk=", powerSupply1DcOk,
-                " powerSupply2DcOk=", powerSupply2DcOk);
-        currentFaults.setBitAt(faultmgr::FaultStatusBits::POWER_HEALTH_FAULT); // "power supply health fault"
+               " powerSupply1BoostCurrentOn=", powerSupply1BoostCurrentOn,
+               " powerSupply2BoostCurrentOn=", powerSupply2BoostCurrentOn,
+               " powerSupply1DcOk=", powerSupply1DcOk, " powerSupply2DcOk=", powerSupply2DcOk);
+        currentFaults.setBitAt(faultmgr::FaultStatusBits::POWER_HEALTH_FAULT);  // "power supply health fault"
     }
 }
 
 }  // namespace control
 }  // namespace m2cellcpp
 }  // namespace LSST
-

@@ -71,17 +71,16 @@ class FaultMgr;
 /// "BasicFaultManager.lvclass:init.vi"
 class BasicFaultMgr {
 public:
-
     /// cRIO subsystem enum values from SystemControlDefs.lvlib:cRIO_Subsystem.ctl
     /// Note: This may not be the best place to put this.
     enum CrioSubsystem {
-        SYSTEM_CONTROLLER = 0, ///< "System controller" = 0
-        FAULT_MANAGER = 1,     ///< "Fault Manager" = 1
-        POWER_SUBSYSTEM = 2,   ///< "Power Subsystem" = 2
-        CELL_CONTROLLER = 3,   ///< "Cell Controller" = 3
-        TELEMETRY_LOGGER = 4,  ///< "Telemetry Logger" = 4
-        NETWORK_INTERFACE = 5, ///< "Network Interface" = 5
-        MOTION_ENGINE = 6      ///< "Motion Engine" = 6
+        SYSTEM_CONTROLLER = 0,  ///< "System controller" = 0
+        FAULT_MANAGER = 1,      ///< "Fault Manager" = 1
+        POWER_SUBSYSTEM = 2,    ///< "Power Subsystem" = 2
+        CELL_CONTROLLER = 3,    ///< "Cell Controller" = 3
+        TELEMETRY_LOGGER = 4,   ///< "Telemetry Logger" = 4
+        NETWORK_INTERFACE = 5,  ///< "Network Interface" = 5
+        MOTION_ENGINE = 6       ///< "Motion Engine" = 6
     };
 
     static std::string getCrioSubsystemStr(CrioSubsystem subSystem);
@@ -117,9 +116,10 @@ public:
     /// @return FaultStatusBits with bits that changed set to 1, equivalent to the
     ///         same in UpdateFaultStatus.vi
     /// UpdateFaultStatus.vi
-    static std::tuple<uint16_t, uint16_t> updateFaultStatus(
-            uint64_t summaryFaultStatus, uint64_t faultEnableMask,
-            uint64_t newFaultStatus, uint64_t affectedWarnInfo, uint64_t affectedFault);
+    static std::tuple<uint16_t, uint16_t> updateFaultStatus(uint64_t summaryFaultStatus,
+                                                            uint64_t faultEnableMask, uint64_t newFaultStatus,
+                                                            uint64_t affectedWarnInfo,
+                                                            uint64_t affectedFault);
 
     /// Return `_summaryFaults`
     FaultStatusBits getSummaryFaults() const { return _summaryFaults; }
@@ -202,17 +202,16 @@ public:
     std::string dump() const;
 
 private:
-    FaultStatusBits _summaryFaults;        ///< "Summary Faults Status"
-    FaultStatusBits _prevFaults;           ///< "Previous Faults Status"
-    FaultStatusBits _currentFaults;        ///< "Current Faults Status"
-    FaultStatusBits _faultEnableMask;      ///< "Fault Enable Mask"
-    FaultStatusBits _defaultFaultMask;     ///< "Default Fault Mask"
-    FaultStatusBits _affectedFaultsMask;   ///< "Affected Faults Bit Mask"
-    FaultStatusBits _affectedWarnInfoMask; ///< "Affected Warnings/Info Bit Mask"
+    FaultStatusBits _summaryFaults;         ///< "Summary Faults Status"
+    FaultStatusBits _prevFaults;            ///< "Previous Faults Status"
+    FaultStatusBits _currentFaults;         ///< "Current Faults Status"
+    FaultStatusBits _faultEnableMask;       ///< "Fault Enable Mask"
+    FaultStatusBits _defaultFaultMask;      ///< "Default Fault Mask"
+    FaultStatusBits _affectedFaultsMask;    ///< "Affected Faults Bit Mask"
+    FaultStatusBits _affectedWarnInfoMask;  ///< "Affected Warnings/Info Bit Mask"
 
-    util::TIMEPOINT _timeStamp; ///< last time there was a significant change.
+    util::TIMEPOINT _timeStamp;  ///< last time there was a significant change.
 };
-
 
 /// `PowerFaultMgr` is `BasicFaultMgr` with slightly different initialization.
 class PowerFaultMgr : public BasicFaultMgr {
@@ -224,7 +223,6 @@ public:
     ~PowerFaultMgr() override = default;
 };
 
-
 /// `TelemetryFaultMgr` adds arrays for ILC's and such, which will be implemented when ILC
 /// handling is added.
 class TelemetryFaultMgr : public BasicFaultMgr {
@@ -232,7 +230,6 @@ public:
     /// Initialize arrays.
     TelemetryFaultMgr() : BasicFaultMgr() {}
 };
-
 
 }  // namespace faultmgr
 }  // namespace m2cellcpp

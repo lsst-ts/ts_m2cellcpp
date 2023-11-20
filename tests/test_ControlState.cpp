@@ -57,7 +57,7 @@ TEST_CASE("Test ControlState", "[ControlState]") {
     REQUIRE(sMap.getCurrentState() == sMap.getStandbyState());
 
     // go from standby to idle
-    REQUIRE(sMap.changeState(State::IDLESTATE)); // "IdleState"
+    REQUIRE(sMap.changeState(State::IDLESTATE));  // "IdleState"
     REQUIRE(sMap.getCurrentState()->getName() == "IdleState");
 
     // go from idle to inMotion
@@ -101,10 +101,9 @@ TEST_CASE("Test ControlState", "[ControlState]") {
     REQUIRE(sMap.getCurrentState() == sMap.getOfflineState());
 
     // goToASafeState tests (starts with currentState being OfflineState
-    REQUIRE(sMap.goToASafeState(State::STANDBYSTATE, "test") == false); // should stay in OfflineState.
-    REQUIRE(sMap.changeState(State::IDLESTATE)); // change to IdleState for next test
+    REQUIRE(sMap.goToASafeState(State::STANDBYSTATE, "test") == false);  // should stay in OfflineState.
+    REQUIRE(sMap.changeState(State::IDLESTATE));                         // change to IdleState for next test
     REQUIRE(sMap.goToASafeState(State::STANDBYSTATE, "test") == true);
     REQUIRE(sMap.goToASafeState(State::INMOTIONSTATE, "test") == false);
     REQUIRE(sMap.getCurrentState()->getName() == "StandbyState");
-
 }

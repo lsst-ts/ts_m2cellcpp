@@ -44,7 +44,7 @@ public:
 
     /// Create an instance and insert it into `stateMap`.
     /// @throws Bug if there's already an instance of this class in `stateMap`.
-    static Ptr create(StateMap& stateMap, Model *const model);
+    static Ptr create(StateMap& stateMap, Model* const model);
 
     IdleState() = delete;
     IdleState(IdleState const&) = delete;
@@ -68,7 +68,6 @@ public:
     /// VI setPowerVI // calls Model::setPowerVI(CommPowerControl, MotorPowerControl)
     bool setPower(bool on) override;
 
-
     // VI-PH  shutdownCellCommVI // calls Model::shutdownCellComm VI-PH
     // shutdownMotionEngineVI   // calls Model::shutdownMotionEngine VI-PH  shutdownNetworkInterfaceVI  //
     // calls Model::shutdownNetworkInterfaceVI VI-PH  shutdownScriptEngineVI // calls
@@ -77,7 +76,7 @@ public:
     // Model::startScriptVI VI-PH stopScriptVI
     // // call Model::stopScriptVI
 private:
-    IdleState(Model *const model) : State(IDLESTATE, model) {}
+    IdleState(Model* const model) : State(IDLESTATE, model) {}
 };
 
 }  // namespace state

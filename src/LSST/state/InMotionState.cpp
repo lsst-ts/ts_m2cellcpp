@@ -32,7 +32,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace state {
 
-InMotionState::Ptr InMotionState::create(StateMap& stateMap, Model *const model) {
+InMotionState::Ptr InMotionState::create(StateMap& stateMap, Model* const model) {
     auto state = shared_ptr<InMotionState>(new InMotionState(model));
     stateMap.insertIntoMap(state);
     return state;

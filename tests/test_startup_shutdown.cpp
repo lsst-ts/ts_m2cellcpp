@@ -61,6 +61,4 @@ TEST_CASE("Test startup shutdown", "[CSV]") {
     auto newState = context->model.getState(State::IDLESTATE);
     REQUIRE(context->model.changeState(newState));
     REQUIRE(context->model.getCurrentState() == context->model.getState(State::IDLESTATE));
-
 }
-

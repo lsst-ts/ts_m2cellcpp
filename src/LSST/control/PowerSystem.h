@@ -36,7 +36,6 @@
 #include "faultmgr/FaultMgr.h"
 #include "util/EventThread.h"
 
-
 namespace LSST {
 namespace m2cellcpp {
 namespace control {
@@ -47,7 +46,8 @@ namespace control {
 /// unit tests: test_PowerSystem.cpp
 //
 // DM-40694 set from config file,
-//  Controller->InitializeFunctionalGlobals.vi - The individual items should be done in a separate class/function
+//  Controller->InitializeFunctionalGlobals.vi - The individual items should be done in a separate
+//  class/function
 //    - System Config FG:SystemConfigurationFG.vi  ****** power up configuration values ********
 //      There are a lot of configuration values in here having to do with power supply very specific,
 //      probably best to open up the vi and look at the set values. Elements set listed below
@@ -89,7 +89,6 @@ public:
     PowerSubsystem& getComm() { return _comm; }
 
 private:
-
     /// Read SysInfo from the FPGA and call `_processDaq`
     void _daqInfoRead();
 
@@ -109,14 +108,14 @@ private:
     /// @param currentFaults - Faults detected in this function will be reported here.
     void _processDaqHealthTelemetry(SysInfo sInfo, faultmgr::FaultStatusBits& currentFaults);
 
-    PowerSubsystem _motor; ///< Handles MOTOR power control.
-    PowerSubsystem _comm; ///< Handles COMM power control.
+    PowerSubsystem _motor;  ///< Handles MOTOR power control.
+    PowerSubsystem _comm;   ///< Handles COMM power control.
 
-    SysStatus _motorStatusPrev = SysStatus::WAITING; ///< Previous motor status
-    SysStatus _commStatusPrev = SysStatus::WAITING; ///< Previous comm status
+    SysStatus _motorStatusPrev = SysStatus::WAITING;  ///< Previous motor status
+    SysStatus _commStatusPrev = SysStatus::WAITING;   ///< Previous comm status
 
-    FpgaIo::Ptr _fpgaIo; ///< Pointer to the global instance of FpgaIo.
-    util::EventThread _eThrd; ///< Thread running DAQ processing.
+    FpgaIo::Ptr _fpgaIo;       ///< Pointer to the global instance of FpgaIo.
+    util::EventThread _eThrd;  ///< Thread running DAQ processing.
 
     /// Last time the DAQ information was read. Initialized to now to give
     /// the system a chance to read the DAQ instead of instantly timing out.
@@ -130,14 +129,13 @@ private:
     /// DM-40694 set from config file
     bool _boostCurrentFaultEnabled = true;
 
-    std::thread _timeoutThread; ///< calls _checkTimeout on a regular basis.
-    std::atomic<bool> _timeoutLoop{true}; ///< set to false to end _timeoutThread.
+    std::thread _timeoutThread;            ///< calls _checkTimeout on a regular basis.
+    std::atomic<bool> _timeoutLoop{true};  ///< set to false to end _timeoutThread.
 
     /// Sleep time between timeout checks in milliseconds.
     /// DM-40694 set from config file, also needs a real value
     std::chrono::milliseconds _timeoutSleep{1000};
 };
-
 
 }  // namespace control
 }  // namespace m2cellcpp

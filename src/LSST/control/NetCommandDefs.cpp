@@ -38,7 +38,6 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-
 NCmdSwitchCommandSource::Ptr NCmdSwitchCommandSource::create(JsonPtr const& inJson_) {
     auto cmd = Ptr(new NCmdSwitchCommandSource(inJson_));
     return cmd;

@@ -36,7 +36,6 @@ namespace LSST {
 namespace m2cellcpp {
 namespace util {
 
-
 /// It's important that the clock used is consistent when calculating time.
 /// steady_clock should be monotonic.
 using CLOCK = std::chrono::steady_clock;
@@ -44,17 +43,16 @@ using TIMEPOINT = CLOCK::time_point;
 
 using SYSCLOCK = std::chrono::system_clock;
 
-inline time_t steadyToTimeT(TIMEPOINT timeP){
+inline time_t steadyToTimeT(TIMEPOINT timeP) {
     auto sysTime = SYSCLOCK::now() + std::chrono::duration_cast<SYSCLOCK::duration>(timeP - CLOCK::now());
     return SYSCLOCK::to_time_t(sysTime);
 }
-
 
 /// Return the time passed between `start` and `end` in seconds.
 inline double timePassedSec(TIMEPOINT const start, TIMEPOINT const end) {
     // ratio<1,1> is redundant, as the default is seconds. If units other than
     // seconds are desired, chrono::duration_cast may be the better option.
-    const double timeDiff = std::chrono::duration<double, std::ratio<1,1>>(end - start).count();
+    const double timeDiff = std::chrono::duration<double, std::ratio<1, 1>>(end - start).count();
     return timeDiff;
 }
 

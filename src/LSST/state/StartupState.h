@@ -41,7 +41,7 @@ public:
 
     /// Create an instance and insert it into `stateMap`.
     /// @throws Bug if there's already an instance of this class in `stateMap`.
-    static Ptr create(StateMap& stateMap, Model *const model);
+    static Ptr create(StateMap& stateMap, Model* const model);
 
     StartupState(StartupState const&) = delete;
     StartupState& operator=(StartupState const&) = delete;
@@ -50,9 +50,8 @@ public:
     /// Return true if the Model reports startupFinished.
     bool isStartupFinished() const;
 
-
 private:
-    StartupState(Model *const model) : State(STARTUPSTATE, model) {}
+    StartupState(Model* const model) : State(STARTUPSTATE, model) {}
 };
 
 }  // namespace state

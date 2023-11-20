@@ -35,7 +35,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace state {
 
-StandbyState::Ptr StandbyState::create(StateMap& stateMap, Model *const model) {
+StandbyState::Ptr StandbyState::create(StateMap& stateMap, Model* const model) {
     auto state = shared_ptr<StandbyState>(new StandbyState(model));
     stateMap.insertIntoMap(state);
     return state;

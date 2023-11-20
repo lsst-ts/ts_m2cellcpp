@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
     }
     log.setOutputDest(util::Log::SPEEDLOG);
     // FUTURE: DM-39974 add command line argument to turn `Log::_alwaysFlush` off.
-    log.setAlwaysFlush(true); // spdlog is highly prone to waiting a long time before writing to disk.
+    log.setAlwaysFlush(true);  // spdlog is highly prone to waiting a long time before writing to disk.
     LINFO("Main - logging ready");
 
     // Setup global items.
@@ -77,7 +77,6 @@ int main(int argc, char* argv[]) {
 
     // Setup a simple signal handler to handle when clients closing connection results in SIGPIPE.
     signal(SIGPIPE, signalHandler);
-
 
     // Create the control system
     LSST::m2cellcpp::simulator::SimCore::Ptr simCore(new LSST::m2cellcpp::simulator::SimCore());
@@ -95,15 +94,12 @@ int main(int argc, char* argv[]) {
     auto context = control::Context::get();
     context->model.ctrlSetup();
 
-
     // At this point, MotionCtrl and FpgaCtrl should be configured. Start the control loops
     context->model.ctrlStart();
 
     // At this point, the LabView code seems to want to put the system into
     // ReadyIdle. We're NOT doing that. The system is going into StandbyState
     // until it gets an explicit command to do something else.
-
-
 
     // Start the telemetry server
     // FUTURE: Telemetry for the GUI requires the ComControlServer->ComConnection::welcomeMsg to
@@ -119,7 +115,7 @@ int main(int argc, char* argv[]) {
     telemetryServ->startServer();
     if (!telemetryServ->waitForServerRunning(5)) {
         LCRITICAL("Telemetry server failed to start.");
-        exit(-1); // change to powerdown and exit
+        exit(-1);  // change to powerdown and exit
     }
 
     // Wait for MotionCtrl to be ready

@@ -43,25 +43,33 @@ namespace control {
 ///   LUT calculation
 ///   Force balance system
 // Notes about the LabView code related to this:
-//  This section has to with configuring the MotionCtrl(motion control loop objects) FpgaCtrl(FPGA setup, read/write, simu)
-//  Controller->InitializeFunctionalGlobals.vi - The individual items should be done in a separate class/function
+//  This section has to with configuring the MotionCtrl(motion control loop objects) FpgaCtrl(FPGA setup,
+//  read/write, simu) Controller->InitializeFunctionalGlobals.vi - The individual items should be done in a
+//  separate class/function
 //     getCellGeomFromFile.vi - Opens the cellGeom.json file and uses it to set configuration file values.
 //      - critical read values:
 //         - locAct_axial (2d array 64 bit double array in m)
 //         - locAct_tangent (64 bit double angle, file in deg, internal in rad)
 //         - radiusActTangent (64 bit double in m, (demo value of 1.780189734 which can probably be ignored)
-//      - CellConfiguration->Write Axial Actuator Locations(X, Y[m]).vi  - c++ probably just store in cell configuration data structure
-//      - CellConfiguration->Write Tangent Angular Locations.vi  - c++ probably just store in cell configuration data structure
-//      - CellConfiguration->Write Tangent Actuator Radius.vi  - c++ probably just store in cell configuration data structure
-//      - CellConfiguration->Write numOfAxialAct.vi  - c++ probably just store in cell configuration data structure
-//      - CellConfiguration->Write numOfTangentAct.vi  - c++ probably just store in cell configuration data structure
-//      - CellConfiguration->InitializeWithDefaultData.vi  - take the data from CellConfiguration and send to CellActuatorData (which stores it, but where is it accessed ??? )
+//      - CellConfiguration->Write Axial Actuator Locations(X, Y[m]).vi  - c++ probably just store in cell
+//      configuration data structure
+//      - CellConfiguration->Write Tangent Angular Locations.vi  - c++ probably just store in cell
+//      configuration data structure
+//      - CellConfiguration->Write Tangent Actuator Radius.vi  - c++ probably just store in cell configuration
+//      data structure
+//      - CellConfiguration->Write numOfAxialAct.vi  - c++ probably just store in cell configuration data
+//      structure
+//      - CellConfiguration->Write numOfTangentAct.vi  - c++ probably just store in cell configuration data
+//      structure
+//      - CellConfiguration->InitializeWithDefaultData.vi  - take the data from CellConfiguration and send to
+//      CellActuatorData (which stores it, but where is it accessed ??? )
 //    - Control Loop Force Limits FG: - called with init parameter
 //      - Sets the open and closed loop force limits (ask Te-Wei or Patricio about correct values)
 //         - Max Closed-Loop Axial Force - default 100 lbf
 //         - Max Closed-Loop Tangent Force - default 1100 lbf
 //         - Max Open-Loop Axial Force (default) - 110 lbf
-//         - Max Open-Loop Tangent Force (default) - 1350 lbf   *** front pane of the DefaultMaxTangentOpen-LoopForceLimit.vi is mislabled as closed-loop
+//         - Max Open-Loop Tangent Force (default) - 1350 lbf   *** front pane of the
+//         DefaultMaxTangentOpen-LoopForceLimit.vi is mislabled as closed-loop
 //         - Max Open Loop Force Limits
 //            - Axial - 140 lbf
 //            - Tangent - 1400 lbf
@@ -94,13 +102,15 @@ namespace control {
 //         - Gain = 5.0
 //         - offset = 0.0
 // PowerSystem   - System Config FG:SystemConfigurationFG.vi  ****** power up configuration values ********
-// PowerSystem     There are a lot of configuration values in here having to do with power supply very specific,
-// PowerSystem     probably best to open up the vi and look at the set values. Elements set listed below
-// PowerSystem     - "Power Subsystem Configuration Parameters.Power Subsystem Common Configuration Parameters"
-// PowerSystem     - "Power Subsystem Configuration Parameters.Comm Power Bus Configuration Parameters"
-// PowerSystem     - "Power Subsystem Configuration Parameters.Motor Power Bus Configuration Parameters"
-// PowerSystem     - "Power Subsystem Configuration Parameters.Boost Current Fault Enabled" - this is set to false.
-//  - Ctrlr.U/D F Limit:updateForceLimits.vi - Pulls limitForce values for several items from a json file (??? which file)
+// PowerSystem     There are a lot of configuration values in here having to do with power supply very
+// specific, PowerSystem     probably best to open up the vi and look at the set values. Elements set listed
+// below PowerSystem     - "Power Subsystem Configuration Parameters.Power Subsystem Common Configuration
+// Parameters" PowerSystem     - "Power Subsystem Configuration Parameters.Comm Power Bus Configuration
+// Parameters" PowerSystem     - "Power Subsystem Configuration Parameters.Motor Power Bus Configuration
+// Parameters" PowerSystem     - "Power Subsystem Configuration Parameters.Boost Current Fault Enabled" - this
+// is set to false.
+//  - Ctrlr.U/D F Limit:updateForceLimits.vi - Pulls limitForce values for several items from a json file (???
+//  which file)
 //    - limitForce_closedLoopAxial
 //    - limitForce_closedLoopTangent
 //    - limitForce_openLoopAxial
@@ -113,19 +123,20 @@ public:
     using Ptr = std::shared_ptr<CellCtrlComm>;
 
     static void setup();
+
 private:
     CellCtrlComm();
 
-    // (See CellCommunications.vi, which appears to be a major control loop that seems to do a LOT more than its name would imply ???)
-    bool _feedForward{true};     ///< FeedForward = true
-    bool _feedBack{true};        ///< FeedBack = true
-    bool _axialDeadband{false};  ///< AxialDeadband = false
-    bool _outputEnabled{false};  ///< OutputEnabled = false
-    bool _inPosition{false};     ///< In Position = false
-    bool _tuningLogOff{false};   ///< Tuning Log (off) = false  Note: awful name
-    bool _beginSoftStart{false}; ///< Begin Soft Start = false
-    bool _clearReset{true};      ///< Clear, Reset = true Note: awful name
-
+    // (See CellCommunications.vi, which appears to be a major control loop that seems to do a LOT more than
+    // its name would imply ???)
+    bool _feedForward{true};      ///< FeedForward = true
+    bool _feedBack{true};         ///< FeedBack = true
+    bool _axialDeadband{false};   ///< AxialDeadband = false
+    bool _outputEnabled{false};   ///< OutputEnabled = false
+    bool _inPosition{false};      ///< In Position = false
+    bool _tuningLogOff{false};    ///< Tuning Log (off) = false  Note: awful name
+    bool _beginSoftStart{false};  ///< Begin Soft Start = false
+    bool _clearReset{true};       ///< Clear, Reset = true Note: awful name
 };
 
 }  // namespace control

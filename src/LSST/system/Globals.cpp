@@ -39,7 +39,6 @@ namespace system {
 unique_ptr<Globals> Globals::_thisPtr;
 mutex Globals::_thisMtx;
 
-
 void Globals::setup(Config const& config) {
     lock_guard<mutex> lock(_thisMtx);
     if (_thisPtr) {
@@ -49,10 +48,7 @@ void Globals::setup(Config const& config) {
     _thisPtr = std::unique_ptr<Globals>(new Globals(config));
 }
 
-
-Globals::Globals(Config const& config) {
-
-}
+Globals::Globals(Config const& config) {}
 
 void Globals::reset() {
     LCRITICAL("Config reseting Globals!!!");
@@ -60,14 +56,12 @@ void Globals::reset() {
     _thisPtr.reset();
 }
 
-
 Globals& Globals::get() {
     if (_thisPtr == nullptr) {
         throw ConfigException(ERR_LOC, "Globals has not been setup.");
     }
     return *_thisPtr;
 }
-
 
 /// Increase the the number of connections when `connecting` is true, decrease when false;
 void Globals::setTcpIpConnected(bool connecting) {
@@ -92,11 +86,10 @@ bool Globals::getTcpIpConnected() const {
 json Globals::getCommandableByDdsJson() const {
     json js;
     js["id"] = "commandableByDDS";
-    bool state = _commandableByDds; // json cannot convert atomic<bool> to bool directly.
+    bool state = _commandableByDds;  // json cannot convert atomic<bool> to bool directly.
     js["state"] = state;
     return js;
 }
-
 
 }  // namespace system
 }  // namespace m2cellcpp

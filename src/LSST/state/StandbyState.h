@@ -41,7 +41,7 @@ public:
 
     /// Create an instance and insert it into `stateMap`.
     /// @throws Bug if there's already an instance of this class in `stateMap`.
-    static Ptr create(StateMap& stateMap, Model *const model);
+    static Ptr create(StateMap& stateMap, Model* const model);
 
     StandbyState() = delete;
     StandbyState(StandbyState const&) = delete;
@@ -56,7 +56,7 @@ public:
     void startVI();
 
 private:
-    StandbyState(Model *const model) : State(STANDBYSTATE, model) {}
+    StandbyState(Model* const model) : State(STANDBYSTATE, model) {}
 };
 
 }  // namespace state

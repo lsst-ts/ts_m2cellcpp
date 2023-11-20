@@ -26,10 +26,8 @@
 #include <memory>
 #include <mutex>
 
-
 // Project headers
 #include "state/Model.h"
-
 
 namespace LSST {
 namespace m2cellcpp {

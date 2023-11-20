@@ -53,14 +53,14 @@ public:
     /// These enums should match those in create_output_port_bits_masks.vi
     /// Changing the values of these enums will likely cause hardware problems.
     enum {
-        MOTOR_POWER_ON = 0,        ///< “ILC Motor Power On” = 0
-        ILC_COMM_POWER_ON = 1,     ///< “ILC Comm Power On” = 1
-        CRIO_INTERLOCK_ENABLE = 2, ///< “cRIO Interlock Enable” = 2
-        RESET_MOTOR_BREAKERS = 3,  ///< “Reset Motor Power Breakers” = 3
-        RESET_COMM_BREAKERS= 4,    ///< “Reset Comm Power Breakers” = 4
-        SPARE_D05 = 5,             ///< “Spare D05” = 5
-        SPARE_D06 = 6,             ///< “Spare D06” = 6
-        SPARE_D07 = 7,             ///< “Spare D07” = 7
+        MOTOR_POWER_ON = 0,         ///< “ILC Motor Power On” = 0
+        ILC_COMM_POWER_ON = 1,      ///< “ILC Comm Power On” = 1
+        CRIO_INTERLOCK_ENABLE = 2,  ///< “cRIO Interlock Enable” = 2
+        RESET_MOTOR_BREAKERS = 3,   ///< “Reset Motor Power Breakers” = 3
+        RESET_COMM_BREAKERS = 4,    ///< “Reset Comm Power Breakers” = 4
+        SPARE_D05 = 5,              ///< “Spare D05” = 5
+        SPARE_D06 = 6,              ///< “Spare D06” = 6
+        SPARE_D07 = 7,              ///< “Spare D07” = 7
     };
 
     enum {
@@ -97,25 +97,20 @@ public:
     bool getBitAtPos(int pos) const;
 
     /// Return all bits that are set in `_bitmap` and in `mask`.
-    uint8_t getBitsSetInMask(uint8_t mask) const {
-        return _bitmap & mask;
-    }
+    uint8_t getBitsSetInMask(uint8_t mask) const { return _bitmap & mask; }
 
     /// Return all bits that are set in `_bitmap` and not in `mask`.
-    uint8_t getBitsSetOutOfMask(uint8_t mask) const {
-        return _bitmap & ~mask;
-    }
+    uint8_t getBitsSetOutOfMask(uint8_t mask) const { return _bitmap & ~mask; }
 
     /// Return a binary string representation of `_bitmap`.
     static std::string getBinaryStr(uint8_t);
 
 private:
-    uint8_t _bitmap = 0; ///< Bitmap of output port.
+    uint8_t _bitmap = 0;  ///< Bitmap of output port.
 };
 
 }  // namespace control
 }  // namespace m2cellcpp
 }  // namespace LSST
-
 
 #endif  // LSST_M2CELLCPP_CONTROL_OUTPUTPORTBITS_H

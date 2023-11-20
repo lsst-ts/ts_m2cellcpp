@@ -41,7 +41,7 @@ public:
 
     /// Create an instance and insert it into `stateMap`.
     /// @throws Bug if there's already an instance of this class in `stateMap`.
-    static Ptr create(StateMap& stateMap, Model *const model);
+    static Ptr create(StateMap& stateMap, Model* const model);
 
     PauseState() = delete;
     PauseState(PauseState const&) = delete;
@@ -58,7 +58,7 @@ public:
     // VI-PH  shutdownMotionEngineVI // calls Model::shutdownMotionEngineVI
     // VI-PH  stopMotionVI // calls Model::stopMotionVI
 private:
-    PauseState(Model *const model) : State(PAUSESTATE, model) {}
+    PauseState(Model* const model) : State(PAUSESTATE, model) {}
 };
 
 }  // namespace state

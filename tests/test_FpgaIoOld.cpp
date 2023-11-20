@@ -226,7 +226,7 @@ TEST_CASE("Test FaultStatusMap", "[FaultStatusMap]") {
         fsm.setBitAt(FaultStatusBits::CRIO_TIMING_FAULT);
         REQUIRE(fsm.getBit(FaultStatusBits::CRIO_TIMING_FAULT) != 0);
 
-        fsm.setBitAt(FaultStatusBits::BROADCAST_ERR); // = 2
+        fsm.setBitAt(FaultStatusBits::BROADCAST_ERR);  // = 2
         REQUIRE(fsm.getBit(FaultStatusBits::CRIO_TIMING_FAULT) != 0);
         REQUIRE(fsm.getBit(FaultStatusBits::BROADCAST_ERR) == 4);
 
@@ -250,4 +250,3 @@ TEST_CASE("Test FaultStatusMap", "[FaultStatusMap]") {
         REQUIRE_THROWS(fsm.setBitAt(-1));
     }
 }
-

@@ -33,7 +33,6 @@
 #include <thread>
 #include <vector>
 
-
 // Project headers
 #include "control/InputPortBits.h"
 #include "control/OutputPortBits.h"
@@ -45,8 +44,6 @@
 namespace LSST {
 namespace m2cellcpp {
 namespace simulator {
-
-
 
 /// A basic simulator for the hardware. At this point it is limited to power systems.
 /// Breaker values can only be read while voltage is above a certain level, which
@@ -82,9 +79,7 @@ public:
     void start();
 
     /// Stop the simulation thread.
-    void stop() {
-        _simLoop = false;
-    }
+    void stop() { _simLoop = false; }
 
     /// Join the simulation thread.
     bool join();
@@ -106,7 +101,7 @@ public:
     SimPowerSubsystem::Ptr getMotorSub() { return _motorSub; }
 
 private:
-    double _frequencyHz = 40.0; ///< How many times loop should run per second.
+    double _frequencyHz = 40.0;  ///< How many times loop should run per second.
 
     /// OutputPort value used for determine simulation actions.
     control::OutputPortBits::Ptr _outputPort;
@@ -114,27 +109,25 @@ private:
     /// Contains system status as determined by the simulation.
     control::InputPortBits::Ptr _inputPort;
 
-    SimPowerSubsystem::Ptr _motorSub; ///< Motor power simulation
-    SimPowerSubsystem::Ptr _commSub; ///< Comm power simulation.
+    SimPowerSubsystem::Ptr _motorSub;  ///< Motor power simulation
+    SimPowerSubsystem::Ptr _commSub;   ///< Comm power simulation.
 
-    void _simRun(); ///< Primary function run inside `_simThread`
-    std::atomic<bool> _simLoop{true}; ///< _simThread will run until this is false.
-    std::thread _simThread; ///< Generate hardware outputs at a specified rate.
+    void _simRun();                    ///< Primary function run inside `_simThread`
+    std::atomic<bool> _simLoop{true};  ///< _simThread will run until this is false.
+    std::thread _simThread;            ///< Generate hardware outputs at a specified rate.
 
     /// New value for `_outputPort` to be set on next `_simRun()` iteration.
     control::OutputPortBits _newOutput;
 
-    control::SysInfo _simInfo; ///< simulation status information.
+    control::SysInfo _simInfo;  ///< simulation status information.
 
-    mutable std::mutex _mtx; ///< protects `_newOutput`
-    mutable std::condition_variable _iterationCv; ///< used to detect that the simulator has advanced.
+    mutable std::mutex _mtx;                       ///< protects `_newOutput`
+    mutable std::condition_variable _iterationCv;  ///< used to detect that the simulator has advanced.
 
-    std::atomic<uint64_t> _iterations{0}; ///< number of times through the `_simRun` loop.
+    std::atomic<uint64_t> _iterations{0};  ///< number of times through the `_simRun` loop.
 
-    util::CLOCK::time_point _prevTimeStamp; ///< Last time through the `_simRun` loop.
+    util::CLOCK::time_point _prevTimeStamp;  ///< Last time through the `_simRun` loop.
 };
-
-
 
 }  // namespace simulator
 }  // namespace m2cellcpp

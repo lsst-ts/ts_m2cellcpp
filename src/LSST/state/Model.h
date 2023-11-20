@@ -37,7 +37,7 @@ namespace control {
 class FpgaIo;
 class MotionEngine;
 class PowerSystem;
-}
+}  // namespace control
 
 namespace state {
 
@@ -182,7 +182,6 @@ protected:
     // VI-PH stopCellCommunicationsVI
 
 private:
-
     /// Go to safe mode, which includes turning off MOTOR and COMM power.
     /// @param note - Description of reason for safe mode.
     /// @return true if the system was not already trying to reach.
@@ -202,10 +201,9 @@ private:
 
     // _cellCommRT_FIFO // systemElement VI-PH
     // _deltaForceRT_FIFO // systemElement VI-PH
-    std::weak_ptr<control::FpgaIo> _fpgaIo; ///< The FpgaIo instance for communicating with hardware.
+    std::weak_ptr<control::FpgaIo> _fpgaIo;  ///< The FpgaIo instance for communicating with hardware.
 
-    std::weak_ptr<control::MotionEngine> _motionEngine; ///< The MotionEngine instance.
-
+    std::weak_ptr<control::MotionEngine> _motionEngine;  ///< The MotionEngine instance.
 
     // The LabView implementation of Model has the folowing systemElements that need to
     // accounted for in the C++ version.
@@ -216,13 +214,14 @@ private:
 
     // _cellCommRef // systemElement VI-PH
     // _powerStatus // systemElement  _commPowerOn, _motorPowerOn VI-PH
-    std::shared_ptr<control::PowerSystem> _powerSystem; ///< The PowerSystem control instance, contains power states.
+    std::shared_ptr<control::PowerSystem>
+            _powerSystem;  ///< The PowerSystem control instance, contains power states.
 
-    std::shared_ptr<control::FpgaIo> _fpgaCtrl; ///< pointer to the global instance of FpgaIo.
+    std::shared_ptr<control::FpgaIo> _fpgaCtrl;  ///< pointer to the global instance of FpgaIo.
 
-    util::VMutex _mtx; ///< Protects all members.
+    util::VMutex _mtx;  ///< Protects all members.
 
-    std::atomic<bool> _setupFinished{false}; ///< Set to true when system setup is finished.
+    std::atomic<bool> _setupFinished{false};  ///< Set to true when system setup is finished.
 };
 
 }  // namespace state

@@ -49,7 +49,7 @@ public:
 
     /// Constructor, initial _currentState is StandByState.
     /// @param `model` pointer to the model.
-    StateMap(Model *const model);
+    StateMap(Model* const model);
 
     StateMap() = delete;
     virtual ~StateMap() = default;
@@ -64,7 +64,6 @@ public:
     /// Change the state to `newState`, if possible.
     /// @return false if the state could not be changed.
     bool changeState(State::Ptr const& newState);
-
 
     /// Get the state with id `stateId`.
     /// @returns nullptr if `stateName` could not be found.
@@ -113,7 +112,7 @@ private:
 
     /// Reference to the global model. Since StateMap only exists
     /// as a member of the Model, this is always safe.
-    Model *const _model;
+    Model* const _model;
 
     /// Map of all possible states with their names as the keys.
     /// It will only include the items defined below.
@@ -130,7 +129,7 @@ private:
     /// one of the elements of `_stateMap`.
     State::Ptr _currentState;
 
-    std::vector<State::Ptr> _safeStates; ///< List of safe states (power and motion off)
+    std::vector<State::Ptr> _safeStates;  ///< List of safe states (power and motion off)
 };
 
 }  // namespace state

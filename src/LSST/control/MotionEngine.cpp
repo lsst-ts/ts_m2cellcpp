@@ -46,7 +46,6 @@ void MotionEngine::setup() {
     _thisPtr = Ptr(new MotionEngine());
 }
 
-
 MotionEngine::Ptr MotionEngine::getPtr() {
     if (_thisPtr == nullptr) {
         throw system::ConfigException(ERR_LOC, "MotionEngine has not been setup.");
@@ -61,14 +60,13 @@ MotionEngine& MotionEngine::get() {
     return *_thisPtr;
 }
 
-MotionEngine::MotionEngine() {
-}
+MotionEngine::MotionEngine() {}
 
 void MotionEngine::engineStart() {
     LINFO("MotionEngine::mCtrlStart() running threads");
     if ((_eStarted.exchange(true) == true) || _eStopCalled == true) {
-        throw util::Bug(ERR_LOC, "MotionEngine::engineStart() can only be called once eStarted="
-                + to_string(_eStarted) + " eEnded=" + to_string(_eStopCalled));
+        throw util::Bug(ERR_LOC, "MotionEngine::engineStart() can only be called once eStarted=" +
+                                         to_string(_eStarted) + " eEnded=" + to_string(_eStopCalled));
     }
 
     _comReadTime = util::CLOCK::now();
@@ -114,7 +112,6 @@ void MotionEngine::engineJoin() {
     _eThrd.join();
     _timeoutThread.join();
 }
-
 
 void MotionEngine::queueTimeoutCheck() {
     auto cmdTimeoutCheck = std::make_shared<util::Command>([&](util::CmdData*) { _comTimeoutCheck(); });

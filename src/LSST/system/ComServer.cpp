@@ -192,7 +192,7 @@ ComConnection::Ptr ComServer::newComConnection(IoContextPtr const& ioContext, ui
 
 void ComServer::asyncWriteToAllComConn(std::string const& msg) {
     lock_guard<mutex> lg(_mapMtx);
-    for (auto&& elem:_connections) {
+    for (auto&& elem : _connections) {
         auto conn = elem.second.lock();
         if (conn != nullptr) {
             conn->asyncWrite(msg);

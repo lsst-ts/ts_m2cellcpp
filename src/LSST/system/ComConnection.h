@@ -151,8 +151,8 @@ private:
     boost::asio::streambuf _streamBuf;
     std::string _buffer;
 
-    std::atomic<bool> _shutdown{false}; ///< Set to true to stop loops and shutdown.
-    std::atomic<bool> _connectionActive{false}; ///< True when there is an active connection.
+    std::atomic<bool> _shutdown{false};          ///< Set to true to stop loops and shutdown.
+    std::atomic<bool> _connectionActive{false};  ///< True when there is an active connection.
 
     /// If true, send the welcome message when the connection is established.
     std::atomic<bool> _doSendWelcomeMsg{true};
