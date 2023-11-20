@@ -46,10 +46,11 @@ state::State::Ptr Model::getCurrentState() {
     return _stateMap.getCurrentState();
 }
 
-std::shared_ptr<state::State> Model::getState(std::string const& stateName) {
+std::shared_ptr<state::State> Model::getState(State::StateEnum const& stateId) {
     std::lock_guard<util::VMutex> lockg(_mtx);
-    return _stateMap.getState(stateName);
+    return _stateMap.getState(stateId);
 }
+
 
 bool Model::changeState(std::shared_ptr<state::State> const& newState) {
     std::lock_guard<util::VMutex> lockg(_mtx);
@@ -64,7 +65,7 @@ bool Model::goToSafeMode(std::string const& note) {
 
 bool Model::_goToSafeMode(std::string const& note) {
     VMUTEX_HELD(_mtx);
-    return _stateMap.goToASafeState("StandbyState", note);
+    return _stateMap.goToASafeState(State::STANDBYSTATE, note);
 }
 
 bool Model::_turnOffAll(string const& note) {

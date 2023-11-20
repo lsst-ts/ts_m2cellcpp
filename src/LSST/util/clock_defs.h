@@ -37,9 +37,17 @@ namespace m2cellcpp {
 namespace util {
 
 
-/// It's important that the clock used is consistent when calculating time. steady_clock may be a better choice.
-using CLOCK = std::chrono::system_clock;
+/// It's important that the clock used is consistent when calculating time.
+/// steady_clock should be monotonic.
+using CLOCK = std::chrono::steady_clock;
 using TIMEPOINT = CLOCK::time_point;
+
+using SYSCLOCK = std::chrono::system_clock;
+
+inline time_t steadyToTimeT(TIMEPOINT timeP){
+    auto sysTime = SYSCLOCK::now() + std::chrono::duration_cast<SYSCLOCK::duration>(timeP - CLOCK::now());
+    return SYSCLOCK::to_time_t(sysTime);
+}
 
 
 /// Return the time passed between `start` and `end` in seconds.

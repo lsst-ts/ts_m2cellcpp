@@ -77,7 +77,7 @@ public:
     // Model::startScriptVI VI-PH stopScriptVI
     // // call Model::stopScriptVI
 private:
-    IdleState(Model *const model) : State("IdleState", model) {}
+    IdleState(Model *const model) : State(IDLESTATE, model) {}
 };
 
 }  // namespace state

@@ -58,7 +58,7 @@ public:
     // VI-PH  shutdownMotionEngineVI // calls Model::shutdownMotionEngineVI
     // VI-PH  stopMotionVI // calls Model::stopMotionVI
 private:
-    PauseState(Model *const model) : State("PauseState", model) {}
+    PauseState(Model *const model) : State(PAUSESTATE, model) {}
 };
 
 }  // namespace state

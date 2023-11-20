@@ -50,7 +50,7 @@ public:
 
     // nothing here in LabView
 private:
-    OfflineState(Model *const model) : State("OfflineState", model) {}
+    OfflineState(Model *const model) : State(OFFLINESTATE, model) {}
 };
 
 }  // namespace state

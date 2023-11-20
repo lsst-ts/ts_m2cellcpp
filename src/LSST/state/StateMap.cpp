@@ -44,30 +44,31 @@ StateMap::StateMap(Model *const model) : _model(model) {
     _currentState = _startupState;
 
     /// Add safe states to the list.
-    _safeStates.push_back(_offlineState);
     _safeStates.push_back(_standbyState);
+    _safeStates.push_back(_offlineState);
 }
 
 void StateMap::insertIntoMap(State::Ptr const& state) {
-    auto [iter, success] = _stateMap.emplace(state->getName(), state);
+    auto [iter, success] = _stateMap.emplace(state->getId(), state);
     if (!success) {
         string name = state->getName();
         throw util::Bug(ERR_LOC, name + " was already in stateMap!");
     }
 }
 
-bool StateMap::changeState(string const& newState) {
-    LDEBUG("changeState newState=", newState);
+bool StateMap::changeState(State::StateEnum newState) {
+    LDEBUG("changeState newState=", State::getStateEnumStr(newState));
 
     // Find the state
     auto iter = _stateMap.find(newState);
     if (iter == _stateMap.end()) {
-        LERROR("changeState unknown newState=", newState);
+        LERROR("changeState unknown newState=", State::getStateEnumStr(newState));
         return false;
     }
     auto& newStatePtr = iter->second;
     return _changeState(newStatePtr);
 }
+
 
 bool StateMap::changeState(State::Ptr const& newState) {
     if (newState == nullptr) {
@@ -77,7 +78,7 @@ bool StateMap::changeState(State::Ptr const& newState) {
 
     // The new state much match a state in the state map.
     // Find the state
-    auto iter = _stateMap.find(newState->getName());
+    auto iter = _stateMap.find(newState->getId());
     if (iter == _stateMap.end()) {
         LERROR("changeState unknown newState=", newState);
         return false;
@@ -99,7 +100,7 @@ bool StateMap::_changeState(State::Ptr const& newState) {
     auto oldState = _currentState;
     if (newState == oldState) {
         // Re-run the enter state options. This is useful for for
-        // states like StandbyState to make sur everything is turned off.
+        // states like StandbyState to make sure everything is turned off.
         // Other states should be checking the old state and taking appropriate
         // action.
         newState->onEnterState(oldState);
@@ -108,9 +109,9 @@ bool StateMap::_changeState(State::Ptr const& newState) {
 
     // If the current state is "startupState", the state cannot be changed until
     // the Model believes all files have been loaded, etc.
-    if (_currentState->getName() == "StartupState") {
+    if (_currentState->getId() == State::STARTUPSTATE) {
         if (!_startupState->isStartupFinished()) {
-            LERROR("StateMap::_changeState cannot leave startupState as system isn't ready.");
+            LERROR("StateMap::_changeState cannot leave StartupState as system isn't ready.");
             return false;
         }
     }
@@ -121,34 +122,34 @@ bool StateMap::_changeState(State::Ptr const& newState) {
     // such as "Support_VIs->Commands->Pause.lvclass:exec.vi"
 
     bool acceptable = false;
-    auto const currentStateName = _currentState->getName();
+    auto const currentStateId = _currentState->getId();
 
-    if (isASafeState(newState->getName())) {
+    if (isASafeState(newState->getId())) {
         // It's always safe to go to these states as they
         // turn off power and motion.
         acceptable = true;
-    } else if (currentStateName == "IdleState") {
-        if (newState->getName() == "InMotionState"
-            || newState->getName() == "PauseState") {
+    } else if (currentStateId == State::IDLESTATE) {
+        if (newState->getId() == State::INMOTIONSTATE
+            || newState->getId() == State::PAUSESTATE) {
             // Motion states are accessible from IdleState.
             acceptable = true;
         }
-    } else if (currentStateName == "InMotionState") {
-        if (newState->getName() == "InMotionState"
-            || newState->getName() == "PauseState"
-            || newState->getName() == "IdleState") {
-            // Motion state can go to idle or pause.
+    } else if (currentStateId == State::INMOTIONSTATE) {
+        if (newState->getId() == State::INMOTIONSTATE
+            || newState->getId() == State::PAUSESTATE
+            || newState->getId() == State::IDLESTATE) {
+            // InMotion state can go to idle or pause.
             acceptable = true;
         }
-    } else if (currentStateName == "PauseState") {
-        if (newState->getName() == "InMotionState"
-            || newState->getName() == "IdleState") {
+    } else if (currentStateId == State::PAUSESTATE) {
+        if (newState->getId() == State::INMOTIONSTATE
+            || newState->getId() == State::IDLESTATE) {
             // pause can go to idle or motion.
             acceptable = true;
         }
-    } else if (isASafeState(currentStateName)
-            || currentStateName == "StartupState") {
-        if (newState->getName() == "IdleState") {
+    } else if (isASafeState(currentStateId)
+            || currentStateId == State::STARTUPSTATE) {
+        if (newState->getId() == State::IDLESTATE) {
             // Any safe state can go to idle.
             acceptable = true;
         }
@@ -165,29 +166,29 @@ bool StateMap::_changeState(State::Ptr const& newState) {
     return acceptable;
 }
 
-State::Ptr StateMap::getState(std::string const& stateName) {
-    auto iter = _stateMap.find(stateName);
+State::Ptr StateMap::getState(State::StateEnum stateId) {
+    auto iter = _stateMap.find(stateId);
     if (iter == _stateMap.end()) {
-        LDEBUG("unknown state=", stateName);
+        LDEBUG("unknown state=", to_string(stateId));
         return nullptr;
     }
     return iter->second;
 }
 
-bool StateMap::isASafeState(std::string const& state) const {
+bool StateMap::isASafeState(State::StateEnum stateId) const {
     for (auto const& safe:_safeStates) {
-        if (state == safe->getName()) {
+        if (stateId == safe->getId()) {
             return true;
         }
     }
     return false;
 }
 
-bool StateMap::goToASafeState(string const& desiredState, string const& note) {
-    LDEBUG("StateMap::goToASafeState ", desiredState, " ", note);
-    if (_currentState == _offlineState || desiredState == _offlineState->getName()) {
+bool StateMap::goToASafeState(State::StateEnum desiredState, string const& note) {
+    LDEBUG("StateMap::goToASafeState ", State::getStateEnumStr(desiredState), " ", note);
+    if (_currentState == _offlineState || desiredState == _offlineState->getId()) {
         changeState(_offlineState);
-        return (desiredState == _offlineState->getName());
+        return (desiredState == _offlineState->getId());
     }
 
     if (isASafeState(desiredState)) {

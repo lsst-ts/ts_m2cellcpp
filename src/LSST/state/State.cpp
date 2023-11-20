@@ -34,6 +34,18 @@ namespace LSST {
 namespace m2cellcpp {
 namespace state {
 
+std::string State::getStateEnumStr(StateEnum stEnum) {
+    switch (stEnum) {
+    case OFFLINESTATE: return string("OfflineState");
+    case STARTUPSTATE: return string("StartupState");
+    case STANDBYSTATE: return string("StandbyState");
+    case IDLESTATE: return string("IdleState");
+    case PAUSESTATE: return string("PauseState");
+    case INMOTIONSTATE: return string("InMotionState");
+    }
+    throw util::Bug(ERR_LOC, "State::getStateEnumStr unknown state " +  to_string(stEnum));
+}
+
 void State::errorMsg(std::string const& msg) {
     LERROR("State error ", msg);
 }

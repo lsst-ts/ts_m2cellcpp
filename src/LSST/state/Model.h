@@ -64,7 +64,7 @@ public:
     /// Return true if sytem setup has finished.
     bool isSetupFinished() const { return _setupFinished; }
 
-    /// Start MotionEngine and other threads that aen't started in their constructors.
+    /// Start MotionEngine and other threads that aren't started in their constructors.
     /// These are generally objects that require the essential services to  already
     /// be running.
     void ctrlStart();
@@ -82,9 +82,9 @@ public:
     /// @return false in `newState` is invalid.
     bool changeState(std::shared_ptr<state::State> const& newState);
 
-    /// Get a pointer to the state with `stateName`.
-    /// @return nullptr if the state is not found.
-    std::shared_ptr<state::State> getState(std::string const& stateName);
+    /// Get a pointer to the `State` with `stateId`.
+    /// @return nullptr if the `State` is not found.
+    std::shared_ptr<state::State> getState(State::StateEnum const& stateId);
 
     /// Get a pointer to the current State.
     /// VI-PH retrieveStateVI  // calls breaks out State and currentStateEnum and returns

@@ -132,6 +132,11 @@ TEST_CASE("Test ComControl", "[ComControl]") {
 
     // Shutdown the server
     serv->shutdown();
+    // Give it a few seconds for everything to shutdown. One
+    // second should be enough, but Jenkins may be busy.
+    for (int j = 0; serv->connectionCount() != 0 && j < 10; ++j) {
+        sleep(1);
+    }
     REQUIRE(serv->connectionCount() == 0);
 
     // Server stop

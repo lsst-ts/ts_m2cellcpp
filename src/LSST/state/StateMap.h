@@ -44,8 +44,8 @@ namespace state {
 /// unit test: test_StateMap.cpp
 class StateMap {
 public:
-    /// The type for the map of states. TODO: it should be an enum instead of string.
-    using MapType = std::map<std::string, State::Ptr>;
+    /// The type for the map of states.
+    using MapType = std::map<State::StateEnum, State::Ptr>;
 
     /// Constructor, initial _currentState is StandByState.
     /// @param `model` pointer to the model.
@@ -59,15 +59,16 @@ public:
 
     /// Change the state to `newState`, if possible.
     /// @return false if the state could not be changed.
-    bool changeState(std::string const& newState);
+    bool changeState(State::StateEnum newState);
 
     /// Change the state to `newState`, if possible.
     /// @return false if the state could not be changed.
     bool changeState(State::Ptr const& newState);
 
-    /// Get the state with name `stateName`.
+
+    /// Get the state with id `stateId`.
     /// @returns nullptr if `stateName` could not be found.
-    State::Ptr getState(std::string const& stateName);
+    State::Ptr getState(State::StateEnum stateId);
 
     /// Return a pointer to the startup state.
     StartupState::Ptr getStartupState() { return _startupState; }
@@ -95,13 +96,13 @@ public:
     /// will stay in "OfflineState".
     /// @param `note` - A note to indicate what called this function.
     /// @return true if the `desiredState` was used to set `_currentState`.
-    bool goToASafeState(std::string const& desiredState, std::string const& note);
+    bool goToASafeState(State::StateEnum desiredState, std::string const& note);
 
     /// Insert `state` into the state map.
     void insertIntoMap(State::Ptr const& state);
 
-    /// Returns true is state is in the `_safeStates` list.
-    bool isASafeState(std::string const& state) const;
+    /// Returns true is `stateId` is in the `_safeStates` list.
+    bool isASafeState(State::StateEnum state) const;
 
 private:
     /// Change the state to `newState`, if possible. `newState`

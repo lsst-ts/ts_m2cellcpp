@@ -56,7 +56,7 @@ public:
     void startVI();
 
 private:
-    StandbyState(Model *const model) : State("StandbyState", model) {}
+    StandbyState(Model *const model) : State(STANDBYSTATE, model) {}
 };
 
 }  // namespace state

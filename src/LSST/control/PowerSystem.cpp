@@ -78,8 +78,9 @@ void PowerSystem::_daqInfoRead() {
     bool timedOut = _checkTimeout(diff); // shutoff power if timed out.
     if (timedOut) {
         stringstream os;
-        time_t nowTm = util::CLOCK::to_time_t(_daqReadTime);
-        time_t infoTm = util::CLOCK::to_time_t(sInfo.timestamp);
+        time_t nowTm = util::steadyToTimeT(_daqReadTime);
+        time_t infoTm = util::steadyToTimeT(sInfo.timestamp);
+
         os << "PowerSystem::_daqInfoRead() timedOut last _daq read=" << ctime(&nowTm)
             << " infoTm=" << ctime(&infoTm)
             << " seconds since last read=" << diff;
@@ -95,7 +96,7 @@ void PowerSystem::_daqTimeoutCheck() {
     bool timedOut = _checkTimeout(diff); // shutoff power if timed out.
     if (timedOut) {
         stringstream os;
-        time_t tm = util::CLOCK::to_time_t(_daqReadTime);
+        time_t tm = util::steadyToTimeT(_daqReadTime);
         os << "PowerSystem::Timeout timedOut last _daq read=" << ctime(&tm)
            << " seconds since last read=" << diff;
         LERROR(os.str());

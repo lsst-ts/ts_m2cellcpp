@@ -41,6 +41,7 @@
 
 using namespace std;
 using namespace LSST::m2cellcpp::control;
+using namespace LSST::m2cellcpp::state;
 
 TEST_CASE("Test startup shutdown", "[CSV]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
@@ -55,11 +56,11 @@ TEST_CASE("Test startup shutdown", "[CSV]") {
     REQUIRE(context != nullptr);
     context->model.ctrlSetup();
 
-    REQUIRE(context->model.getCurrentState() == context->model.getState("StartupState"));
+    REQUIRE(context->model.getCurrentState() == context->model.getState(State::STARTUPSTATE));
 
-    auto newState = context->model.getState("IdleState");
+    auto newState = context->model.getState(State::IDLESTATE);
     REQUIRE(context->model.changeState(newState));
-    REQUIRE(context->model.getCurrentState() == context->model.getState("IdleState"));
+    REQUIRE(context->model.getCurrentState() == context->model.getState(State::IDLESTATE));
 
 }
 

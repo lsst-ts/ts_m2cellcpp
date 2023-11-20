@@ -127,7 +127,7 @@ void MotionEngine::_comTimeoutCheck() {
     bool timedOut = _checkTimeout(diff);
     if (timedOut) {
         stringstream os;
-        time_t tm = util::CLOCK::to_time_t(_comReadTime);
+        time_t tm = util::steadyToTimeT(_comReadTime);
         os << "MotionEngine::_comTimeoutCheck timedOut last read=" << ctime(&tm)
            << " seconds since last read=" << diff;
         LDEBUG(os.str());

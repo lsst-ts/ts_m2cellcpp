@@ -60,7 +60,7 @@ public:
     // VI-PH  shutdownMotionEngineVI // calls Model::shutdownMotionEngineVI
     // VI-PH  stopMotionVI // calls Model::stopMotionVI
 private:
-    InMotionState(Model *const model) : State("InMotionState", model) {}
+    InMotionState(Model *const model) : State(INMOTIONSTATE, model) {}
 };
 
 }  // namespace state

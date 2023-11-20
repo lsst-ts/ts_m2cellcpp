@@ -52,7 +52,7 @@ public:
 
 
 private:
-    StartupState(Model *const model) : State("StartupState", model) {}
+    StartupState(Model *const model) : State(STARTUPSTATE, model) {}
 };
 
 }  // namespace state

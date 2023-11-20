@@ -434,6 +434,7 @@ string FaultStatusBits::getEnumString(int enumVal) {
     case TANGENT_LOAD_CELL_FAULT: return "TANGENT_LOAD_CELL_FAULT " + to_string(enumVal);
     case ELEVATION_ANGLE_DIFF_FAULT: return "ELEVATION_ANGLE_DIFF_FAULT " + to_string(enumVal);
     case MONITOR_ILC_READ_WARN: return "MONITOR_ILC_READ_WARN " + to_string(enumVal);
+    case POWER_SYSTEM_TIMEOUT: return "POWER_SYSTEM_TIMEOUT " + to_string(enumVal);
     case PARAMETER_FILE_READ_FAULT: return "PARAMETER_FILE_READ_FAULT " + to_string(enumVal);
     case ILC_STATE_TRANSITION_FAULT: return "ILC_STATE_TRANSITION_FAULT " + to_string(enumVal);
     case CRIO_COMM_FAULT: return "CRIO_COMM_FAULT " + to_string(enumVal);
