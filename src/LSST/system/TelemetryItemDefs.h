@@ -85,7 +85,6 @@ public:
     virtual ~TItemPowerStatusRaw() = default;
 };
 
-
 /// TelemetryItem child class for storing the "tangentForce" values.
 /// Unit tests in tests/test_TelemetryCom
 class TItemTangentForce : public TelemetryItem {
@@ -94,7 +93,7 @@ public:
 
     TItemTangentForce() : TelemetryItem("tangentForce") {}
 
-    ~TItemTangentForce() override {};
+    ~TItemTangentForce() override{};
 
     /// Return reference to `_lutGravity`, unit: newton.
     TItemVectorDouble& getLutGravity() const { return *_lutGravity; }
@@ -121,7 +120,8 @@ private:
     TItemVectorDouble::Ptr _lutTemperature = TItemVectorDouble::create("lutTemperature", 6, &_tiMap);
     TItemVectorDouble::Ptr _applied = TItemVectorDouble::create("applied", 6, &_tiMap);
     TItemVectorDouble::Ptr _measured = TItemVectorDouble::create("measured", 6, &_tiMap);
-    TItemVectorDouble::Ptr _hardpointCorrection = TItemVectorDouble::create("hardpointCorrection", 6, &_tiMap);
+    TItemVectorDouble::Ptr _hardpointCorrection =
+            TItemVectorDouble::create("hardpointCorrection", 6, &_tiMap);
 };
 
 /// TelemetryItem child class for storing the "forceBalance" values.
@@ -165,7 +165,6 @@ private:
     TItemDouble::Ptr _my = TItemDouble::create("my", &_tiMap);
     TItemDouble::Ptr _mz = TItemDouble::create("mz", &_tiMap);
 };
-
 
 /// Common elements between position message ids.
 /// Unit tests in tests/test_TelemetryCom
@@ -418,7 +417,6 @@ public:
     /// Return reference to `_inclinometer`, units degree.
     TItemDouble& getInclinometer() { return *_inclinometer; }
 
-
     /// Return true if this item and `other` have the same id and values.
     bool compareItem(TelemetryItem const& other) const override {
         return compareItemsTemplate<TItemInclinometerAngleTma>(*this, other);
@@ -427,7 +425,6 @@ public:
 private:
     TItemDouble::Ptr _inclinometer = TItemDouble::create("inclinometer", &_tiMap);
 };
-
 
 /// TelemetryItem child class for storing the "displacementSensors" values.
 /// Unit tests in tests/test_TelemetryCom
@@ -454,7 +451,6 @@ private:
     TItemVectorDouble::Ptr _thetaZ = TItemVectorDouble::create("thetaZ", 6, &_tiMap);
     TItemVectorDouble::Ptr _deltaZ = TItemVectorDouble::create("deltaZ", 6, &_tiMap);
 };
-
 
 /// TelemetryItem child class for storing the "ilcData" values.
 /// Unit tests in tests/test_TelemetryCom
@@ -573,7 +569,8 @@ private:
     TItemVectorDouble::Ptr _lutTemperature = TItemVectorDouble::create("lutTemperature", 72, &_tiMap);
     TItemVectorDouble::Ptr _applied = TItemVectorDouble::create("applied", 72, &_tiMap);
     TItemVectorDouble::Ptr _measured = TItemVectorDouble::create("measured", 72, &_tiMap);
-    TItemVectorDouble::Ptr _hardpointCorrection = TItemVectorDouble::create("hardpointCorrection", 72, &_tiMap);
+    TItemVectorDouble::Ptr _hardpointCorrection =
+            TItemVectorDouble::create("hardpointCorrection", 72, &_tiMap);
 };
 
 /// This class is used to accept the telescope elevation angle from a client.

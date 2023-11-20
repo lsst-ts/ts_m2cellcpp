@@ -66,7 +66,7 @@ ComServer::~ComServer() {
     try {
         // The server must be on this host.
         ComClient client(_ioContext, "127.0.0.1", _port);
-        string cmd("ComServer destructor shuting down");
+        string cmd("ComServer destructor shutting down");
         client.writeCommand(cmd);
         LDEBUG("wrote cmd=", cmd);
     } catch (std::exception const& ex) {
@@ -103,22 +103,24 @@ void ComServer::_beginAccept() {
     }
     auto connId = _connIdSeq++;
     ComConnection::Ptr const connection = newComConnection(_ioContext, connId, shared_from_this());
-    size_t connectionSize;
-    {
-        lock_guard<mutex> lg(_mapMtx);
-        _connections.emplace(connId, connection);
-        connectionSize = _connections.size();
-    }
     _acceptor.async_accept(connection->socket(),
                            bind(&ComServer::_handleAccept, shared_from_this(), connection, _1));
-    // If going from 0 to 1, FaultMgr must clear the appropriate fault so the system can be turned on.
-    faultmgr::FaultMgr::get().reportComConnectionCount(connectionSize);
 }
 
 void ComServer::_handleAccept(ComConnection::Ptr const& connection, boost::system::error_code const& ec) {
     if (_state == STOPPED || _shutdown) {
         return;
     }
+
+    size_t connectionSize;
+    {
+        lock_guard<mutex> lg(_mapMtx);
+        _connections.emplace(connection->getConnId(), connection);
+        connectionSize = _connections.size();
+    }
+    // If going from 0 to 1, FaultMgr must clear the appropriate fault so the system can be turned on.
+    faultmgr::FaultMgr::get().reportComConnectionCount(connectionSize);
+
     if (ec.value() == 0) {
         connection->beginProtocol();
     } else {
@@ -186,6 +188,16 @@ ComConnection::Ptr ComServer::newComConnection(IoContextPtr const& ioContext, ui
     ComConnection::Ptr ptr = ComConnection::create(ioContext, connId, server);
     ptr->setDoSendWelcomeMsg(_doSendWelcomeMsgServ);
     return ptr;
+}
+
+void ComServer::asyncWriteToAllComConn(std::string const& msg) {
+    lock_guard<mutex> lg(_mapMtx);
+    for (auto&& elem : _connections) {
+        auto conn = elem.second.lock();
+        if (conn != nullptr) {
+            conn->asyncWrite(msg);
+        }
+    }
 }
 
 }  // namespace system

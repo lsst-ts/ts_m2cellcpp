@@ -19,41 +19,40 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_CONTROL_OFFLINESTATE_H
-#define LSST_M2CELLCPP_CONTROL_OFFLINESTATE_H
-
-// System headers
-#include <functional>
-#include <map>
-#include <memory>
+// Class header
+#include "state/IdleState.h"
 
 // Project headers
-#include "control/State.h"
+#include "state/Model.h"
+#include "state/StateMap.h"
+#include "util/Bug.h"
+#include "util/Log.h"
+
+using namespace std;
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace state {
 
-/// Class representation of the OfflineState, which leads to program termination.
-class OfflineState : public State {
-public:
-    using Ptr = std::shared_ptr<OfflineState>;
+IdleState::Ptr IdleState::create(StateMap& stateMap, Model* const model) {
+    auto state = shared_ptr<IdleState>(new IdleState(model));
+    stateMap.insertIntoMap(state);
+    return state;
+}
 
-    /// Create an instance and insert it into `stateMap`.
-    /// @throws Bug if there's already an instance of this class in `stateMap`.
-    static Ptr create(StateMap& stateMap);
+void IdleState::enterState(State::Ptr const& oldState) {
+    string msg("IdleState::enterState " + getName());
+    LINFO(msg);
+}
 
-    OfflineState(OfflineState const&) = delete;
-    OfflineState& operator=(OfflineState const&) = delete;
-    virtual ~OfflineState() = default;
+bool IdleState::setPower(bool on) {
+    if (modelPtr == nullptr) {
+        LERROR("IdleState modelPtr is NULL");
+        return false;
+    }
+    return modelPtr->_setPower(on);
+}
 
-    // nothing here in LabView
-private:
-    OfflineState() : State("OfflineState") {}
-};
-
-}  // namespace control
+}  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST
-
-#endif  // LSST_M2CELLCPP_CONTROL_OFFLINESTATE_H

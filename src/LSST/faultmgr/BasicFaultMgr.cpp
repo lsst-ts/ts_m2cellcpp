@@ -44,21 +44,29 @@ namespace faultmgr {
 
 string BasicFaultMgr::getCrioSubsystemStr(CrioSubsystem subSystem) {
     switch (subSystem) {
-    case SYSTEM_CONTROLLER: return "SYSTEM_CONTROLLER";
-    case FAULT_MANAGER: return "FAULT_MANAGER";
-    case POWER_SUBSYSTEM: return "POWER_SUBSYSTEM";
-    case CELL_CONTROLLER: return "CELL_CONTROLLER";
-    case TELEMETRY_LOGGER: return "TELEMETRY_LOGGER";
-    case NETWORK_INTERFACE: return "NETWORK_INTERFACE";
-    case MOTION_ENGINE: return "MOTION_ENGINE";
+        case SYSTEM_CONTROLLER:
+            return "SYSTEM_CONTROLLER";
+        case FAULT_MANAGER:
+            return "FAULT_MANAGER";
+        case POWER_SUBSYSTEM:
+            return "POWER_SUBSYSTEM";
+        case CELL_CONTROLLER:
+            return "CELL_CONTROLLER";
+        case TELEMETRY_LOGGER:
+            return "TELEMETRY_LOGGER";
+        case NETWORK_INTERFACE:
+            return "NETWORK_INTERFACE";
+        case MOTION_ENGINE:
+            return "MOTION_ENGINE";
     }
     return string(" unexpected subSytem=") + to_string(subSystem);
 }
 
 BasicFaultMgr::BasicFaultMgr() {
     // _summaryFaults, _prevFaults, and _currentFaults should all be zero already.
-    _faultEnableMask.setBitmap(FaultStatusBits::getMaskFaults()); ///< "Fault Enable Mask"
-    _defaultFaultMask.setBitmap(FaultStatusBits::getMaskFaults());; ///< "Default Fault Mask"
+    _faultEnableMask.setBitmap(FaultStatusBits::getMaskFaults());  ///< "Fault Enable Mask"
+    _defaultFaultMask.setBitmap(FaultStatusBits::getMaskFaults());
+    ;  ///< "Default Fault Mask"
     // _affectedFaultsMask, and _affectedWarnInfoMask should both be zero already.
 
     _timeStamp = util::CLOCK::now();
@@ -67,7 +75,7 @@ BasicFaultMgr::BasicFaultMgr() {
 bool BasicFaultMgr::updateFaults(BasicFaultMgr::CrioSubsystem subsystem) {
     uint64_t diff = (_prevFaults.getBitmap() ^ _currentFaults.getBitmap()) & _faultEnableMask.getBitmap();
     if (diff == 0) {
-        return false; // nothing needs to be done.
+        return false;  // nothing needs to be done.
     }
     _prevFaults = _currentFaults;
 
@@ -93,10 +101,11 @@ void BasicFaultMgr::resetFaults(FaultStatusBits mask) {
     _timeStamp = util::CLOCK::now();
 }
 
-
-std::tuple<uint16_t, uint16_t> BasicFaultMgr::updateFaultStatus(
-        uint64_t summaryFaultStatus, uint64_t faultEnableMask,
-        uint64_t newFaultStatus, uint64_t affectedWarnInfo, uint64_t affectedFault) {
+std::tuple<uint16_t, uint16_t> BasicFaultMgr::updateFaultStatus(uint64_t summaryFaultStatus,
+                                                                uint64_t faultEnableMask,
+                                                                uint64_t newFaultStatus,
+                                                                uint64_t affectedWarnInfo,
+                                                                uint64_t affectedFault) {
     // affectedAll is the same as 1.MASK' from UpdateFaultStatus.vi
     uint64_t affectedAll = affectedFault | affectedWarnInfo;
 
@@ -117,13 +126,28 @@ std::tuple<uint16_t, uint16_t> BasicFaultMgr::updateFaultStatus(
     return make_tuple(updatedSummaryFaults, changedBits);
 }
 
+FaultStatusBits BasicFaultMgr::mergeFaults(FaultStatusBits bits) {
+    FaultStatusBits bitsMask = _faultEnableMask.getBitmap() & bits.getBitmap();
+    if (bitsMask.getBitmap() == 0) {
+        // not enabled, nothing to change
+        return bitsMask;
+    }
+
+    FaultStatusBits previous(_summaryFaults);
+    _summaryFaults.setBitmap(_summaryFaults.getBitmap() | bitsMask.getBitmap());
+    // FUTURE: _currentFaults should be able to be removed...
+    _currentFaults.setBitmap(_currentFaults.getBitmap() | bitsMask.getBitmap());
+    FaultStatusBits changed(_summaryFaults.getBitmap() ^ previous.getBitmap());
+    _prevFaults.setBitmap(previous.getBitmap());  // FUTURE: _prevFaults should be able to be removed...
+
+    return changed;
+}
 
 void BasicFaultMgr::updateSummary(uint64_t newSummary) {
     _prevFaults = _currentFaults;
     _summaryFaults = newSummary;
     _currentFaults = _summaryFaults;
 }
-
 
 void BasicFaultMgr::setMaskComm(FaultStatusBits newFaultMask) {
     // SendDisconnectFault.vi uses a mask with only the "cRIO COMM error fault" bit set.
@@ -133,13 +157,35 @@ void BasicFaultMgr::setMaskComm(FaultStatusBits newFaultMask) {
     // see FaultManager.lvclass:fault_manager_main.vi
     _faultEnableMask.setBitmap(_faultEnableMask.getBitmap() | newFaultMask.getBitmap());
     _affectedFaultsMask.setBitmap(_affectedFaultsMask.getBitmap() | newFaultMask.getBitmap());
-    _prevFaults = _currentFaults; // This is different than what the LabView code does.
+    _prevFaults = _currentFaults;  // This is different than what the LabView code does.
     _currentFaults = newFaultMask;
 
-    _summaryFaults.setBitmap((_summaryFaults.getBitmap() & _defaultFaultMask.getBitmap()) | _currentFaults.getBitmap());
+    _summaryFaults.setBitmap((_summaryFaults.getBitmap() & _defaultFaultMask.getBitmap()) |
+                             _currentFaults.getBitmap());
     _currentFaults = _summaryFaults;
 
     _timeStamp = util::CLOCK::now();
+}
+
+FaultStatusBits BasicFaultMgr::enableFaultsInMask(FaultStatusBits mask) {
+    auto enabled = _faultEnableMask.getBitmap();
+    auto changed = enabled;
+    enabled = enabled | mask.getBitmap();
+    _faultEnableMask.setBitmap(enabled);
+    FaultStatusBits changedBits(enabled ^ changed);
+    return changedBits;
+}
+
+std::string BasicFaultMgr::dump() const {
+    stringstream os;
+    os << "[summaryFaults{" << _summaryFaults.getAllSetBitEnums() << "}";
+    os << ", prevFaults{" << _prevFaults.getAllSetBitEnums() << "}";
+    os << ", currentFaults{" << _currentFaults.getAllSetBitEnums() << "}";
+    os << ", faultEnableMask{" << _faultEnableMask.getAllSetBitEnums() << "}";
+    os << ", defaultFaultMask{" << _defaultFaultMask.getAllSetBitEnums() << "}";
+    os << ", affectedFaultsMask{" << _affectedFaultsMask.getAllSetBitEnums() << "}";
+    os << ", affectedWarnInfoMask{" << _affectedWarnInfoMask.getAllSetBitEnums() << "}]";
+    return os.str();
 }
 
 PowerFaultMgr::PowerFaultMgr() : BasicFaultMgr() {
@@ -154,4 +200,3 @@ PowerFaultMgr::PowerFaultMgr() : BasicFaultMgr() {
 }  // namespace faultmgr
 }  // namespace m2cellcpp
 }  // namespace LSST
-

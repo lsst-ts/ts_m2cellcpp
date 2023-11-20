@@ -70,55 +70,55 @@ public:
     TItemTangentForce::Ptr getTangentForce() const { return _tangentForce; }
 
     /// Return a pointer to `_forceBalance`.
-    TItemForceBalance::Ptr getForceBalance() const {return _forceBalance; }
+    TItemForceBalance::Ptr getForceBalance() const { return _forceBalance; }
 
     /// Return a pointer to `_position`.
-    TItemPosition::Ptr getPosition() const {return _position; }
+    TItemPosition::Ptr getPosition() const { return _position; }
 
     /// Return a pointer to `_positionIMS`.
-    TItemPositionIMS::Ptr getPositionIMS() const {return _positionIMS; }
+    TItemPositionIMS::Ptr getPositionIMS() const { return _positionIMS; }
 
     /// Return a pointer to `_temperature`.
-    TItemTemperature::Ptr getTemperature() const {return _temperature; }
+    TItemTemperature::Ptr getTemperature() const { return _temperature; }
 
     /// Return a pointer to `_zenithAngle`.
-    TItemZenithAngle::Ptr getZenithAngle() const {return _zenithAngle; }
+    TItemZenithAngle::Ptr getZenithAngle() const { return _zenithAngle; }
 
     /// Return a pointer to `_axialEncoderPositions`.
-    TItemAxialEncoderPositions::Ptr getAxialEncoderPositions() const {return _axialEncoderPositions; }
+    TItemAxialEncoderPositions::Ptr getAxialEncoderPositions() const { return _axialEncoderPositions; }
 
     /// Return a pointer to `_tangentEncoderPositions`.
-    TItemTangentEncoderPositions::Ptr getTangentEncoderPositions() const {return _tangentEncoderPositions; }
+    TItemTangentEncoderPositions::Ptr getTangentEncoderPositions() const { return _tangentEncoderPositions; }
 
     /// Return a pointer to `_axialActuatorSteps`.
-    TItemAxialActuatorSteps::Ptr getAxialActuatorSteps() const {return _axialActuatorSteps; }
+    TItemAxialActuatorSteps::Ptr getAxialActuatorSteps() const { return _axialActuatorSteps; }
 
     /// Return a pointer to `_tangentActuatorSteps`.
-    TItemTangentActuatorSteps::Ptr getTangentActuatorSteps() const {return _tangentActuatorSteps; }
+    TItemTangentActuatorSteps::Ptr getTangentActuatorSteps() const { return _tangentActuatorSteps; }
 
     /// Return a pointer to `_forceErrorTangent`.
-    TItemForceErrorTangent::Ptr getForceErrorTangent() const {return _forceErrorTangent; }
+    TItemForceErrorTangent::Ptr getForceErrorTangent() const { return _forceErrorTangent; }
 
     /// Return a pointer to `_inclinometerAngleTma`.
-    TItemInclinometerAngleTma::Ptr getInclinometerAngleTma() const {return _inclinometerAngleTma; }
+    TItemInclinometerAngleTma::Ptr getInclinometerAngleTma() const { return _inclinometerAngleTma; }
 
     /// Return a pointer to `_displacementSensors`.
-    TItemDisplacementSensors::Ptr getDisplacementSensors() const {return _displacementSensors; }
+    TItemDisplacementSensors::Ptr getDisplacementSensors() const { return _displacementSensors; }
 
     /// Return a pointer to `_ilcData`.
-    TItemIlcData::Ptr getIlcData() const {return _ilcData; }
+    TItemIlcData::Ptr getIlcData() const { return _ilcData; }
 
     /// Return a pointer to `_netForcesTotal`.
-    TItemNetForcesTotal::Ptr getNetForcesTotal() const {return _netForcesTotal; }
+    TItemNetForcesTotal::Ptr getNetForcesTotal() const { return _netForcesTotal; }
 
     /// Return a pointer to `_netMomentsTotal`.
-    TItemNetMomentsTotal::Ptr getNetMomentsTotal() const {return _netMomentsTotal; }
+    TItemNetMomentsTotal::Ptr getNetMomentsTotal() const { return _netMomentsTotal; }
 
     /// Return a pointer to `_axialForce`.
-    TItemAxialForce::Ptr getAxialForce() const {return _axialForce; }
+    TItemAxialForce::Ptr getAxialForce() const { return _axialForce; }
 
     /// Return a pointer to `_telElevation`.
-    TItemTelElevation::Ptr getTelElevation() const {return _telElevation; }
+    TItemTelElevation::Ptr getTelElevation() const { return _telElevation; }
 
 private:
     /// Map of all telemetry items to be sent to clients.
@@ -137,32 +137,35 @@ private:
 
     TItemPowerStatus::Ptr _powerStatus = TelemetryMap::_addItem<TItemPowerStatus>();  ///< "powerStatus"
     TItemPowerStatusRaw::Ptr _powerStatusRaw =
-            TelemetryMap::_addItem<TItemPowerStatusRaw>();  ///< "powerStatusRaw"
-    TItemTangentForce::Ptr _tangentForce = _addItem<TItemTangentForce>(); ///< "tangentForce"
-    TItemForceBalance::Ptr _forceBalance = _addItem<TItemForceBalance>(); ///< "forceBalance"
-    TItemPosition::Ptr _position = _addItem<TItemPosition>(); ///< "position"
-    TItemPositionIMS::Ptr _positionIMS = _addItem<TItemPositionIMS>(); ///< "positionIMS"
-    TItemTemperature::Ptr _temperature = _addItem<TItemTemperature>(); ///< "temperature"
-    TItemZenithAngle::Ptr _zenithAngle = _addItem<TItemZenithAngle>(); ///< "zenithAngle"
+            TelemetryMap::_addItem<TItemPowerStatusRaw>();                 ///< "powerStatusRaw"
+    TItemTangentForce::Ptr _tangentForce = _addItem<TItemTangentForce>();  ///< "tangentForce"
+    TItemForceBalance::Ptr _forceBalance = _addItem<TItemForceBalance>();  ///< "forceBalance"
+    TItemPosition::Ptr _position = _addItem<TItemPosition>();              ///< "position"
+    TItemPositionIMS::Ptr _positionIMS = _addItem<TItemPositionIMS>();     ///< "positionIMS"
+    TItemTemperature::Ptr _temperature = _addItem<TItemTemperature>();     ///< "temperature"
+    TItemZenithAngle::Ptr _zenithAngle = _addItem<TItemZenithAngle>();     ///< "zenithAngle"
     /// "axialEncoderPositions"
     TItemAxialEncoderPositions::Ptr _axialEncoderPositions = _addItem<TItemAxialEncoderPositions>();
-     /// "tangentEncoderPositions"
+    /// "tangentEncoderPositions"
     TItemTangentEncoderPositions::Ptr _tangentEncoderPositions = _addItem<TItemTangentEncoderPositions>();
-    TItemAxialActuatorSteps::Ptr _axialActuatorSteps = _addItem<TItemAxialActuatorSteps>(); ///< "axialActuatorSteps"
+    TItemAxialActuatorSteps::Ptr _axialActuatorSteps =
+            _addItem<TItemAxialActuatorSteps>();  ///< "axialActuatorSteps"
     /// "tangentActuatorSteps"
     TItemTangentActuatorSteps::Ptr _tangentActuatorSteps = _addItem<TItemTangentActuatorSteps>();
-    TItemForceErrorTangent::Ptr _forceErrorTangent = _addItem<TItemForceErrorTangent>(); ///< "forceErrorTangent"
-    TItemInclinometerAngleTma::Ptr _inclinometerAngleTma = _addItem<TItemInclinometerAngleTma>(); ///< "inclinometerAngleTma"
-    TItemDisplacementSensors::Ptr _displacementSensors = _addItem<TItemDisplacementSensors>(); ///< "displacementSensors"
-    TItemIlcData::Ptr _ilcData = _addItem<TItemIlcData>(); ///< "ilcData"
-    TItemNetForcesTotal::Ptr _netForcesTotal = _addItem<TItemNetForcesTotal>(); ///< "netForcesTotal"
-    TItemNetMomentsTotal::Ptr _netMomentsTotal = _addItem<TItemNetMomentsTotal>(); ///< "netMomentsTotal"
-    TItemAxialForce::Ptr _axialForce = _addItem<TItemAxialForce>(); ///< "axialForce"
+    TItemForceErrorTangent::Ptr _forceErrorTangent =
+            _addItem<TItemForceErrorTangent>();  ///< "forceErrorTangent"
+    TItemInclinometerAngleTma::Ptr _inclinometerAngleTma =
+            _addItem<TItemInclinometerAngleTma>();  ///< "inclinometerAngleTma"
+    TItemDisplacementSensors::Ptr _displacementSensors =
+            _addItem<TItemDisplacementSensors>();                                   ///< "displacementSensors"
+    TItemIlcData::Ptr _ilcData = _addItem<TItemIlcData>();                          ///< "ilcData"
+    TItemNetForcesTotal::Ptr _netForcesTotal = _addItem<TItemNetForcesTotal>();     ///< "netForcesTotal"
+    TItemNetMomentsTotal::Ptr _netMomentsTotal = _addItem<TItemNetMomentsTotal>();  ///< "netMomentsTotal"
+    TItemAxialForce::Ptr _axialForce = _addItem<TItemAxialForce>();                 ///< "axialForce"
 
     // The following items are read from the telemetry channel
-    TItemTelElevation::Ptr _telElevation = _addItem<TItemTelElevation>(); ///< "tel_elevation"
+    TItemTelElevation::Ptr _telElevation = _addItem<TItemTelElevation>();  ///< "tel_elevation"
 };
-
 
 }  // namespace system
 }  // namespace m2cellcpp

@@ -71,17 +71,16 @@ class FaultMgr;
 /// "BasicFaultManager.lvclass:init.vi"
 class BasicFaultMgr {
 public:
-
     /// cRIO subsystem enum values from SystemControlDefs.lvlib:cRIO_Subsystem.ctl
     /// Note: This may not be the best place to put this.
     enum CrioSubsystem {
-        SYSTEM_CONTROLLER = 0, ///< "System controller" = 0
-        FAULT_MANAGER = 1,     ///< "Fault Manager" = 1
-        POWER_SUBSYSTEM = 2,   ///< "Power Subsystem" = 2
-        CELL_CONTROLLER = 3,   ///< "Cell Controller" = 3
-        TELEMETRY_LOGGER = 4,  ///< "Telemetry Logger" = 4
-        NETWORK_INTERFACE = 5, ///< "Network Interface" = 5
-        MOTION_ENGINE = 6      ///< "Motion Engine" = 6
+        SYSTEM_CONTROLLER = 0,  ///< "System controller" = 0
+        FAULT_MANAGER = 1,      ///< "Fault Manager" = 1
+        POWER_SUBSYSTEM = 2,    ///< "Power Subsystem" = 2
+        CELL_CONTROLLER = 3,    ///< "Cell Controller" = 3
+        TELEMETRY_LOGGER = 4,   ///< "Telemetry Logger" = 4
+        NETWORK_INTERFACE = 5,  ///< "Network Interface" = 5
+        MOTION_ENGINE = 6       ///< "Motion Engine" = 6
     };
 
     static std::string getCrioSubsystemStr(CrioSubsystem subSystem);
@@ -117,9 +116,10 @@ public:
     /// @return FaultStatusBits with bits that changed set to 1, equivalent to the
     ///         same in UpdateFaultStatus.vi
     /// UpdateFaultStatus.vi
-    static std::tuple<uint16_t, uint16_t> updateFaultStatus(
-            uint64_t summaryFaultStatus, uint64_t faultEnableMask,
-            uint64_t newFaultStatus, uint64_t affectedWarnInfo, uint64_t affectedFault);
+    static std::tuple<uint16_t, uint16_t> updateFaultStatus(uint64_t summaryFaultStatus,
+                                                            uint64_t faultEnableMask, uint64_t newFaultStatus,
+                                                            uint64_t affectedWarnInfo,
+                                                            uint64_t affectedFault);
 
     /// Return `_summaryFaults`
     FaultStatusBits getSummaryFaults() const { return _summaryFaults; }
@@ -178,18 +178,40 @@ public:
     /// to the old `_currentFaults` value;
     void updateSummary(uint64_t newSummary);
 
+    /// Merge FaultStatusBits in `bits` into `_summaryFaults`, but only those
+    /// bits that are enabled.
+    /// @param - `bits` a mask containing the bits to set.
+    /// @return - a mask containing the changed bits.
+    ///
+    /// Note: Is hoped that once ILC related faults have been added to the
+    /// the code base that `mergeFaults` (or some version of it) can replace
+    /// `updateFaultStatus`. The individual systems should only need
+    /// `_affectedFaultsMask` so they can mask out faults that do not affect them.
+    /// Most of the logic in `updateFaultStatus` LabView's version seems to be
+    /// focused on avoiding resending messages. The C++ code doesn't send
+    /// messages for faults, so that complexity can be removed.
+    FaultStatusBits mergeFaults(FaultStatusBits bits);
+
+    /// Enable the fault bits set in `mask` in `_faultEnableMask`.
+    /// @param `mask` - bitmap of faults to be enabled.
+    /// @return FaultsStatusBits object with the changed bits from
+    ///         `_faultEnableMask`.
+    FaultStatusBits enableFaultsInMask(FaultStatusBits mask);
+
+    /// Return a log worthy string version of this object.
+    std::string dump() const;
+
 private:
-    FaultStatusBits _summaryFaults;        ///< "Summary Faults Status"
-    FaultStatusBits _prevFaults;           ///< "Previous Faults Status"
-    FaultStatusBits _currentFaults;        ///< "Current Faults Status"
-    FaultStatusBits _faultEnableMask;      ///< "Fault Enable Mask"
-    FaultStatusBits _defaultFaultMask;     ///< "Default Fault Mask"
-    FaultStatusBits _affectedFaultsMask;   ///< "Affected Faults Bit Mask"
-    FaultStatusBits _affectedWarnInfoMask; ///< "Affected Warnings/Info Bit Mask"
+    FaultStatusBits _summaryFaults;         ///< "Summary Faults Status"
+    FaultStatusBits _prevFaults;            ///< "Previous Faults Status"
+    FaultStatusBits _currentFaults;         ///< "Current Faults Status"
+    FaultStatusBits _faultEnableMask;       ///< "Fault Enable Mask"
+    FaultStatusBits _defaultFaultMask;      ///< "Default Fault Mask"
+    FaultStatusBits _affectedFaultsMask;    ///< "Affected Faults Bit Mask"
+    FaultStatusBits _affectedWarnInfoMask;  ///< "Affected Warnings/Info Bit Mask"
 
-    util::TIMEPOINT _timeStamp; ///< last time there was a significant change.
+    util::TIMEPOINT _timeStamp;  ///< last time there was a significant change.
 };
-
 
 /// `PowerFaultMgr` is `BasicFaultMgr` with slightly different initialization.
 class PowerFaultMgr : public BasicFaultMgr {
@@ -201,7 +223,6 @@ public:
     ~PowerFaultMgr() override = default;
 };
 
-
 /// `TelemetryFaultMgr` adds arrays for ILC's and such, which will be implemented when ILC
 /// handling is added.
 class TelemetryFaultMgr : public BasicFaultMgr {
@@ -209,7 +230,6 @@ public:
     /// Initialize arrays.
     TelemetryFaultMgr() : BasicFaultMgr() {}
 };
-
 
 }  // namespace faultmgr
 }  // namespace m2cellcpp

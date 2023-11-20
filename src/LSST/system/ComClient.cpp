@@ -98,7 +98,7 @@ string ComClient::readCommand() {
 }
 
 int ComClient::readWelcomeMsg() {
-    string lastMsgId("configurationFiles");
+    string lastMsgId("summaryFaultsStatus");
     int count = 0;
     bool done = false;
     while (!done) {

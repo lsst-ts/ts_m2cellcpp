@@ -19,31 +19,28 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-// Class header
-#include "control/SysInfo.h"
+#ifndef LSST_M2CELLCPP_SCRIPTENGINE_H
+#define LSST_M2CELLCPP_SCRIPTENGINE_H
 
 // System headers
+#include <memory>
 
 // Project headers
-#include "util/Log.h"
-
-using namespace std;
 
 namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-string SysInfo::dump() const {
-    stringstream os;
-    os << "SysInfo"
-       << " outputPort=" << outputPort.getAllSetBitEnums() << " inputPort=" << inputPort.getAllSetBitEnums()
-       << " motorVoltage=" << motorVoltage << " motorCurrent=" << motorCurrent
-       << " motorBreakerClosed=" << motorBreakerClosed << " commVoltage=" << commVoltage
-       << " commCurrent=" << commCurrent << " commBreakerClosed=" << commBreakerClosed
-       << " iterations=" << iterations;
-    return os.str();
-}
+/// PLACEHOLDER for ScriptEngine.vi - a complex control loop for running scripts.
+class ScriptEngine {
+public:
+    using Ptr = std::shared_ptr<ScriptEngine>;
+
+private:
+};
 
 }  // namespace control
 }  // namespace m2cellcpp
 }  // namespace LSST
+
+#endif  // LSST_M2CELLCPP_SCRIPTENGINE_H

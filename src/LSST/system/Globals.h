@@ -28,6 +28,9 @@
 #include <mutex>
 #include <vector>
 
+// Third party headers
+#include "nlohmann/json.hpp"
+
 // Project headers
 
 namespace LSST {
@@ -40,7 +43,7 @@ class Config;
 /// setup once using the system::Config. Setting and values in this class
 /// should be threadsafe and there should only be one instance of this class.
 ///
-///For unit testing and other simple tests, the class default values may be used.
+/// For unit testing and other simple tests, the class default values may be used.
 /// FUTURE: Many of the values here are likely to be place holders with values
 ///         to help it play nicely with the existing GUI. Eventually, all of these
 ///         need to work properly or be removed. This may actually be a reasonable
@@ -83,7 +86,8 @@ public:
     /// Return list of exhaust temperature offsets. PLACEHOLDER
     std::vector<double>& getTemperatureOffsetsExhaust() {
         std::lock_guard<std::mutex> lock(_temperatureOffsetsExhaustMtx);
-        return _temperatureOffsetsExhaust; }
+        return _temperatureOffsetsExhaust;
+    }
 
     /// Increment the number of connections when `connecting` is true, decrement when false;
     void setTcpIpConnected(bool connecting);
@@ -94,6 +98,9 @@ public:
     /// Returns true when system is commandable by DDS. PLACEHOLDER
     bool getCommandableByDds() const { return _commandableByDds; }
 
+    /// Returns a json msg string suitable to be read by clients.
+    nlohmann::json getCommandableByDdsJson() const;
+
     /// Returns the value of interlock. PLACEHOLDER
     bool getInterlock() const { return _interlock; }
 
@@ -103,14 +110,14 @@ public:
     /// Return summary system state. PLACEHOLDER
     int getSummaryState() const { return _summaryState; }
 
+    /// Set summary system state to `val`. PLACEHOLDER
+    void setSummaryState(int val) { _summaryState = val; }
+
     /// Return model digital input. PLACEHOLDER
     uint32_t getDigitalInput() const { return _digitalInput; }
 
     /// Return model digital output. PLACEHOLDER
     uint32_t getDigitalOutput() const { return _digitalOutput; }
-
-    /// Return model enabled fault mask. PLACEHOLDER
-    uint64_t getEnabledFaultMask() const { return _enabledFaultMask; }
 
     /// Return the closed loop control mode identifier. PLACEHOLDER
     int getClosedLoopControlMode() const { return _closedLoopControlMode; }
@@ -119,6 +126,7 @@ public:
     /// @return true if the command source was set successfully.
     bool setCommandSourceIsRemote(bool isRemote) {
         _commandSourceIsRemote = isRemote;
+        _commandableByDds = isRemote;
         return true;
     }
 
@@ -130,44 +138,48 @@ private:
     /// Private constructor to force call to `setup(Config const& config)`.
     Globals(Config const& config);
 
-    static std::unique_ptr<Globals> _thisPtr; ///< Pointer to the global instance of Globals
-    static std::mutex _thisMtx;               ///< Protects _thisPtr.
+    static std::unique_ptr<Globals> _thisPtr;  ///< Pointer to the global instance of Globals
+    static std::mutex _thisMtx;                ///< Protects _thisPtr.
 
     /// List of hard points.
     /// The hardpoint list is the 1-based index {6, 16, 26, 74, 76, 78}
     /// some calculations are done with the 0-based index {5, 15,25,73, 75, 77}
     /// FUTURE: Is this where this should be set/stored? PLACEHOLDER
     std::vector<int> _hardPointList{6, 16, 26, 74, 76, 78};
-    std::mutex _hardPointListMtx; ///< Protects `_hardPointList`
+    std::mutex _hardPointListMtx;  ///< Protects `_hardPointList`
 
     /// List of ring temperature offsets in degrees C. PLACEHOLDER
-    std::vector<double> _temperatureOffsetsRing{21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0, 21.0};
-    std::mutex _temperatureOffsetsRingMtx; ///< Protects `_temperatureOffsetsRing`
+    std::vector<double> _temperatureOffsetsRing{21.0, 21.0, 21.0, 21.0, 21.0, 21.0,
+                                                21.0, 21.0, 21.0, 21.0, 21.0, 21.0};
+    std::mutex _temperatureOffsetsRingMtx;  ///< Protects `_temperatureOffsetsRing`
 
     /// List of intake temperature offsets. PLACEHOLDER
     std::vector<double> _temperatureOffsetsIntake{0.0, 0.0};
-    std::mutex _temperatureOffsetsIntakeMtx; ///< Protects `_temperatureOffsetsIntake`
+    std::mutex _temperatureOffsetsIntakeMtx;  ///< Protects `_temperatureOffsetsIntake`
 
     /// List of exhaust temperature offsets. PLACEHOLDER
     std::vector<double> _temperatureOffsetsExhaust{0.0, 0.0};
-    std::mutex _temperatureOffsetsExhaustMtx; ///< Protects `_temperatureOffsetsExhaust`
+    std::mutex _temperatureOffsetsExhaustMtx;  ///< Protects `_temperatureOffsetsExhaust`
 
-    int _tcpIpConnectedCount = 0;  ///< Number of active connections   FUTURE: Should this be in ComControlServer?
-    mutable std::mutex _tcpIpConnectedMtx; ///< protects _tcpIpConnectedCount
+    int _tcpIpConnectedCount =
+            0;  ///< Number of active connections   FUTURE: Should this be in ComControlServer?
+    mutable std::mutex _tcpIpConnectedMtx;  ///< protects _tcpIpConnectedCount
 
-    std::atomic<bool> _commandableByDds{true}; ///< True when system commandable by DDS. PLACEHOLDER
-    std::atomic<bool> _interlock{true}; ///< Status of the interlock. PLACEHOLDER
-    std::atomic<int>  _telemetrySource{1}; ///< telemetry source identifier. PLACEHOLDER
-    std::atomic<int> _summaryState{5}; ///< Summary system state. PLACEHOLDER from python - salobj.State.OFFLINE=5
+    std::atomic<bool> _commandableByDds{true};  ///< True when system commandable by DDS. PLACEHOLDER
+    std::atomic<bool> _interlock{true};         ///< Status of the interlock. PLACEHOLDER
+    std::atomic<int> _telemetrySource{1};       ///< telemetry source identifier. PLACEHOLDER
+    std::atomic<int> _summaryState{
+            5};  ///< Summary system state. PLACEHOLDER from python - salobj.State.OFFLINE=5
 
-    std::atomic<uint32_t> _digitalInput{0x9F00FFFF}; ///< Model digital input PLACEHOLDER from python = 2667642879
-    std::atomic<uint32_t> _digitalOutput{0x1C}; ///< Model digital output PLACEHOLDER from python = 28
-    std::atomic<uint64_t> _enabledFaultMask{0xff800007ffffffff}; ///< Model enabled fault mask. PLACEHOLDER from python = 18410715311050326015
+    std::atomic<uint32_t> _digitalInput{
+            0x9F00FFFF};                         ///< Model digital input PLACEHOLDER from python = 2667642879
+    std::atomic<uint32_t> _digitalOutput{0x1C};  ///< Model digital output PLACEHOLDER from python = 28
 
-    std::atomic<int> _closedLoopControlMode{1}; ///< Closed loop control mode. PLACEHOLDER from python 1=ClosedLoopControlMode.Idle
+    std::atomic<int> _closedLoopControlMode{
+            1};  ///< Closed loop control mode. PLACEHOLDER from python 1=ClosedLoopControlMode.Idle
 
-    std::atomic<bool> _commandSourceIsRemote{false}; ///< Command source is remote when true, otherwise false.
-
+    std::atomic<bool> _commandSourceIsRemote{
+            false};  ///< Command source is remote when true, otherwise false.
 };
 
 }  // namespace system

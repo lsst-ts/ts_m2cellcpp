@@ -37,36 +37,30 @@ SimCore::SimCore() {
     _outputPort = control::OutputPortBits::Ptr(new control::OutputPortBits());
     _inputPort = control::InputPortBits::Ptr(new control::InputPortBits());
 
-    vector<int> motorBreakerInBits = {
-            control::InputPortBits::J1_W9_1_MTR_PWR_BRKR_OK,
-            control::InputPortBits::J1_W9_2_MTR_PWR_BRKR_OK,
-            control::InputPortBits::J1_W9_3_MTR_PWR_BRKR_OK,
-            control::InputPortBits::J2_W10_1_MTR_PWR_BRKR_OK,
-            control::InputPortBits::J2_W10_2_MTR_PWR_BRKR_OK,
-            control::InputPortBits::J2_W10_3_MTR_PWR_BRKR_OK,
-            control::InputPortBits::J3_W11_1_MTR_PWR_BRKR_OK,
-            control::InputPortBits::J3_W11_2_MTR_PWR_BRKR_OK,
-            control::InputPortBits::J3_W11_3_MTR_PWR_BRKR_OK};
+    vector<int> motorBreakerInBits = {control::InputPortBits::J1_W9_1_MTR_PWR_BRKR_OK,
+                                      control::InputPortBits::J1_W9_2_MTR_PWR_BRKR_OK,
+                                      control::InputPortBits::J1_W9_3_MTR_PWR_BRKR_OK,
+                                      control::InputPortBits::J2_W10_1_MTR_PWR_BRKR_OK,
+                                      control::InputPortBits::J2_W10_2_MTR_PWR_BRKR_OK,
+                                      control::InputPortBits::J2_W10_3_MTR_PWR_BRKR_OK,
+                                      control::InputPortBits::J3_W11_1_MTR_PWR_BRKR_OK,
+                                      control::InputPortBits::J3_W11_2_MTR_PWR_BRKR_OK,
+                                      control::InputPortBits::J3_W11_3_MTR_PWR_BRKR_OK};
 
     _motorSub = SimPowerSubsystem::Ptr(new SimPowerSubsystem(
-            control::MOTOR,
-            _outputPort, control::OutputPortBits::MOTOR_POWER_ON,
-            control::OutputPortBits::RESET_MOTOR_BREAKERS,
-            _inputPort, motorBreakerInBits));
+            control::MOTOR, _outputPort, control::OutputPortBits::MOTOR_POWER_ON,
+            control::OutputPortBits::RESET_MOTOR_BREAKERS, _inputPort, motorBreakerInBits));
 
-    vector<int> commBreakerInBits = {
-            control::InputPortBits::J1_W12_1_COMM_PWR_BRKR_OK,
-            control::InputPortBits::J1_W12_2_COMM_PWR_BRKR_OK,
-            control::InputPortBits::J2_W13_1_COMM_PWR_BRKR_OK,
-            control::InputPortBits::J2_W13_2_COMM_PWR_BRKR_OK,
-            control::InputPortBits::J3_W14_1_COMM_PWR_BRKR_OK,
-            control::InputPortBits::J3_W14_2_COMM_PWR_BRKR_OK};
+    vector<int> commBreakerInBits = {control::InputPortBits::J1_W12_1_COMM_PWR_BRKR_OK,
+                                     control::InputPortBits::J1_W12_2_COMM_PWR_BRKR_OK,
+                                     control::InputPortBits::J2_W13_1_COMM_PWR_BRKR_OK,
+                                     control::InputPortBits::J2_W13_2_COMM_PWR_BRKR_OK,
+                                     control::InputPortBits::J3_W14_1_COMM_PWR_BRKR_OK,
+                                     control::InputPortBits::J3_W14_2_COMM_PWR_BRKR_OK};
 
     _commSub = SimPowerSubsystem::Ptr(new SimPowerSubsystem(
-            control::COMM,
-            _outputPort, control::OutputPortBits::ILC_COMM_POWER_ON,
-            control::OutputPortBits::RESET_COMM_BREAKERS,
-            _inputPort, commBreakerInBits));
+            control::COMM, _outputPort, control::OutputPortBits::ILC_COMM_POWER_ON,
+            control::OutputPortBits::RESET_COMM_BREAKERS, _inputPort, commBreakerInBits));
 
     _newOutput = *_outputPort;
 
@@ -79,10 +73,9 @@ SimCore::SimCore() {
     _inputPort->setBitAtPos(control::InputPortBits::POWER_SUPPLY_2_CURRENT_OK, true);
 }
 
-
 void SimCore::_simRun() {
     control::OutputPortBits prevOutput = *_outputPort;
-    while(_simLoop) {
+    while (_simLoop) {
         util::CLOCK::time_point timestamp = util::CLOCK::now();
         // Read in new outputPorts set elsewhere. Keep the lock short.
         {
@@ -117,11 +110,11 @@ void SimCore::_simRun() {
         ++_iterations;
         _iterationCv.notify_all();
         _prevTimeStamp = timestamp;
-        this_thread::sleep_for(chrono::duration<double, std::ratio<1,1>>(1.0/_frequencyHz));
+        this_thread::sleep_for(chrono::duration<double, std::ratio<1, 1>>(1.0 / _frequencyHz));
     }
 }
 
-void SimCore::waitForUpdate(int count)  const {
+void SimCore::waitForUpdate(int count) const {
     LDEBUG("SimCore::waitForUpdate()");
     uint64_t iteration = _iterations;
     unique_lock<mutex> gLock(_mtx);
@@ -160,12 +153,10 @@ void SimCore::setNewOutputPort(control::OutputPortBits const& outputPort) {
     _newOutput.setBitmap(outputPort.getBitmap());
 }
 
-
 control::OutputPortBits SimCore::getNewOutputPort() {
     lock_guard<mutex> lg(_mtx);
     return _newOutput;
 }
-
 
 control::SysInfo SimCore::getSysInfo() const {
     lock_guard<mutex> lg(_mtx);

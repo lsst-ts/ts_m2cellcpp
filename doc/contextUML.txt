@@ -6,13 +6,17 @@ class Context
 class Model
 class StateMap
 class State
-class FaultState
 class IdleState
 class InMotionState
 class OfflineState
 class PauseState
 class StandbyState
 class StartupState
+class MotionEngine
+class CellCtrlComm
+class ScriptEngine
+class PowerSystem
+class FpgaIo
 
 Config <.. Context
 Config <.. Model
@@ -20,7 +24,6 @@ Context *-- Model
 Model *-- StateMap
 StateMap *-- State
 StateMap *-- currentState
-State <|-- FaultState
 State <|-- IdleState
 State <|-- InMotionState
 State <|-- OfflineState

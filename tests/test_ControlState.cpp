@@ -24,12 +24,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_session.hpp>
 
-#include "control/StateMap.h"
+#include "state/StateMap.h"
 #include "system/Config.h"
 #include "util/Log.h"
 
 using namespace std;
-using namespace LSST::m2cellcpp::control;
+using namespace LSST::m2cellcpp::state;
 using namespace LSST::m2cellcpp;
 
 TEST_CASE("Test ControlState", "[ControlState]") {
@@ -37,7 +37,7 @@ TEST_CASE("Test ControlState", "[ControlState]") {
     string cfgPath = system::Config::getEnvironmentCfgPath("../configs");
     system::Config::setup(cfgPath + "unitTestCfg.yaml");
 
-    StateMap sMap;
+    StateMap sMap(nullptr);
     State::Ptr currentState = sMap.getCurrentState();
     StartupState::Ptr startupState = dynamic_pointer_cast<StartupState>(currentState);
     REQUIRE(currentState->getName() == "StartupState");
@@ -47,62 +47,63 @@ TEST_CASE("Test ControlState", "[ControlState]") {
     // Test advancing through existing states transistions.
 
     // go from startup to idle
-    REQUIRE(sMap.changeState("IdleState"));
+    REQUIRE(sMap.changeState(State::IDLESTATE));
     REQUIRE(sMap.getCurrentState()->getName() == "IdleState");
     REQUIRE(sMap.getCurrentState() == sMap.getIdleState());
 
     // go from idle to standby
-    REQUIRE(sMap.changeState("StandbyState"));
+    REQUIRE(sMap.changeState(State::STANDBYSTATE));
     REQUIRE(sMap.getCurrentState()->getName() == "StandbyState");
     REQUIRE(sMap.getCurrentState() == sMap.getStandbyState());
 
     // go from standby to idle
-    REQUIRE(sMap.changeState("IdleState"));
+    REQUIRE(sMap.changeState(State::IDLESTATE));  // "IdleState"
     REQUIRE(sMap.getCurrentState()->getName() == "IdleState");
 
     // go from idle to inMotion
-    REQUIRE(sMap.changeState("InMotionState"));
+    REQUIRE(sMap.changeState(State::INMOTIONSTATE));
     REQUIRE(sMap.getCurrentState()->getName() == "InMotionState");
     REQUIRE(sMap.getCurrentState() == sMap.getInMotionState());
 
     // go from inMotion to idle
-    REQUIRE(sMap.changeState("IdleState"));
+    REQUIRE(sMap.changeState(State::IDLESTATE));
     REQUIRE(sMap.getCurrentState()->getName() == "IdleState");
 
     // go from idle to inMotion
-    REQUIRE(sMap.changeState("InMotionState"));
+    REQUIRE(sMap.changeState(State::INMOTIONSTATE));
     REQUIRE(sMap.getCurrentState()->getName() == "InMotionState");
 
     // got from inMotion to pause
-    REQUIRE(sMap.changeState("PauseState"));
+    REQUIRE(sMap.changeState(State::PAUSESTATE));
     REQUIRE(sMap.getCurrentState()->getName() == "PauseState");
     REQUIRE(sMap.getCurrentState() == sMap.getPauseState());
 
     // go from pause to inMotion
-    REQUIRE(sMap.changeState("InMotionState"));
+    REQUIRE(sMap.changeState(State::INMOTIONSTATE));
     REQUIRE(sMap.getCurrentState()->getName() == "InMotionState");
 
     // go from inMotion to pause
-    REQUIRE(sMap.changeState("PauseState"));
+    REQUIRE(sMap.changeState(State::PAUSESTATE));
     REQUIRE(sMap.getCurrentState()->getName() == "PauseState");
 
     // go from pause to idle
-    REQUIRE(sMap.changeState("IdleState"));
+    REQUIRE(sMap.changeState(State::IDLESTATE));
     REQUIRE(sMap.getCurrentState()->getName() == "IdleState");
 
     // go from idle to standby
-    REQUIRE(sMap.changeState("StandbyState"));
+    REQUIRE(sMap.changeState(State::STANDBYSTATE));
     REQUIRE(sMap.getCurrentState()->getName() == "StandbyState");
     REQUIRE(sMap.getCurrentState() == sMap.getStandbyState());
 
     // go from standby to offline
-    REQUIRE(sMap.changeState("OfflineState"));
+    REQUIRE(sMap.changeState(State::OFFLINESTATE));
     REQUIRE(sMap.getCurrentState()->getName() == "OfflineState");
     REQUIRE(sMap.getCurrentState() == sMap.getOfflineState());
 
-    // Check FaultState. While not used, it seems like it
-    // would be useful.
-    REQUIRE(sMap.changeState("FaultState"));
-    REQUIRE(sMap.getCurrentState()->getName() == "FaultState");
-    REQUIRE(sMap.getCurrentState() == sMap.getFaultState());
+    // goToASafeState tests (starts with currentState being OfflineState
+    REQUIRE(sMap.goToASafeState(State::STANDBYSTATE, "test") == false);  // should stay in OfflineState.
+    REQUIRE(sMap.changeState(State::IDLESTATE));                         // change to IdleState for next test
+    REQUIRE(sMap.goToASafeState(State::STANDBYSTATE, "test") == true);
+    REQUIRE(sMap.goToASafeState(State::INMOTIONSTATE, "test") == false);
+    REQUIRE(sMap.getCurrentState()->getName() == "StandbyState");
 }

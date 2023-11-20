@@ -31,6 +31,7 @@
 
 // Project headers
 #include "control/Context.h"
+#include "control/ControlMain.h"
 #include "control/FpgaIo.h"
 #include "control/MotionEngine.h"
 #include "simulator/SimCore.h"
@@ -42,7 +43,7 @@ using namespace std;
 using namespace LSST::m2cellcpp::control;
 using namespace LSST::m2cellcpp::state;
 
-TEST_CASE("Test Csv", "[CSV]") {
+TEST_CASE("Test startup shutdown", "[CSV]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
     string cfgPath = LSST::m2cellcpp::system::Config::getEnvironmentCfgPath("../configs");
 
@@ -53,17 +54,11 @@ TEST_CASE("Test Csv", "[CSV]") {
 
     Context::Ptr context = Context::get();
     REQUIRE(context != nullptr);
-    REQUIRE(context->model.getCurrentState() ==
-            context->model.getState(State::STARTUPSTATE));  // "StartupState"
-
     context->model.ctrlSetup();
 
-    auto newState = context->model.getState(State::STANDBYSTATE);  // "StandbyState"
-    REQUIRE(context->model.changeState(newState));
-    REQUIRE(context->model.getCurrentState() ==
-            context->model.getState(State::STANDBYSTATE));  //"StandbyState"
+    REQUIRE(context->model.getCurrentState() == context->model.getState(State::STARTUPSTATE));
 
-    newState = context->model.getState(State::IDLESTATE);  //"IdleState"
+    auto newState = context->model.getState(State::IDLESTATE);
     REQUIRE(context->model.changeState(newState));
-    REQUIRE(context->model.getCurrentState() == context->model.getState(State::IDLESTATE));  //"IdleState"
+    REQUIRE(context->model.getCurrentState() == context->model.getState(State::IDLESTATE));
 }

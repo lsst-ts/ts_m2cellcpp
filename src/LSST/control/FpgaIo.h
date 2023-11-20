@@ -90,18 +90,18 @@ public:
     void setLoopSleepSecs(double seconds) { _loopSleepSecs = seconds; }
 
 private:
-    static Ptr _thisPtr; ///< Pointer to the global instance of FpgaIo.
-    static std::mutex _thisPtrMtx; ///< Protects `_thisPtr`.
+    static Ptr _thisPtr;            ///< Pointer to the global instance of FpgaIo.
+    static std::mutex _thisPtrMtx;  ///< Protects `_thisPtr`.
 
     /// Turn off all power bits in _outputPort as something is unsafe
     /// and the PowerSystem is not available.
     void _emergencyTurnOffAllPower();
 
-    SysInfo _sysInfo; ///< Last information read from the FPGA.
+    SysInfo _sysInfo;  ///< Last information read from the FPGA.
 
-    void _readWriteFpga(); ///< Reads/writes to the FPGA/simulator.
-    std::thread _fpgaIoThrd; ///< Thread that runs `_readWriteFpga()`
-    std::atomic<bool> _loop{true}; ///< Set false to stop `_fpgaIoThrd`.
+    void _readWriteFpga();          ///< Reads/writes to the FPGA/simulator.
+    std::thread _fpgaIoThrd;        ///< Thread that runs `_readWriteFpga()`
+    std::atomic<bool> _loop{true};  ///< Set false to stop `_fpgaIoThrd`.
 
     /// Sleep this long after each loop, in seconds.
     std::atomic<double> _loopSleepSecs{0.05};
@@ -109,15 +109,14 @@ private:
     /// Private constructor to force call to `setup`.
     FpgaIo(std::shared_ptr<simulator::SimCore> const& simCore);
 
-    OutputPortBits _outputPort; ///< Output to be written to the output port.
-    InputPortBits _inputPort; ///< Input to be read from to the input port.
-    mutable util::VMutex _portMtx; ///< Protects `_outputPort` and `_inputPort`.
+    OutputPortBits _outputPort;     ///< Output to be written to the output port.
+    InputPortBits _inputPort;       ///< Input to be read from to the input port.
+    mutable util::VMutex _portMtx;  ///< Protects `_outputPort` and `_inputPort`.
 
-    std::shared_ptr<simulator::SimCore> _simCore; ///< simulator
+    std::shared_ptr<simulator::SimCore> _simCore;  ///< simulator
 
-    std::weak_ptr<PowerSystem> _powerSys; ///< Pointer to the `PowerSystem`.
+    std::weak_ptr<PowerSystem> _powerSys;  ///< Pointer to the `PowerSystem`.
 };
-
 
 }  // namespace control
 }  // namespace m2cellcpp

@@ -55,7 +55,6 @@ public:
     TelemetryException(Context const& ctx, std::string const& msg) : util::Issue(ctx, msg) {}
 };
 
-
 class TelemetryItem;
 
 /// Type the `TelemetryItemMap`. Objects of this will be copied, so the
@@ -83,7 +82,8 @@ public:
     /// @param mapB - arbitray `TelemetryItemMap` to be compared to `mapA`
     /// @param note - optional, used to help identify why the two maps are being compared in the log.
     /// NOTE: Comparing a map to itself will likely deadlock.
-    static bool compareTelemetryItemMaps(TelemetryItemMap const& mapA, TelemetryItemMap const& mapB, std::string const& note ="");
+    static bool compareTelemetryItemMaps(TelemetryItemMap const& mapA, TelemetryItemMap const& mapB,
+                                         std::string const& note = "");
 
     /// Create a `TelemetryItem` with immutable id of `id`.
     TelemetryItem(std::string const& id) : _id(id) {}
@@ -98,9 +98,7 @@ public:
     std::string getId() const { return _id; };
 
     /// Return a json object containing the id.
-    virtual nlohmann::json getJson() const {
-        return buildJsonFromMap(_tiMap);
-    }
+    virtual nlohmann::json getJson() const { return buildJsonFromMap(_tiMap); }
 
     /// Return true if this item and `other` have the same id and values.
     virtual bool compareItem(TelemetryItem const& other) const = 0;
@@ -156,9 +154,10 @@ protected:
 
     /// Map of items for this TelemetryItem. Does not change after constructor.
     TelemetryItemMap _tiMap;
+
 private:
-    std::string const _id; ///< Identifier for this item.
-    std::atomic<bool> _doNotSend{false}; ///< Do not transmit this item when this is true.
+    std::string const _id;                ///< Identifier for this item.
+    std::atomic<bool> _doNotSend{false};  ///< Do not transmit this item when this is true.
 };
 
 /// This is a TelemetryItem child class for handling simple single values (such as
@@ -223,9 +222,8 @@ public:
     }
 
 private:
-    std::atomic<ST> _val; ///< Stores the typed value for this item.
+    std::atomic<ST> _val;  ///< Stores the typed value for this item.
 };
-
 
 /// This class is used to store a specific telemetry item with a double value.
 /// Unit tests in tests/test_TelemetryCom
@@ -284,27 +282,29 @@ public:
     /// Create a shared pointer instance of TItemString using `id`, and `defaultVal`, and
     /// insert it into the map `itMap`.
     /// @throws TelemetryException if the new object cannot be inserted into the list.
-    static Ptr create(std::string const& id, TelemetryItemMap* tiMap, std::string const& defaultVal = std::string()) {
+    static Ptr create(std::string const& id, TelemetryItemMap* tiMap,
+                      std::string const& defaultVal = std::string()) {
         Ptr newItem = Ptr(new TItemString(id, defaultVal));
         insert(tiMap, newItem);
         return newItem;
     }
 
     /// Create a `TItemString` object with identifier `id` and option value `defaultVal` for all entries.
-    TItemString(std::string const& id, std::string const& defaultVal = std::string()) : TelemetryItem(id), _val(defaultVal) {}
+    TItemString(std::string const& id, std::string const& defaultVal = std::string())
+            : TelemetryItem(id), _val(defaultVal) {}
 
     ~TItemString() override {}
 
     /// Return a copy of the value.
     std::string getVal() const {
-    	std::lock_guard<std::mutex> lg(_stMtx);
-    	return _val;
+        std::lock_guard<std::mutex> lg(_stMtx);
+        return _val;
     }
 
     /// Set the value of the object to `val`.
     void setVal(std::string const& val) {
-    	std::lock_guard<std::mutex> lg(_stMtx);
-    	_val = val;
+        std::lock_guard<std::mutex> lg(_stMtx);
+        _val = val;
     }
 
     /// Return the json representation of this object.
@@ -349,10 +349,9 @@ public:
     }
 
 private:
-    std::string _val; ///< Stores the typed value for this item.
-    mutable std::mutex _stMtx; ///< Protects `_val`.
+    std::string _val;           ///< Stores the typed value for this item.
+    mutable std::mutex _stMtx;  ///< Protects `_val`.
 };
-
 
 /// This is a TelemetryItem child class for handling vectors, primarily
 /// for the purpose of reading them in and out of json objects.
@@ -366,7 +365,7 @@ public:
 
     /// Create a `TItemVector` object with identifier `id` and option value `defaultVal` for all entries.
     TItemVector(std::string const& id, int size, VT defaultVal = 0) : TelemetryItem(id), _size(size) {
-        for(size_t j=0; j<_size; ++j) {
+        for (size_t j = 0; j < _size; ++j) {
             _vals.push_back(defaultVal);
         }
     }
@@ -413,7 +412,7 @@ public:
     VT getVal(size_t index) const {
         if (index > _size) {
             throw TelemetryException(ERR_LOC, "TItemVector::getVal out of range for index=" +
-                                     std::to_string(index) + " for " + dump());
+                                                      std::to_string(index) + " for " + dump());
         }
         std::lock_guard<std::mutex> lg(_mtx);
         return _vals[index];
@@ -468,11 +467,10 @@ public:
     }
 
 private:
-    size_t const _size; ///< Number of elements in `_vals`.
-    std::vector<VT> _vals; ///< Vector containing the typed values with length _size.
-    mutable std::mutex _mtx; ///< Protects `_vals`.
+    size_t const _size;       ///< Number of elements in `_vals`.
+    std::vector<VT> _vals;    ///< Vector containing the typed values with length _size.
+    mutable std::mutex _mtx;  ///< Protects `_vals`.
 };
-
 
 /// This is a TItemVector child class for handling vectors of doubles.
 /// Unit tests in tests/test_TelemetryCom
@@ -480,8 +478,8 @@ class TItemVectorDouble : public TItemVector<double> {
 public:
     using Ptr = std::shared_ptr<TItemVectorDouble>;
 
-    /// Create a shared pointer instance of TItemVectorDouble using `id`, number of elements `size, and `defaultVal` for
-    /// all entries, then insert it into the map `itMap`.
+    /// Create a shared pointer instance of TItemVectorDouble using `id`, number of elements `size, and
+    /// `defaultVal` for all entries, then insert it into the map `itMap`.
     /// @throws TelemetryException if the new object cannot be inserted into the list
     static Ptr create(std::string const& id, size_t size, TelemetryItemMap* tiMap, double defaultVal = 0.0) {
         Ptr newItem = Ptr(new TItemVectorDouble(id, size, defaultVal));
@@ -492,7 +490,8 @@ public:
     TItemVectorDouble() = delete;
 
     /// Create a `TItemDouble` object with identifier `id` and option value `defaultVal` for all entries.
-    TItemVectorDouble(std::string const& id, int size, double defaultVal = 0.0) : TItemVector(id, size, defaultVal) {}
+    TItemVectorDouble(std::string const& id, int size, double defaultVal = 0.0)
+            : TItemVector(id, size, defaultVal) {}
 
     ~TItemVectorDouble() override {}
 };
@@ -502,8 +501,8 @@ class TItemVectorInt : public TItemVector<int> {
 public:
     using Ptr = std::shared_ptr<TItemVectorInt>;
 
-    /// Create a shared pointer instance of TItemVectorInt using `id`, number of elements `size, and `defaultVal` for
-    /// all entries, then insert it into the map `itMap`.
+    /// Create a shared pointer instance of TItemVectorInt using `id`, number of elements `size, and
+    /// `defaultVal` for all entries, then insert it into the map `itMap`.
     /// @throws TelemetryException if the new object cannot be inserted into the list
     static Ptr create(std::string const& id, size_t size, TelemetryItemMap* tiMap, int defaultVal = 0) {
         Ptr newItem = Ptr(new TItemVectorInt(id, size, defaultVal));

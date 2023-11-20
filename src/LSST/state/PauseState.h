@@ -19,8 +19,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_CONTROL_PAUSESTATE_H
-#define LSST_M2CELLCPP_CONTROL_PAUSESTATE_H
+#ifndef LSST_M2CELLCPP_STATE_PAUSESTATE_H
+#define LSST_M2CELLCPP_STATE_PAUSESTATE_H
 
 // System headers
 #include <functional>
@@ -28,11 +28,11 @@
 #include <memory>
 
 // Project headers
-#include "control/State.h"
+#include "state/State.h"
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace state {
 
 /// Class representation of the "PauseState", aka ReadyPause.
 class PauseState : public State {
@@ -41,8 +41,9 @@ public:
 
     /// Create an instance and insert it into `stateMap`.
     /// @throws Bug if there's already an instance of this class in `stateMap`.
-    static Ptr create(StateMap& stateMap);
+    static Ptr create(StateMap& stateMap, Model* const model);
 
+    PauseState() = delete;
     PauseState(PauseState const&) = delete;
     PauseState& operator=(PauseState const&) = delete;
     virtual ~PauseState() = default;
@@ -57,11 +58,11 @@ public:
     // VI-PH  shutdownMotionEngineVI // calls Model::shutdownMotionEngineVI
     // VI-PH  stopMotionVI // calls Model::stopMotionVI
 private:
-    PauseState() : State("PauseState") {}
+    PauseState(Model* const model) : State(PAUSESTATE, model) {}
 };
 
-}  // namespace control
+}  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_CONTROL_PAUSESTATE_H
+#endif  // LSST_M2CELLCPP_STATE_PAUSESTATE_H

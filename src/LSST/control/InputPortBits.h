@@ -56,47 +56,45 @@ public:
     /// J1-WE9, J2-WE10, J3-WE11, J1-WE12, J2-WE13, and J3-WE14 refer to the bitmaps
     /// made using the matching bit position.
     enum {
-        REDUNDANCY_OK = 0,              ///< “Redundancy OK” = 0
-        LOAD_DISTRIBUTION_OK = 1,       ///< “Load Distribution OK” = 1
-        POWER_SUPPLY_2_DC_OK = 2,       ///< “Power Suppy #2 DC OK” = 2  <sic>
-        POWER_SUPPLY_1_DC_OK = 3,       ///< “Power Supply #1 DC OK” = 3
-        POWER_SUPPLY_2_CURRENT_OK = 4,  ///< “Power Supply #2 Current OK” = 4
-        POWER_SUPPLY_1_CURRENT_OK = 5,  ///< “Power Supply #1 Current OK” = 5
-        J1_W9_1_MTR_PWR_BRKR_OK = 6,    ///< “J1-W9-1-MtrPwrBrkr OK” = 6
-        J1_W9_2_MTR_PWR_BRKR_OK = 7,    ///< “J1-W9-2-MtrPwrBrkr OK” = 7
-        J1_W9_3_MTR_PWR_BRKR_OK = 8,    ///< “J1-W9-3-MtrPwrBrkr OK” = 8
-        J2_W10_1_MTR_PWR_BRKR_OK = 9,   ///< “J2-W10-1-MtrPwrBrkr OK” = 9
-        J2_W10_2_MTR_PWR_BRKR_OK = 10,  ///< “J2-W10-2-MtrPwrBrkr OK” = 10
-        J2_W10_3_MTR_PWR_BRKR_OK = 11,  ///< “J2-W10-3-MtrPwrBrkr OK” = 11
-        J3_W11_1_MTR_PWR_BRKR_OK = 12,  ///< “J3-W11-1-MtrPwrBrkr OK” = 12
-        J3_W11_2_MTR_PWR_BRKR_OK = 13,  ///< “J3-W11-2-MtrPwrBrkr OK” = 13
-        J3_W11_3_MTR_PWR_BRKR_OK = 14,  ///< “J3-W11-3-MtrPwrBrkr OK” = 14
-        J1_W12_1_COMM_PWR_BRKR_OK = 15, ///< “J1-W12-1-CommPwrBrkr OK” = 15
-        SPARE_D16 = 16,                 ///< “Spare_D16” = 16
-        SPARE_D17 = 17,                 ///< “Spare_D16” = 16
-        SPARE_D18 = 18,                 ///< “Spare_D16” = 16
-        SPARE_D19 = 19,                 ///< “Spare_D16” = 16
-        SPARE_D20 = 20,                 ///< “Spare_D16” = 16
-        SPARE_D21 = 21,                 ///< “Spare_D16” = 16
-        SPARE_D22 = 22,                 ///< “Spare_D16” = 16
-        SPARE_D23 = 23,                 ///< “Spare_D23” = 23
-        J1_W12_2_COMM_PWR_BRKR_OK = 24, ///< “J1-W12-2-CommPwrBrkr OK” = 24
-        J2_W13_1_COMM_PWR_BRKR_OK = 25, ///< “J2-W13-1-CommPwrBrkr OK” = 25
-        J2_W13_2_COMM_PWR_BRKR_OK = 26, ///< “J2-W13-2-CommPwrBrkr OK” = 26
-        J3_W14_1_COMM_PWR_BRKR_OK = 27, ///< “J3-W14-1-CommPwrBrkr OK” = 27
-        J3_W14_2_COMM_PWR_BRKR_OK = 28, ///< “J3-W14-2-CommPwrBrkr OK” = 28
-        SPARE_D29 = 29,                 ///< “Spare_D29” = 29
-        SPARE_D30 = 30,                 ///< “Spare_D30” = 30
-        INTERLOCK_POWER_RELAY = 31,     ///< “Interlock Power Relay On” = 31
+        REDUNDANCY_OK = 0,               ///< “Redundancy OK” = 0
+        LOAD_DISTRIBUTION_OK = 1,        ///< “Load Distribution OK” = 1
+        POWER_SUPPLY_2_DC_OK = 2,        ///< “Power Suppy #2 DC OK” = 2  <sic>
+        POWER_SUPPLY_1_DC_OK = 3,        ///< “Power Supply #1 DC OK” = 3
+        POWER_SUPPLY_2_CURRENT_OK = 4,   ///< “Power Supply #2 Current OK” = 4
+        POWER_SUPPLY_1_CURRENT_OK = 5,   ///< “Power Supply #1 Current OK” = 5
+        J1_W9_1_MTR_PWR_BRKR_OK = 6,     ///< “J1-W9-1-MtrPwrBrkr OK” = 6
+        J1_W9_2_MTR_PWR_BRKR_OK = 7,     ///< “J1-W9-2-MtrPwrBrkr OK” = 7
+        J1_W9_3_MTR_PWR_BRKR_OK = 8,     ///< “J1-W9-3-MtrPwrBrkr OK” = 8
+        J2_W10_1_MTR_PWR_BRKR_OK = 9,    ///< “J2-W10-1-MtrPwrBrkr OK” = 9
+        J2_W10_2_MTR_PWR_BRKR_OK = 10,   ///< “J2-W10-2-MtrPwrBrkr OK” = 10
+        J2_W10_3_MTR_PWR_BRKR_OK = 11,   ///< “J2-W10-3-MtrPwrBrkr OK” = 11
+        J3_W11_1_MTR_PWR_BRKR_OK = 12,   ///< “J3-W11-1-MtrPwrBrkr OK” = 12
+        J3_W11_2_MTR_PWR_BRKR_OK = 13,   ///< “J3-W11-2-MtrPwrBrkr OK” = 13
+        J3_W11_3_MTR_PWR_BRKR_OK = 14,   ///< “J3-W11-3-MtrPwrBrkr OK” = 14
+        J1_W12_1_COMM_PWR_BRKR_OK = 15,  ///< “J1-W12-1-CommPwrBrkr OK” = 15
+        SPARE_D16 = 16,                  ///< “Spare_D16” = 16
+        SPARE_D17 = 17,                  ///< “Spare_D16” = 16
+        SPARE_D18 = 18,                  ///< “Spare_D16” = 16
+        SPARE_D19 = 19,                  ///< “Spare_D16” = 16
+        SPARE_D20 = 20,                  ///< “Spare_D16” = 16
+        SPARE_D21 = 21,                  ///< “Spare_D16” = 16
+        SPARE_D22 = 22,                  ///< “Spare_D16” = 16
+        SPARE_D23 = 23,                  ///< “Spare_D23” = 23
+        J1_W12_2_COMM_PWR_BRKR_OK = 24,  ///< “J1-W12-2-CommPwrBrkr OK” = 24
+        J2_W13_1_COMM_PWR_BRKR_OK = 25,  ///< “J2-W13-1-CommPwrBrkr OK” = 25
+        J2_W13_2_COMM_PWR_BRKR_OK = 26,  ///< “J2-W13-2-CommPwrBrkr OK” = 26
+        J3_W14_1_COMM_PWR_BRKR_OK = 27,  ///< “J3-W14-1-CommPwrBrkr OK” = 27
+        J3_W14_2_COMM_PWR_BRKR_OK = 28,  ///< “J3-W14-2-CommPwrBrkr OK” = 28
+        SPARE_D29 = 29,                  ///< “Spare_D29” = 29
+        SPARE_D30 = 30,                  ///< “Spare_D30” = 30
+        INTERLOCK_POWER_RELAY = 31,      ///< “Interlock Power Relay On” = 31
         // Special values
-        ALWAYS_HIGH = 100000, ///< Indicates that the bit will always be set high.
-        ALWAYS_LOW = 100001   ///< Indicates that the bit will always be set low.
+        ALWAYS_HIGH = 100000,  ///< Indicates that the bit will always be set high.
+        ALWAYS_LOW = 100001    ///< Indicates that the bit will always be set low.
     };
 
     /// Bitmap size, bits in uint32_t
-    enum {
-        BM_SZ = 32
-    };
+    enum { BM_SZ = 32 };
 
     /// Returns the input port bit mask, which is all bits. This is from the
     /// vi in the LabView code and is mainly kept for reference as having a
@@ -134,20 +132,16 @@ public:
     void setBitAtPos(int pos, bool val);
 
     /// Return all bits that are set in `_bitmap` and in `mask`.
-    uint32_t getBitsSetInMask(uint32_t mask) const {
-        return _bitmap & mask;
-    }
+    uint32_t getBitsSetInMask(uint32_t mask) const { return _bitmap & mask; }
 
     /// Return all bits that are set in `_bitmap` and not in `mask`.
-    uint32_t getBitsSetOutOfMask(uint32_t mask) const {
-        return _bitmap & ~mask;
-    }
+    uint32_t getBitsSetOutOfMask(uint32_t mask) const { return _bitmap & ~mask; }
 
     /// Return a binary string representation of `_bitmap`.
     static std::string getBinaryStr(uint32_t);
 
 private:
-    uint32_t _bitmap = 0; ///< Bitmap of input port.
+    uint32_t _bitmap = 0;  ///< Bitmap of input port.
 };
 
 }  // namespace control

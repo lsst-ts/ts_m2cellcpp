@@ -19,8 +19,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_CONTROL_FAULTSTATE_H
-#define LSST_M2CELLCPP_CONTROL_FAULTSTATE_H
+#ifndef LSST_M2CELLCPP_STATE_OFFLINESTATE_H
+#define LSST_M2CELLCPP_STATE_OFFLINESTATE_H
 
 // System headers
 #include <functional>
@@ -28,34 +28,33 @@
 #include <memory>
 
 // Project headers
-#include "control/State.h"
+#include "state/State.h"
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace state {
 
-/// Class representation of the "FaultState", this state appears to be unused in LabView.
-class FaultState : public State {
+/// Class representation of the OfflineState, which leads to program termination.
+class OfflineState : public State {
 public:
-    using Ptr = std::shared_ptr<FaultState>;
+    using Ptr = std::shared_ptr<OfflineState>;
 
     /// Create an instance and insert it into `stateMap`.
     /// @throws Bug if there's already an instance of this class in `stateMap`.
-    static Ptr create(StateMap& stateMap);
+    static Ptr create(StateMap& stateMap, Model* const model);
 
-    FaultState(FaultState const&) = delete;
-    FaultState& operator=(FaultState const&) = delete;
-    virtual ~FaultState() = default;
-    // VI-PH  clearErrorVI   // calls Model::resetErrorCodeVI then Model::changeStateVI(StandbyState)
-    // VI-PH  goToStandbyVI  // calls Model::resetErrorCodeVI then Model::stopVI then
-    // Model::changeStateVI(StandbyState)
+    OfflineState() = delete;
+    OfflineState(OfflineState const&) = delete;
+    OfflineState& operator=(OfflineState const&) = delete;
+    virtual ~OfflineState() = default;
 
+    // nothing here in LabView
 private:
-    FaultState() : State("FaultState") {}
+    OfflineState(Model* const model) : State(OFFLINESTATE, model) {}
 };
 
-}  // namespace control
+}  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_CONTROL_FAULTSTATE_H
+#endif  // LSST_M2CELLCPP_STATE_OFFLINESTATE_H

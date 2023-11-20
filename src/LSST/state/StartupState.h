@@ -19,8 +19,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_CONTROL_STANDBYSTATE_H
-#define LSST_M2CELLCPP_CONTROL_STANDBYSTATE_H
+#ifndef LSST_M2CELLCPP_STATE_STARTUPSTATE_H
+#define LSST_M2CELLCPP_STATE_STARTUPSTATE_H
 
 // System headers
 #include <functional>
@@ -28,38 +28,34 @@
 #include <memory>
 
 // Project headers
-#include "control/State.h"
+#include "state/State.h"
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace state {
 
-/// This class represents the "StandbyState".
-class StandbyState : public State {
+/// This class represents the state when the system is started.
+class StartupState : public State {
 public:
-    using Ptr = std::shared_ptr<StandbyState>;
+    using Ptr = std::shared_ptr<StartupState>;
 
     /// Create an instance and insert it into `stateMap`.
     /// @throws Bug if there's already an instance of this class in `stateMap`.
-    static Ptr create(StateMap& stateMap);
+    static Ptr create(StateMap& stateMap, Model* const model);
 
-    StandbyState(StandbyState const&) = delete;
-    StandbyState& operator=(StandbyState const&) = delete;
-    virtual ~StandbyState() = default;
+    StartupState(StartupState const&) = delete;
+    StartupState& operator=(StartupState const&) = delete;
+    virtual ~StartupState() = default;
 
-    /// VI-PH  exitVI // calls Model::changeStateVI(OfflineState)
-    void exitVI();
-
-    /// VI-PH  startVI // calls Model::startVI  then  Model::stopMotionVI  then
-    /// Model::changeStateVI(ReadyIdle)
-    void startVI();
+    /// Return true if the Model reports startupFinished.
+    bool isStartupFinished() const;
 
 private:
-    StandbyState() : State("StandbyState") {}
+    StartupState(Model* const model) : State(STARTUPSTATE, model) {}
 };
 
-}  // namespace control
+}  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_CONTROL_STANDBYSTATE_H
+#endif  // LSST_M2CELLCPP_STATE_STARTUPSTATE_H

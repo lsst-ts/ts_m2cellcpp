@@ -42,8 +42,8 @@ using namespace LSST::m2cellcpp::simulator;
 using namespace LSST::m2cellcpp::control;
 using namespace LSST::m2cellcpp;
 
-void testPowerOn(PowerSubsystemConfig const& psCfg, double voltage, double current,
-        string const& note, bool& success, bool& done) {
+void testPowerOn(PowerSubsystemConfig const& psCfg, double voltage, double current, string const& note,
+                 bool& success, bool& done) {
     if (voltage > psCfg.getMinVoltageFault()) {
         if (voltage < psCfg.getMaxVoltageFault()) {
             if (current > psCfg.getMaxCurrentFault()) {
@@ -61,8 +61,8 @@ void testPowerOn(PowerSubsystemConfig const& psCfg, double voltage, double curre
     }
 }
 
-void testPowerOff(PowerSubsystemConfig const& psCfg, double voltage,
-        string const& note, bool& success, bool& done) {
+void testPowerOff(PowerSubsystemConfig const& psCfg, double voltage, string const& note, bool& success,
+                  bool& done) {
     if (voltage <= psCfg.getVoltageOffLevel()) {
         success = true;
         done = true;
@@ -91,7 +91,7 @@ bool motorPowerOnTest(SimCore& simCore, PowerSubsystemConfig const& motorCfg) {
             LDEBUG("motor power not on");
         }
         testPowerOn(motorCfg, info.motorVoltage, info.motorCurrent, "motor", success, done);
-        checkTimeout(tStart, motorCfg.outputOnMaxDelay(), done, "motor"); // Sets done = true on timeout.
+        checkTimeout(tStart, motorCfg.outputOnMaxDelay(), done, "motor");  // Sets done = true on timeout.
         this_thread::sleep_for(0.04s);
     }
     return success;
@@ -107,7 +107,7 @@ bool commPowerOnTest(SimCore& simCore, PowerSubsystemConfig const& commCfg) {
             LDEBUG("comm power not on");
         }
         testPowerOn(commCfg, info.commVoltage, info.commCurrent, "comm", success, done);
-        checkTimeout(tStart, commCfg.outputOnMaxDelay(), done, "comm"); // Sets done = true on timeout.
+        checkTimeout(tStart, commCfg.outputOnMaxDelay(), done, "comm");  // Sets done = true on timeout.
         this_thread::sleep_for(0.04s);
     }
     return success;
@@ -128,7 +128,8 @@ bool motorPowerOffTest(SimCore& simCore, PowerSubsystemConfig const& motorCfg) {
         testPowerOff(motorCfg, info.motorVoltage, "motor", success, done);
         // outputOffMaxDelay() is too short for the simulator to finish a single loop
         // given the expected frequency of updates from the configuration.
-        checkTimeout(tStart, motorCfg.outputOffMaxDelay()*5.0, done, "motor"); // Sets done = true on timeout.
+        checkTimeout(tStart, motorCfg.outputOffMaxDelay() * 5.0, done,
+                     "motor");  // Sets done = true on timeout.
         this_thread::sleep_for(0.04s);
     }
     return success;
@@ -149,12 +150,12 @@ bool commPowerOffTest(SimCore& simCore, PowerSubsystemConfig const& commCfg) {
         testPowerOff(commCfg, info.commVoltage, "comm", success, done);
         // outputOffMaxDelay() is too short for the simulator to finish a single loop
         // given the expected frequency of updates from the configuration.
-        checkTimeout(tStart, commCfg.outputOffMaxDelay()*5.0, done, "comm"); // Sets done = true on timeout.
+        checkTimeout(tStart, commCfg.outputOffMaxDelay() * 5.0, done,
+                     "comm");  // Sets done = true on timeout.
         this_thread::sleep_for(0.04s);
     }
     return success;
 }
-
 
 TEST_CASE("Test SimCore", "[SimCore]") {
     util::Log::getLog().useEnvironmentLogLvl();

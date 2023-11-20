@@ -27,6 +27,7 @@
 // Third party headers
 
 // Project headers
+#include "system/ComControlServer.h"
 #include "system/Globals.h"
 #include "util/Log.h"
 
@@ -36,7 +37,6 @@ using json = nlohmann::json;
 namespace LSST {
 namespace m2cellcpp {
 namespace control {
-
 
 NCmdSwitchCommandSource::Ptr NCmdSwitchCommandSource::create(JsonPtr const& inJson_) {
     auto cmd = Ptr(new NCmdSwitchCommandSource(inJson_));
@@ -63,7 +63,14 @@ NetCommand::Ptr NCmdSwitchCommandSource::createNewNetCommand(JsonPtr const& inJs
 }
 
 bool NCmdSwitchCommandSource::action() {
-    return system::Globals::get().setCommandSourceIsRemote(_isRemote);
+    bool result = system::Globals::get().setCommandSourceIsRemote(_isRemote);
+    // This sets the CommandableByDds global, which needs to be broadcast.
+    string msg = to_string(system::Globals::get().getCommandableByDdsJson());
+    auto comServ = system::ComControlServer::get().lock();
+    if (comServ != nullptr) {
+        comServ->asyncWriteToAllComConn(msg);
+    }
+    return result;
 }
 
 }  // namespace control

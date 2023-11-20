@@ -44,9 +44,18 @@ public:
     virtual ~ComControlServer() = default;
 
     /// A factory method to prevent issues with enable_shared_from_this.
+    /// @param ioContext - asio io context.
+    /// @param port - port number.
+    /// @param cmdFactory - pointer to the NetCommandFactory that can handle
+    ///             requests expected of this server
+    /// @param makeGlobal - set to true if the created ComControlServer should
+    ///             be the global instance (default is false).
     /// @return A pointer to the created ComControlServer object.
     static Ptr create(IoContextPtr const& ioContext, int port,
-                      control::NetCommandFactory::Ptr const& cmdFactory);
+                      control::NetCommandFactory::Ptr const& cmdFactory, bool makeGlobal = false);
+
+    /// Return a weak pointer to `_globalComControlServer`.
+    static std::weak_ptr<ComControlServer> get() { return _globalComControlServer; }
 
     /// @return a new ComControl object.
     ComConnection::Ptr newComConnection(IoContextPtr const& ioContext, uint64_t connId,
@@ -62,6 +71,8 @@ private:
     /// NetCommandFactory to decipher messages and provide NetCommands.
     control::NetCommandFactory::Ptr _cmdFactory;
 
+    /// Pointer to the global ComControlServer instance, if there is one.
+    static std::weak_ptr<ComControlServer> _globalComControlServer;
 };
 
 }  // namespace system

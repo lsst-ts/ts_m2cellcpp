@@ -23,7 +23,6 @@
 
 // System headers
 
-
 // Third party headers
 
 // Project headers
@@ -64,7 +63,7 @@ private:
     NCmdSwitchCommandSource(JsonPtr const& json);
     NCmdSwitchCommandSource() : NetCommand() {}
 
-    bool _isRemote = 1; ///< Value of "isRemote" section of message.
+    bool _isRemote = 1;  ///< Value of "isRemote" section of message.
 };
 
 }  // namespace control

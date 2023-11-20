@@ -34,7 +34,6 @@
 // Project headers
 #include "util/Issue.h"
 
-
 namespace LSST {
 namespace m2cellcpp {
 namespace system {

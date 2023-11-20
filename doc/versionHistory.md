@@ -1,5 +1,9 @@
 # Version History
 
+0.3.6
+
+ - Reworked the Model state machine. 
+
 0.3.5
 
  - Added FaultMgr.

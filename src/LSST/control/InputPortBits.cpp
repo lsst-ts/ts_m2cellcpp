@@ -34,18 +34,13 @@
 #include "faultmgr/FaultStatusBits.h"
 #include "util/Log.h"
 
-
-
 using namespace std;
 
 namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-void InputPortBits::writeBit(int pos, bool set) {
-    faultmgr::FaultStatusBits::setBit32(_bitmap, pos, set);
-}
-
+void InputPortBits::writeBit(int pos, bool set) { faultmgr::FaultStatusBits::setBit32(_bitmap, pos, set); }
 
 bool InputPortBits::getBitAtPos(int pos) const {
     if (pos < 0 || pos >= BM_SZ) {
@@ -71,7 +66,7 @@ void InputPortBits::setBitAtPos(int pos, bool val) {
 string InputPortBits::getAllSetBitEnums() const {
     string str;
     uint32_t mask = 1;
-    for (int j=0; j<BM_SZ; ++j) {
+    for (int j = 0; j < BM_SZ; ++j) {
         if (getBitsSetInMask(mask)) {
             str += getEnumString(j) + ",";
         }
@@ -87,45 +82,78 @@ string InputPortBits::getBinaryStr(uint32_t val) {
 }
 
 string InputPortBits::getEnumString(int enumVal) {
-    switch(enumVal) {
-    case REDUNDANCY_OK: return "REDUNDANCY_OK " + to_string(enumVal);
-    case LOAD_DISTRIBUTION_OK: return "LOAD_DISTRIBUTION_OK " + to_string(enumVal);
-    case POWER_SUPPLY_2_DC_OK: return "POWER_SUPPLY_2_DC_OK " + to_string(enumVal);
-    case POWER_SUPPLY_1_DC_OK: return "POWER_SUPPLY_1_DC_OK " + to_string(enumVal);
-    case POWER_SUPPLY_2_CURRENT_OK: return "POWER_SUPPLY_2_CURRENT_OK " + to_string(enumVal);
-    case POWER_SUPPLY_1_CURRENT_OK: return "POWER_SUPPLY_1_CURRENT_OK " + to_string(enumVal);
-    case J1_W9_1_MTR_PWR_BRKR_OK: return "J1_W9_1_MTR_PWR_BRKR_OK " + to_string(enumVal);
-    case J1_W9_2_MTR_PWR_BRKR_OK: return "J1_W9_2_MTR_PWR_BRKR_OK " + to_string(enumVal);
-    case J1_W9_3_MTR_PWR_BRKR_OK: return "J1_W9_3_MTR_PWR_BRKR_OK " + to_string(enumVal);
-    case J2_W10_1_MTR_PWR_BRKR_OK: return "J2_W10_1_MTR_PWR_BRKR_OK " + to_string(enumVal);
-    case J2_W10_2_MTR_PWR_BRKR_OK: return "J2_W10_2_MTR_PWR_BRKR_OK " + to_string(enumVal);
-    case J2_W10_3_MTR_PWR_BRKR_OK: return "J2_W10_3_MTR_PWR_BRKR_OK " + to_string(enumVal);
-    case J3_W11_1_MTR_PWR_BRKR_OK: return "J3_W11_1_MTR_PWR_BRKR_OK " + to_string(enumVal);
-    case J3_W11_2_MTR_PWR_BRKR_OK: return "J3_W11_2_MTR_PWR_BRKR_OK " + to_string(enumVal);
-    case J3_W11_3_MTR_PWR_BRKR_OK: return "J3_W11_3_MTR_PWR_BRKR_OK " + to_string(enumVal);
-    case J1_W12_1_COMM_PWR_BRKR_OK: return "J1_W12_1_COMM_PWR_BRKR_OK " + to_string(enumVal);
-    case SPARE_D16: return "SPARE_D16 " + to_string(enumVal);
-    case SPARE_D17: return "SPARE_D17 " + to_string(enumVal);
-    case SPARE_D18: return "SPARE_D18 " + to_string(enumVal);
-    case SPARE_D19: return "SPARE_D19 " + to_string(enumVal);
-    case SPARE_D20: return "SPARE_D20 " + to_string(enumVal);
-    case SPARE_D21: return "SPARE_D21 " + to_string(enumVal);
-    case SPARE_D22: return "SPARE_D22 " + to_string(enumVal);
-    case SPARE_D23: return "SPARE_D23 " + to_string(enumVal);
-    case J1_W12_2_COMM_PWR_BRKR_OK: return "J1_W12_2_COMM_PWR_BRKR_OK " + to_string(enumVal);
-    case J2_W13_1_COMM_PWR_BRKR_OK: return "J2_W13_1_COMM_PWR_BRKR_OK " + to_string(enumVal);
-    case J2_W13_2_COMM_PWR_BRKR_OK: return "J2_W13_2_COMM_PWR_BRKR_OK " + to_string(enumVal);
-    case J3_W14_1_COMM_PWR_BRKR_OK: return "J3_W14_1_COMM_PWR_BRKR_OK " + to_string(enumVal);
-    case J3_W14_2_COMM_PWR_BRKR_OK: return "J3_W14_2_COMM_PWR_BRKR_OK " + to_string(enumVal);
-    case SPARE_D29: return "SPARE_D29 " + to_string(enumVal);
-    case SPARE_D30: return "SPARE_D30 " + to_string(enumVal);
-    case INTERLOCK_POWER_RELAY: return "INTERLOCK_POWER_RELAY " + to_string(enumVal);
-    case ALWAYS_HIGH: return "ALWAYS_HIGH " + to_string(enumVal);
-    case ALWAYS_LOW: return "ALWAYS_LOW " + to_string(enumVal);
+    switch (enumVal) {
+        case REDUNDANCY_OK:
+            return "REDUNDANCY_OK " + to_string(enumVal);
+        case LOAD_DISTRIBUTION_OK:
+            return "LOAD_DISTRIBUTION_OK " + to_string(enumVal);
+        case POWER_SUPPLY_2_DC_OK:
+            return "POWER_SUPPLY_2_DC_OK " + to_string(enumVal);
+        case POWER_SUPPLY_1_DC_OK:
+            return "POWER_SUPPLY_1_DC_OK " + to_string(enumVal);
+        case POWER_SUPPLY_2_CURRENT_OK:
+            return "POWER_SUPPLY_2_CURRENT_OK " + to_string(enumVal);
+        case POWER_SUPPLY_1_CURRENT_OK:
+            return "POWER_SUPPLY_1_CURRENT_OK " + to_string(enumVal);
+        case J1_W9_1_MTR_PWR_BRKR_OK:
+            return "J1_W9_1_MTR_PWR_BRKR_OK " + to_string(enumVal);
+        case J1_W9_2_MTR_PWR_BRKR_OK:
+            return "J1_W9_2_MTR_PWR_BRKR_OK " + to_string(enumVal);
+        case J1_W9_3_MTR_PWR_BRKR_OK:
+            return "J1_W9_3_MTR_PWR_BRKR_OK " + to_string(enumVal);
+        case J2_W10_1_MTR_PWR_BRKR_OK:
+            return "J2_W10_1_MTR_PWR_BRKR_OK " + to_string(enumVal);
+        case J2_W10_2_MTR_PWR_BRKR_OK:
+            return "J2_W10_2_MTR_PWR_BRKR_OK " + to_string(enumVal);
+        case J2_W10_3_MTR_PWR_BRKR_OK:
+            return "J2_W10_3_MTR_PWR_BRKR_OK " + to_string(enumVal);
+        case J3_W11_1_MTR_PWR_BRKR_OK:
+            return "J3_W11_1_MTR_PWR_BRKR_OK " + to_string(enumVal);
+        case J3_W11_2_MTR_PWR_BRKR_OK:
+            return "J3_W11_2_MTR_PWR_BRKR_OK " + to_string(enumVal);
+        case J3_W11_3_MTR_PWR_BRKR_OK:
+            return "J3_W11_3_MTR_PWR_BRKR_OK " + to_string(enumVal);
+        case J1_W12_1_COMM_PWR_BRKR_OK:
+            return "J1_W12_1_COMM_PWR_BRKR_OK " + to_string(enumVal);
+        case SPARE_D16:
+            return "SPARE_D16 " + to_string(enumVal);
+        case SPARE_D17:
+            return "SPARE_D17 " + to_string(enumVal);
+        case SPARE_D18:
+            return "SPARE_D18 " + to_string(enumVal);
+        case SPARE_D19:
+            return "SPARE_D19 " + to_string(enumVal);
+        case SPARE_D20:
+            return "SPARE_D20 " + to_string(enumVal);
+        case SPARE_D21:
+            return "SPARE_D21 " + to_string(enumVal);
+        case SPARE_D22:
+            return "SPARE_D22 " + to_string(enumVal);
+        case SPARE_D23:
+            return "SPARE_D23 " + to_string(enumVal);
+        case J1_W12_2_COMM_PWR_BRKR_OK:
+            return "J1_W12_2_COMM_PWR_BRKR_OK " + to_string(enumVal);
+        case J2_W13_1_COMM_PWR_BRKR_OK:
+            return "J2_W13_1_COMM_PWR_BRKR_OK " + to_string(enumVal);
+        case J2_W13_2_COMM_PWR_BRKR_OK:
+            return "J2_W13_2_COMM_PWR_BRKR_OK " + to_string(enumVal);
+        case J3_W14_1_COMM_PWR_BRKR_OK:
+            return "J3_W14_1_COMM_PWR_BRKR_OK " + to_string(enumVal);
+        case J3_W14_2_COMM_PWR_BRKR_OK:
+            return "J3_W14_2_COMM_PWR_BRKR_OK " + to_string(enumVal);
+        case SPARE_D29:
+            return "SPARE_D29 " + to_string(enumVal);
+        case SPARE_D30:
+            return "SPARE_D30 " + to_string(enumVal);
+        case INTERLOCK_POWER_RELAY:
+            return "INTERLOCK_POWER_RELAY " + to_string(enumVal);
+        case ALWAYS_HIGH:
+            return "ALWAYS_HIGH " + to_string(enumVal);
+        case ALWAYS_LOW:
+            return "ALWAYS_LOW " + to_string(enumVal);
     }
     return "unknown " + to_string(enumVal);
 }
-
 
 }  // namespace control
 }  // namespace m2cellcpp

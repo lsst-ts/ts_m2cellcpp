@@ -27,6 +27,7 @@
 // Project headers
 #include "control/Context.h"
 #include "control/FpgaIo.h"
+#include "control/MotionEngine.h"
 #include "faultmgr/FaultMgr.h"
 #include "simulator/SimCore.h"
 #include "system/ComClient.h"
@@ -61,6 +62,7 @@ TEST_CASE("Test ComControl", "[ComControl]") {
     simulator::SimCore::Ptr simCore(new LSST::m2cellcpp::simulator::SimCore());
     faultmgr::FaultMgr::setup();
     control::FpgaIo::setup(simCore);
+    control::MotionEngine::setup();
     control::Context::setup();
 
     // Start a ComControlServer
@@ -90,7 +92,7 @@ TEST_CASE("Test ComControl", "[ComControl]") {
         ComClient client(ioContext, "127.0.0.1", port);
         int welcomeCount = client.readWelcomeMsg();
         LDEBUG("welcomeCount=", welcomeCount);
-        REQUIRE(welcomeCount == 13);
+        REQUIRE(welcomeCount == 16);
         {
             string note("Correct NCmdAck");
             LDEBUG(note);
@@ -130,6 +132,11 @@ TEST_CASE("Test ComControl", "[ComControl]") {
 
     // Shutdown the server
     serv->shutdown();
+    // Give it a few seconds for everything to shutdown. One
+    // second should be enough, but Jenkins may be busy.
+    for (int j = 0; serv->connectionCount() != 0 && j < 10; ++j) {
+        sleep(1);
+    }
     REQUIRE(serv->connectionCount() == 0);
 
     // Server stop

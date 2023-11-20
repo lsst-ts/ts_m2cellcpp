@@ -34,20 +34,19 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-
 /// Copy of relevant simulation information.
 class SysInfo {
 public:
     control::OutputPortBits outputPort;
     control::InputPortBits inputPort;
-    double motorVoltage; ///< volts
-    double motorCurrent; ///< amps
+    double motorVoltage;  ///< volts
+    double motorCurrent;  ///< amps
     bool motorBreakerClosed;
-    double commVoltage; ///< volts
-    double commCurrent; ///< amps
+    double commVoltage;  ///< volts
+    double commCurrent;  ///< amps
     bool commBreakerClosed;
     uint64_t iterations;
-    util::TIMEPOINT timestamp; ///< clock time this was updated.
+    util::TIMEPOINT timestamp;  ///< clock time this was updated.
 
     /// Return a log worthy string containing information about this class.
     std::string dump() const;

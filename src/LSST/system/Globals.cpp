@@ -29,6 +29,7 @@
 #include "util/Log.h"
 
 using namespace std;
+using json = nlohmann::json;
 
 namespace LSST {
 namespace m2cellcpp {
@@ -37,7 +38,6 @@ namespace system {
 // static Globals members
 unique_ptr<Globals> Globals::_thisPtr;
 mutex Globals::_thisMtx;
-
 
 void Globals::setup(Config const& config) {
     lock_guard<mutex> lock(_thisMtx);
@@ -48,10 +48,7 @@ void Globals::setup(Config const& config) {
     _thisPtr = std::unique_ptr<Globals>(new Globals(config));
 }
 
-
-Globals::Globals(Config const& config) {
-
-}
+Globals::Globals(Config const& config) {}
 
 void Globals::reset() {
     LCRITICAL("Config reseting Globals!!!");
@@ -59,14 +56,12 @@ void Globals::reset() {
     _thisPtr.reset();
 }
 
-
 Globals& Globals::get() {
     if (_thisPtr == nullptr) {
         throw ConfigException(ERR_LOC, "Globals has not been setup.");
     }
     return *_thisPtr;
 }
-
 
 /// Increase the the number of connections when `connecting` is true, decrease when false;
 void Globals::setTcpIpConnected(bool connecting) {
@@ -86,6 +81,14 @@ void Globals::setTcpIpConnected(bool connecting) {
 bool Globals::getTcpIpConnected() const {
     lock_guard<mutex> lock(_tcpIpConnectedMtx);
     return (_tcpIpConnectedCount > 0);
+}
+
+json Globals::getCommandableByDdsJson() const {
+    json js;
+    js["id"] = "commandableByDDS";
+    bool state = _commandableByDds;  // json cannot convert atomic<bool> to bool directly.
+    js["state"] = state;
+    return js;
 }
 
 }  // namespace system

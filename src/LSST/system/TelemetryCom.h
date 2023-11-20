@@ -103,7 +103,8 @@ public:
         ServerConnectionHandler(ServerConnectionHandler const&) = delete;
 
         /// Create a new `ServerConnectionHandler` and start its threads to handle `sock`.
-        ServerConnectionHandler(int sock, TelemetryMap::Ptr const& tItemMap) : _servConnHSock(sock), _tItemMap(tItemMap) {
+        ServerConnectionHandler(int sock, TelemetryMap::Ptr const& tItemMap)
+                : _servConnHSock(sock), _tItemMap(tItemMap) {
             std::thread thrdH(&ServerConnectionHandler::_servConnHandler, this);
             _servConnHThrd = std::move(thrdH);
             std::thread thrdR(&ServerConnectionHandler::_servConnReader, this);
@@ -111,9 +112,7 @@ public:
         }
 
         /// Join associated threads.
-        ~ServerConnectionHandler() {
-            joinAll();
-        }
+        ~ServerConnectionHandler() { joinAll(); }
 
         /// Stop this instance's threads.
         void servConnHShutdown();
@@ -137,7 +136,7 @@ public:
         /// Join `_servConnHThrd`. `_joinMtx` must be locked before calling
         void _joinHandler();
 
-       /// Join `_servConnReadThrd`. `_joinMtx` must be locked before calling
+        /// Join `_servConnReadThrd`. `_joinMtx` must be locked before calling
         void _joinReader();
 
         /// Check if the reader thread is ready to join, and try to join it if it is.
@@ -148,16 +147,17 @@ public:
 
         /// A map of all the telemetry values that need to be sent to the client.
         TelemetryMap::Ptr _tItemMap;
-        std::thread _servConnHThrd;  ///< The thread running the handler.
+        std::thread _servConnHThrd;     ///< The thread running the handler.
         std::thread _servConnReadThrd;  ///< The thread running the read thread.
 
         std::atomic<bool> _connLoop{true};  ///< Setting this to false stops the threads.
 
-        std::atomic<bool> _readyToJoinHandler{false}; ///< True when the handler thread has reached its end.
-        std::atomic<bool> _joinedHandler{false};      ///< True when the handler thread has joined.
-        std::atomic<bool> _readyToJoinReader{false}; ///< True when the reader thread has reached its end.
-        std::atomic<bool> _joinedReader{false};      ///< True when the reader thread has joined.
-        std::mutex _joinMtx;                          ///< protects `_readyToJoinHandler`, `_joinedHandler`, `_readyToJoinReader`, and `_joinedReader`
+        std::atomic<bool> _readyToJoinHandler{false};  ///< True when the handler thread has reached its end.
+        std::atomic<bool> _joinedHandler{false};       ///< True when the handler thread has joined.
+        std::atomic<bool> _readyToJoinReader{false};   ///< True when the reader thread has reached its end.
+        std::atomic<bool> _joinedReader{false};        ///< True when the reader thread has joined.
+        std::mutex _joinMtx;  ///< protects `_readyToJoinHandler`, `_joinedHandler`, `_readyToJoinReader`, and
+                              ///< `_joinedReader`
     };
 
 private:

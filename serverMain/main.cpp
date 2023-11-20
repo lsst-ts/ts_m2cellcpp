@@ -20,6 +20,10 @@
  */
 
 #include "control/Context.h"
+#include "control/FpgaIo.h"
+#include "control/MotionEngine.h"
+#include "faultmgr/FaultMgr.h"
+#include "simulator/SimCore.h"
 #include "system/ComControl.h"
 #include "system/ComControlServer.h"
 #include "system/Config.h"
@@ -65,7 +69,8 @@ int main(int argc, char* argv[]) {
     }
     log.setOutputDest(util::Log::SPEEDLOG);
     // FUTURE: DM-39974 add command line argument to turn `Log::_alwaysFlush` off.
-    log.setAlwaysFlush(true); // spdlog is highly prone to waiting a long time before writing to disk.
+    log.setAlwaysFlush(true);  // spdlog is highly prone to waiting a long time before writing to disk.
+    LINFO("Main - logging ready");
 
     // Setup global items.
     system::Globals::setup(sysCfg);
@@ -73,7 +78,34 @@ int main(int argc, char* argv[]) {
     // Setup a simple signal handler to handle when clients closing connection results in SIGPIPE.
     signal(SIGPIPE, signalHandler);
 
+    // Create the control system
+    LSST::m2cellcpp::simulator::SimCore::Ptr simCore(new LSST::m2cellcpp::simulator::SimCore());
+    simCore->start();
+    faultmgr::FaultMgr::setup();
+    control::FpgaIo::setup(simCore);
+    control::MotionEngine::setup();
+    control::Context::setup();
+
+    // Register the PowerSystem with FpgaIo so that it gets updates.
+    auto powerSys = control::Context::get()->model.getPowerSystem();
+    control::FpgaIo::get().registerPowerSys(powerSys);
+
+    // Setup the control system
+    auto context = control::Context::get();
+    context->model.ctrlSetup();
+
+    // At this point, MotionCtrl and FpgaCtrl should be configured. Start the control loops
+    context->model.ctrlStart();
+
+    // At this point, the LabView code seems to want to put the system into
+    // ReadyIdle. We're NOT doing that. The system is going into StandbyState
+    // until it gets an explicit command to do something else.
+
     // Start the telemetry server
+    // FUTURE: Telemetry for the GUI requires the ComControlServer->ComConnection::welcomeMsg to
+    //         work properly. Those elements should be in the telemetry so there's no need for a
+    //         ComControlServer connection for Telemetry. This has to wait until the existing
+    //         controller is no longer used.
     LINFO("Starting Telemetry Server");
     // FUTURE: get the correct entries into `system::Config`.
     int const telemPort = 50001;
@@ -83,11 +115,11 @@ int main(int argc, char* argv[]) {
     telemetryServ->startServer();
     if (!telemetryServ->waitForServerRunning(5)) {
         LCRITICAL("Telemetry server failed to start.");
-        exit(-1);
+        exit(-1);  // change to powerdown and exit
     }
 
-    // Start the control system
-    control::Context::setup();
+    // Wait for MotionCtrl to be ready
+    context->model.waitForCtrlReady();
 
     // Start a ComControlServer
     LDEBUG("ComControlServer starting...");
@@ -95,7 +127,7 @@ int main(int argc, char* argv[]) {
     int port = system::Config::get().getControlServerPort();
     auto cmdFactory = control::NetCommandFactory::create();
     system::ComControl::setupNormalFactory(cmdFactory);
-    auto serv = system::ComControlServer::create(ioContext, port, cmdFactory);
+    auto serv = system::ComControlServer::create(ioContext, port, cmdFactory, true);
     LINFO("ComControlServer created port=", port);
 
     atomic<bool> comServerDone{false};
@@ -110,11 +142,15 @@ int main(int argc, char* argv[]) {
         comServerDone = true;
     });
 
+    // FUTURE: Add a NetCommand to terminate the service which will
+    //   - send shutdown  to ComServer.
+    //   - send shutdown  to TelemetryServer
+
     // Wait as long as the server is running. At some point,
     // something should call comServ->shutdown().
     LDEBUG("ComControlServer waiting for server shutdown");
     while (serv->getState() != system::ComServer::STOPPED) {
-        sleep(5);
+        sleep(1);
     }
 
     // This will terminate all TCP/IP communication.
@@ -125,6 +161,15 @@ int main(int argc, char* argv[]) {
         LINFO("server wait ", d);
     }
     LINFO("server stopped");
+
+    context->model.ctrlStop();
+    LINFO("stopping model");
+
     comControlServThrd.join();
+    LINFO("server joined");
+
+    context->model.ctrlJoin();
+    LINFO("Model threads joined");
+
     return 0;
 }

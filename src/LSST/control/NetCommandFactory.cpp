@@ -61,8 +61,8 @@ NetCommand::Ptr NetCommandFactory::getCommandFor(std::string const& jsonStr) {
     NetCommand::Ptr cmdOut;
     // Check if seqId is valid (must be larger than the previous one)
     if (seqId <= _prevSeqId) {
-        string badSeqId = string("Bad sequence_id ") + to_string(seqId) + " " + cmdId + " previous sequence_id was " +
-                          to_string(_prevSeqId);
+        string badSeqId = string("Bad sequence_id ") + to_string(seqId) + " " + cmdId +
+                          " previous sequence_id was " + to_string(_prevSeqId);
         LWARN("getCommandFor sequence_id ", seqId, " ", cmdId, badSeqId, " returning ",
               _defaultNoAck->getCommandName());
         cmdOut = _defaultNoAck->createNewNetCommand(inJson);

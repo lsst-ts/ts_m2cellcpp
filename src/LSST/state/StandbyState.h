@@ -19,8 +19,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_CONTROL_INMOTIONSTATE_H
-#define LSST_M2CELLCPP_CONTROL_INMOTIONSTATE_H
+#ifndef LSST_M2CELLCPP_STATE_STANDBYSTATE_H
+#define LSST_M2CELLCPP_STATE_STANDBYSTATE_H
 
 // System headers
 #include <functional>
@@ -28,42 +28,39 @@
 #include <memory>
 
 // Project headers
-#include "control/State.h"
+#include "state/State.h"
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace state {
 
-/// Class representation of the "InMotionState", aka ReadyInMotion.
-class InMotionState : public State {
+/// This class represents the "StandbyState".
+class StandbyState : public State {
 public:
-    using Ptr = std::shared_ptr<InMotionState>;
+    using Ptr = std::shared_ptr<StandbyState>;
 
     /// Create an instance and insert it into `stateMap`.
     /// @throws Bug if there's already an instance of this class in `stateMap`.
-    static Ptr create(StateMap& stateMap);
+    static Ptr create(StateMap& stateMap, Model* const model);
 
-    InMotionState(InMotionState const&) = delete;
-    InMotionState& operator=(InMotionState const&) = delete;
-    virtual ~InMotionState() = default;
+    StandbyState() = delete;
+    StandbyState(StandbyState const&) = delete;
+    StandbyState& operator=(StandbyState const&) = delete;
+    virtual ~StandbyState() = default;
 
-    /// VI-PH  goToIdleReadyVI // calls Model::changeStateVI(ReadyIdle)
-    void goToIdleReadyVI() override;
+    /// VI-PH  exitVI // calls Model::changeStateVI(OfflineState)
+    void exitVI();
 
-    /// VI-PH  goToPauseVI // calls Model::changeStateVI(ReadyPause)
-    void goToPauseVI() override;
+    /// VI-PH  startVI // calls Model::startVI  then  Model::stopMotionVI  then
+    /// Model::changeStateVI(ReadyIdle)
+    void startVI();
 
-    // VI-PH  pauseVI // calls Model::pauseVI
-    // VI-PH  shutdownMotionEngineVI // calls Model::shutdownMotionEngineVI
-    // VI-PH  stopMotionVI // calls Model::stopMotionVI
-    // VI-PH  shutdownMotionEngineVI // calls Model::shutdownMotionEngineVI
-    // VI-PH  stopMotionVI // calls Model::stopMotionVI
 private:
-    InMotionState() : State("InMotionState") {}
+    StandbyState(Model* const model) : State(STANDBYSTATE, model) {}
 };
 
-}  // namespace control
+}  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_CONTROL_INMOTIONSTATE_H
+#endif  // LSST_M2CELLCPP_STATE_STANDBYSTATE_H

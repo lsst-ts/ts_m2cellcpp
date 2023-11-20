@@ -20,11 +20,12 @@
  */
 
 // Class header
-#include "control/FaultState.h"
+#include "state/StandbyState.h"
 
-// Project headers
-#include "control/Model.h"
-#include "control/StateMap.h"
+// Project header
+#include "state/State.h"
+#include "state/Model.h"
+#include "state/StateMap.h"
 #include "util/Bug.h"
 #include "util/Log.h"
 
@@ -32,14 +33,14 @@ using namespace std;
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace state {
 
-FaultState::Ptr FaultState::create(StateMap& stateMap) {
-    auto state = shared_ptr<FaultState>(new FaultState());
+StandbyState::Ptr StandbyState::create(StateMap& stateMap, Model* const model) {
+    auto state = shared_ptr<StandbyState>(new StandbyState(model));
     stateMap.insertIntoMap(state);
     return state;
 }
 
-}  // namespace control
+}  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST

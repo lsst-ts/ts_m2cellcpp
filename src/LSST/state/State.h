@@ -19,8 +19,8 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-#ifndef LSST_M2CELLCPP_CONTROL_STATE_H
-#define LSST_M2CELLCPP_CONTROL_STATE_H
+#ifndef LSST_M2CELLCPP_STATE_STATE_H
+#define LSST_M2CELLCPP_STATE_STATE_H
 
 // System headers
 #include <functional>
@@ -32,30 +32,54 @@
 
 namespace LSST {
 namespace m2cellcpp {
-namespace control {
+namespace state {
 
 class Model;
 class StateMap;
 
-/// This is the base class for system states.
+/// This is the base class for system states. It determines what commands the
+/// are allowed to be used. Each child class has overridden functions for the
+/// commands that can be used.
+/// In the LabView code, the most critical element to be aware of is
+/// "Command.lvclass.::exec.vi" which is used in "Controller.lvclass:controllerMain.vi"
+/// within
 class State {
 public:
     using Ptr = std::shared_ptr<State>;
-    State(std::string const& name) : _name(name) {}
+
+    /// Enum for the state name, one for each possible state.
+    enum StateEnum {
+        OFFLINESTATE = 0,
+        STARTUPSTATE = 1,
+        STANDBYSTATE = 2,
+        IDLESTATE = 3,
+        PAUSESTATE = 4,
+        INMOTIONSTATE = 5
+    };
+
+    /// Return the string version of `stEnum`.
+    static std::string getStateEnumStr(StateEnum stEnum);
+
+    State(StateEnum stateId, Model* const model_)
+            : modelPtr(model_), _stateId(stateId), _name(getStateEnumStr(_stateId)) {}
     State() = delete;
     State(State const&) = delete;
     State& operator=(State const&) = delete;
     virtual ~State() = default;
 
     /// Return the name of the state.
-    std::string getName() { return _name; }
+    std::string getName() const { return _name; }
+
+    /// Return the state identifier.
+    StateEnum getId() const { return _stateId; }
 
     /// Do things that need to be done every time entering a state.
     /// This calls `enterState`.
     void onEnterState(Ptr const& oldName);
 
     /// Do things specific to entering a state.
-    virtual void enterState(Ptr const& oldName) { return; }
+    /// Unless overriden, this will shut off power and stop motion.
+    virtual void enterState(Ptr const& oldName);
 
     /// Do things that need to be done every time leaving a state.
     /// This calls `exitState`.
@@ -110,7 +134,13 @@ public:
     // VI-PH  resumeScriptVI; // ??? if case with no effect
     // VI-PH  setDeltaForcVectorVI; // ??? if case with no effect
     // VI-PH  setElevationAngleVI; // ??? if case with no effect
-    // VI-PH  setPowerVI; // Maybe does something, but looks incomplete
+
+    /// Return true if power could be set to 'on'.
+    /// VI-PH  setPowerVI;
+    virtual bool setPower(bool on) {
+        errorWrongStateMsg("setPower");
+        return false;
+    }
     // VI-PH  setSlewingStateVI; // ??? if case with no effect
     // VI-PH  shutdownCellCommVI; // ??? if case with no effect
     // VI-PH  shutdownLoggerVI; // Nada
@@ -123,12 +153,25 @@ public:
     // VI-PH  stopMotionVI; // nada
     // VI-PH  stopScriptVI; // ??? if case with no effect
 
+    /// Log a message indicating a problem. Possibly send an error message back
+    /// to the client.
+    void errorMsg(std::string const& msg);
+
+    /// Log a message indicating a problem that this `action` cannot be performed
+    /// in the current `State`
+    void errorWrongStateMsg(std::string const& action);
+
+protected:
+    /// Constant pointer to the model, which can be nullptr in unit tests.
+    Model* const modelPtr;
+
 private:
-    std::string const _name;  ///< Name of this state.
+    StateEnum const _stateId;  ///< The type of this state.
+    std::string const _name;   ///< Name of this state.
 };
 
-}  // namespace control
+}  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST
 
-#endif  // LSST_M2CELLCPP_CONTROL_STATE_H
+#endif  // LSST_M2CELLCPP_STATE_STATE_H

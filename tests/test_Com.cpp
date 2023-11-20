@@ -34,6 +34,7 @@
 // Project headers
 #include "control/Context.h"
 #include "control/FpgaIo.h"
+#include "control/MotionEngine.h"
 #include "faultmgr/FaultMgr.h"
 #include "simulator/SimCore.h"
 #include "system/Config.h"
@@ -55,6 +56,7 @@ TEST_CASE("Test Com echo", "[Com]") {
     simulator::SimCore::Ptr simCore(new LSST::m2cellcpp::simulator::SimCore());
     faultmgr::FaultMgr::setup();
     control::FpgaIo::setup(simCore);
+    control::MotionEngine::setup();
     control::Context::setup();
 
     REQUIRE(ComServer::prettyState(ComServer::CREATED) == "CREATED");
