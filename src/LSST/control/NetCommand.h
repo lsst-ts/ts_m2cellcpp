@@ -141,7 +141,8 @@ protected:
     /// @param funcName - The name of function where the error was caught
     /// @param inJson - The command being handled.
     /// @param ex - The json exception that was caught.
-    void throwNetCommandException(util::Issue::Context const& errLoc, std::string const& funcName, JsonPtr const& inJson, nlohmann::json::exception const& ex) const;
+    void throwNetCommandException(util::Issue::Context const& errLoc, std::string const& funcName,
+                                  JsonPtr const& inJson, nlohmann::json::exception const& ex) const;
 
     /// This consturctor is ONLY to be used in createFactoryVersion()/
     /// This constructor makes a dummy version of the object that is only

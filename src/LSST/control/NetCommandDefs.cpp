@@ -51,7 +51,7 @@ NCmdSwitchCommandSource::NCmdSwitchCommandSource(JsonPtr const& inJson) : NetCom
         _isRemote = inJson->at("isRemote");
         LDEBUG(__func__, " ", getCommandName(), " seqId=", getSeqId(), " isRemote=", _isRemote);
     } catch (json::exception const& ex) {
-        throwNetCommandException(ERR_LOC, __func__,inJson, ex);
+        throwNetCommandException(ERR_LOC, __func__, inJson, ex);
     }
 
     ackJson["id"] = "ack";
@@ -98,7 +98,7 @@ NCmdPower::NCmdPower(JsonPtr const& inJson) : NetCommand(inJson) {
         LDEBUG(__func__, " ", getCommandName(), " seqId=", getSeqId(), " powerType=", _powerType, " ",
                getPowerSystemTypeStr(_powerType), " status=", _status);
     } catch (json::exception const& ex) {
-        throwNetCommandException(ERR_LOC, __func__,inJson, ex);
+        throwNetCommandException(ERR_LOC, __func__, inJson, ex);
     }
     ackJson["id"] = "ack";
     ackJson["user_info"] = getCommandName() + " " + getPowerSystemTypeStr(_powerType) + to_string(_status);
