@@ -42,7 +42,6 @@ using namespace std;
 using namespace LSST::m2cellcpp::system;
 using namespace LSST::m2cellcpp;
 
-
 TEST_CASE("Test ComControl", "[ComControl]") {
     util::Log::getLog().useEnvironmentLogLvl();
     string cfgPath = Config::getEnvironmentCfgPath("../configs");

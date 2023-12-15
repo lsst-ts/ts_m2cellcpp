@@ -40,15 +40,9 @@ IdleState::Ptr IdleState::create(StateMap& stateMap, Model* const model) {
     return state;
 }
 
+void IdleState::enterState(State::Ptr const& oldState) { enterStateBase(oldState); }
 
-void IdleState::enterState(State::Ptr const& oldState) {
-    enterStateBase(oldState);
-}
-
-
-bool IdleState::cmdPower(control::PowerSystemType powerType, bool on) {
-    return cmdPowerBase(powerType, on);
-}
+bool IdleState::cmdPower(control::PowerSystemType powerType, bool on) { return cmdPowerBase(powerType, on); }
 
 }  // namespace state
 }  // namespace m2cellcpp

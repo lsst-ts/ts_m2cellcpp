@@ -40,9 +40,7 @@ PauseState::Ptr PauseState::create(StateMap& stateMap, Model* const model) {
     return state;
 }
 
-void PauseState::enterState(State::Ptr const& oldState) {
-    enterStateBase(oldState);
-}
+void PauseState::enterState(State::Ptr const& oldState) { enterStateBase(oldState); }
 
 void PauseState::goToIdleReadyVI() { throw util::Bug(ERR_LOC, "goToIdleReady PLACEHOLDER"); }
 

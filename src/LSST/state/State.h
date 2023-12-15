@@ -167,12 +167,17 @@ protected:
     /// Constant pointer to the model, which can be nullptr in unit tests.
     Model* const modelPtr;
 
-
-    /// &&& doc - the rules for turning power on and off are icky, need separate on off functions in different states.
+    /// This function is called by child classes to turn power on or off for
+    /// `PowerSubsystem` instances.
+    /// Turn the power for the indicated power subsystem on or off.
+    /// Changes to the power states can result in system `State` changes.
+    /// @param powerType - subsystem to be turned on or off (MOTOR or COMM).
+    /// @param on - Turn power on if true, or off if false.
     bool cmdPowerBase(control::PowerSystemType powerType, bool on);
 
-    /// &&& doc
-    std::string  enterStateBase(State::Ptr const& oldName);
+    /// This function contains default actions to do when entering a new state,
+    /// primarily associated with logging.
+    std::string enterStateBase(State::Ptr const& oldName);
 
 private:
     StateEnum const _stateId;  ///< The type of this state.

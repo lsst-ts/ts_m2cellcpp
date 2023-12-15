@@ -89,7 +89,7 @@ public:
     /// Set the loop sleep time in seconds.
     void setLoopSleepSecs(double seconds) { _loopSleepSecs = seconds; }
 
-    /// &&& doc
+    /// Calling this function will stop the `_fpgaIoThrd` thread.
     void stopLoop() { _loop = false; }
 
 private:

@@ -70,7 +70,6 @@ private:
     bool _isRemote = 1;  ///< Value of "isRemote" section of message.
 };
 
-
 /// This class handles the "cmd_power" message.
 /// - "powerType" must be `1` (for MOTOR) or `2` (for COMM) (see PowerSystemType).
 /// - "status" `true` indicates the "powerType" should be turned on, while `false` turns it off.
@@ -112,7 +111,6 @@ private:
     bool _status = false;
 };
 
-
 /// This class handles the "cmd_systemShutdown" message.
 /// Expected message form is: {'id': 'cmd_systemShutdown', 'sequence_id': 123}
 /// This would shutdown the entire system.
@@ -144,7 +142,6 @@ private:
     NCmdSystemShutdown(JsonPtr const& json);
     NCmdSystemShutdown() : NetCommand() {}
 };
-
 
 }  // namespace control
 }  // namespace m2cellcpp

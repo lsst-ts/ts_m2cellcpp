@@ -69,18 +69,25 @@ inline std::string getPowerSystemTypeStr(PowerSystemType sysT) {
 }
 
 /// PowerSystemState, values must match lsst-ts/ts_xml/python/lsst/ts/xml/enums/MTM2.py
-// PowerSystemState { INIT = 1, POWEREDOFF = 2, POWERINGON = 3, RESETTINGBREAKERS = 4, POWEREDON = 5, POWERINGOFF = 6 };
-enum PowerState { UNKNOWN = 1, OFF = 2, TURNING_ON = 3, RESET = 4, ON = 5, TURNING_OFF = 6};
+// PowerSystemState { INIT = 1, POWEREDOFF = 2, POWERINGON = 3, RESETTINGBREAKERS = 4, POWEREDON = 5,
+// POWERINGOFF = 6 };
+enum PowerState { UNKNOWN = 1, OFF = 2, TURNING_ON = 3, RESET = 4, ON = 5, TURNING_OFF = 6 };
 
 /// Return a string version of `sysState` to be used in TCP/IP communications.
 inline std::string getPowerStateOldStr(PowerState sysState) {
     switch (sysState) {
-    case UNKNOWN: return "Init";
-    case OFF: return "PoweredOff";
-    case TURNING_ON: return "PoweringOn";
-    case RESET: return "ResettingBreakers";
-    case ON: return "PoweredOn";
-    case TURNING_OFF: return "PoweringOff";
+        case UNKNOWN:
+            return "Init";
+        case OFF:
+            return "PoweredOff";
+        case TURNING_ON:
+            return "PoweringOn";
+        case RESET:
+            return "ResettingBreakers";
+        case ON:
+            return "PoweredOn";
+        case TURNING_OFF:
+            return "PoweringOff";
     }
     return "unknown";
 }

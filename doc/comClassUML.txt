@@ -31,6 +31,8 @@ NetCommand <|-- NCmdAck
 NetCommand <|-- NCmdNoAck
 NetCommand <|-- NCmdEcho
 NetCommand <|-- NCmdSwitchCommandSource
+NetCommand <|-- NCmdPower
+NetCommand <|-- NCmdShutdown
 
 NetCommandException <.. NetCommandFactory : throws
 

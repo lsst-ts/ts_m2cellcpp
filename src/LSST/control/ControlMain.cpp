@@ -71,10 +71,9 @@ ControlMain::ControlMain() {}
 ControlMain::~ControlMain() {}
 
 void ControlMain::run(int argc, const char* argv[]) {
-        thread t(&ControlMain::_cMain, this, argc, argv);
-        _mainThrd = move(t);
+    thread t(&ControlMain::_cMain, this, argc, argv);
+    _mainThrd = move(t);
 }
-
 
 void signalHandler(int sig) {
     if (sig == SIGPIPE) {
@@ -171,11 +170,11 @@ void ControlMain::_cMain(int argc, const char* argv[]) {
             sleep(1);
         }
         if (j >= maxSeconds) {
-            throw util::Bug(ERR_LOC, "ControlMain server did not start within " + to_string(maxSeconds) + " seconds");
+            throw util::Bug(ERR_LOC,
+                            "ControlMain server did not start within " + to_string(maxSeconds) + " seconds");
         }
         _running = true;
     }
-
 
     // Wait as long as the server is running. At some point,
     // something should call comServ->shutdown(). When the

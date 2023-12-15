@@ -104,66 +104,62 @@ bool Model::_turnOffAll(string const& note) {
     return true;
 }
 
-
-void Model::reportPowerSystemStateChange(control::PowerSystemType systemType, control::PowerState targPowerState, control::PowerState actualPowerState) {
+void Model::reportPowerSystemStateChange(control::PowerSystemType systemType,
+                                         control::PowerState targPowerState,
+                                         control::PowerState actualPowerState) {
     VMUTEX_NOT_HELD(_mtx);
-    LTRACE("Model::reportPowerSystemStateChange ", getPowerSystemTypeStr(systemType), " targ=", getPowerStateStr(targPowerState), " act=", getPowerStateStr(actualPowerState));
+    LTRACE("Model::reportPowerSystemStateChange ", getPowerSystemTypeStr(systemType),
+           " targ=", getPowerStateStr(targPowerState), " act=", getPowerStateStr(actualPowerState));
     {
         std::lock_guard<util::VMutex> lockg(_mtx);
         // Is a state change required?
         // If inOfflineState, stay in OfflineState (turning off all power if needed)
-        auto currentState = _stateMap.getCurrentState();;
+        auto currentState = _stateMap.getCurrentState();
+        ;
         auto currentStateId = currentState->getId();
         auto comTargPower = _powerSystem->getComm().getTargPowerState();
         auto motorTargPower = _powerSystem->getMotor().getTargPowerState();
         auto comActPower = _powerSystem->getComm().getActualPowerState();
         auto motorActPower = _powerSystem->getMotor().getActualPowerState();
         LINFO("Model::reportPowerSystemStateChange com(targ=", comTargPower, " act=", comActPower,
-                ") motor(targ=", motorTargPower, " act=", motorActPower, ")");
+              ") motor(targ=", motorTargPower, " act=", motorActPower, ")");
         switch (currentStateId) {
-        case State::STARTUPSTATE:
-            [[fallthrough]];
-        case State::OFFLINESTATE:
-        {
-            /// Power should always be OFF in these states.
-            if (comTargPower != control::PowerState::OFF || motorTargPower != control::PowerState::OFF) {
-                _turnOffAll("Model::reportPowerSystemStateChange state=" + currentState->getName());
+            case State::STARTUPSTATE:
+                [[fallthrough]];
+            case State::OFFLINESTATE: {
+                /// Power should always be OFF in these states.
+                if (comTargPower != control::PowerState::OFF || motorTargPower != control::PowerState::OFF) {
+                    _turnOffAll("Model::reportPowerSystemStateChange state=" + currentState->getName());
+                }
+                break;
             }
-            break;
-        }
 
-        case State::IDLESTATE:
-            [[fallthrough]];
-        case State::INMOTIONSTATE:
-            [[fallthrough]];
-        case State::PAUSESTATE:
-        {
-            // Power should always be ON in these states, if not go to STANDBYSTATE.
-            if (comTargPower != control::PowerState::ON
-                    || comActPower != control::PowerState::ON
-                    || motorTargPower != control::PowerState::ON
-                    || motorActPower != control::PowerState::ON) {
-                _stateMap.changeState(State::STANDBYSTATE);
+            case State::IDLESTATE:
+                [[fallthrough]];
+            case State::INMOTIONSTATE:
+                [[fallthrough]];
+            case State::PAUSESTATE: {
+                // Power should always be ON in these states, if not go to STANDBYSTATE.
+                if (comTargPower != control::PowerState::ON || comActPower != control::PowerState::ON ||
+                    motorTargPower != control::PowerState::ON || motorActPower != control::PowerState::ON) {
+                    _stateMap.changeState(State::STANDBYSTATE);
+                }
+                break;
             }
-            break;
-        }
 
-        case State::STANDBYSTATE:
-        {
-            // Power may be ON or OFF in this state.
-            // Normally, MOTOR power should only be on if COMM power is on, but that is tested elsewhere.
-            // If both COMM and MOTOR power are on, the state should change to IDLESTATE
-            if (comTargPower == control::PowerState::ON
-                    && comActPower == control::PowerState::ON
-                    && motorTargPower == control::PowerState::ON
-                    && motorActPower == control::PowerState::ON) {
-                LTRACE("Model::reportPowerSystemStateChange change to IDLESTATE");
-                _stateMap.changeState(State::IDLESTATE);
+            case State::STANDBYSTATE: {
+                // Power may be ON or OFF in this state.
+                // Normally, MOTOR power should only be on if COMM power is on, but that is tested elsewhere.
+                // If both COMM and MOTOR power are on, the state should change to IDLESTATE
+                if (comTargPower == control::PowerState::ON && comActPower == control::PowerState::ON &&
+                    motorTargPower == control::PowerState::ON && motorActPower == control::PowerState::ON) {
+                    LTRACE("Model::reportPowerSystemStateChange change to IDLESTATE");
+                    _stateMap.changeState(State::IDLESTATE);
+                }
+                break;
             }
-            break;
         }
-        }
-    } // No need to hold _mtx any longer.
+    }  // No need to hold _mtx any longer.
 
     // Make and broadcast the json message
     auto comServ = system::ComControlServer::get().lock();
@@ -175,7 +171,9 @@ void Model::reportPowerSystemStateChange(control::PowerSystemType systemType, co
         bool targetOn = (targPowerState == control::PowerState::ON);
         js["status"] = targetOn;
         if (system::Globals::get().isSendUserInfo()) {
-            string infoStr = getPowerSystemTypeStr(systemType) + " is " + getPowerStateOldStr(actualPowerState) + " turning " + getPowerStateStr(targPowerState);
+            string infoStr = getPowerSystemTypeStr(systemType) + " is " +
+                             getPowerStateOldStr(actualPowerState) + " turning " +
+                             getPowerStateStr(targPowerState);
             js["user_info"] = infoStr;
         }
         string msg = to_string(js);

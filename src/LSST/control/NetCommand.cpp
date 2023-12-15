@@ -95,6 +95,13 @@ string NetCommand::getAckJsonStr() { return ackJson.dump(); }
 
 string NetCommand::getRespJsonStr() { return respJson.dump(); }
 
+
+void NetCommand::throwNetCommandException(util::Issue::Context const& errLoc, std::string const& funcName, JsonPtr const& inJson, json::exception const& ex) const {
+    string eMsg = getCommandName() + " " +funcName + " constructor error in " + inJson->dump() + " what=" + ex.what();
+    LERROR(eMsg);
+    throw NetCommandException(errLoc, eMsg);
+}
+
 NCmdAck::Ptr NCmdAck::create(JsonPtr const& inJson_) {
     auto cmd = Ptr(new NCmdAck(inJson_));
     return cmd;

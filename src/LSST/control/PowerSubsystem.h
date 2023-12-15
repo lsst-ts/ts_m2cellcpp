@@ -335,7 +335,6 @@ private:
 /// unit tests: test_PowerSystem.cpp
 class PowerSubsystem {
 public:
-
     PowerSubsystem() = delete;
     PowerSubsystem(PowerSubsystem const&) = delete;
     PowerSubsystem& operator=(PowerSubsystem const&) = delete;
@@ -394,7 +393,8 @@ public:
     /// Return the target power state.
     PowerState getTargPowerState() const;
 
-    /// &&& doc
+    /// Return a json message that describes the state of this instance.
+    /// The message is appropriate to be sent to TCP/IP clients.
     nlohmann::json getPowerSystemStateJson() const;
 
 private:
@@ -450,10 +450,11 @@ private:
     /// Return true if the FaultMgr has any faults that affect this PowerSubsystem.
     bool _checkForFaults();
 
-    /// &&& doc
+    /// Calling this will indicate to the `Model` that the state of this object has changed.
     void _reportStateChange() const;
 
-    /// &&& doc
+    /// Return a json message that describes the state of this instance.
+    /// The message is appropriate to be sent to TCP/IP clients.
     nlohmann::json _getPowerSystemStateJson() const;
 
     PowerSystemType _systemType;  ///< indicates if this is the MOTOR or COMM system.

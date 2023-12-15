@@ -38,9 +38,7 @@ InMotionState::Ptr InMotionState::create(StateMap& stateMap, Model* const model)
     return state;
 }
 
-void InMotionState::enterState(State::Ptr const& oldState) {
-    enterStateBase(oldState);
-}
+void InMotionState::enterState(State::Ptr const& oldState) { enterStateBase(oldState); }
 
 void InMotionState::goToIdleReadyVI() { throw util::Bug(ERR_LOC, "goToInMotion PLACEHOLDER"); }
 

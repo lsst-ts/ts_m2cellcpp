@@ -60,7 +60,7 @@ public:
     /// @throws `ConfigException` if `setup` has not already been called.
     static Ptr getPtr();
 
-    /// &&& doc
+    /// Run the main thread which starts the communication and other threads.
     void run(int argc, const char* argv[]);
 
     /// Returns true once the server is running.
@@ -69,17 +69,14 @@ public:
     /// Return a pointer to `_simCore`.
     std::shared_ptr<simulator::SimCore> getSimCore() { return _simCore; }
 
-
-    /// &&& doc
+    /// Stop the communication server threads, which should stop the main thread.
     void stop();
 
-    /// &&& doc
+    /// Join the main thread.
     void join();
 
-    /// &&& doc
-    std::shared_ptr<system::ComControlServer> getComServer() {
-        return _comServer;
-    }
+    /// Return a pointer to the `_comServer`.
+    std::shared_ptr<system::ComControlServer> getComServer() { return _comServer; }
 
 private:
     static Ptr _thisPtr;            ///< Pointer to the global instance of ControlMain.
@@ -88,10 +85,13 @@ private:
     /// Private constructor to force the use of `setup()`.
     ControlMain();
 
-    /// &&& doc
+    /// The function that runs in the main thread.
+    /// @param argc - unused
+    /// @param argv - unused
     void _cMain(int argc, const char* argv[]);
 
-    std::thread _mainThrd; ///< &&& doc
+    /// The main thread, which runs the `_cMain()` function.
+    std::thread _mainThrd;
 
     /// Pointer to the system ComControllServer.
     std::shared_ptr<system::ComControlServer> _comServer;
@@ -100,8 +100,7 @@ private:
     /// This is only used for testing.
     std::shared_ptr<simulator::SimCore> _simCore;
 
-    std::atomic<bool> _running{false}; ///< Set to true once the server is running.
-
+    std::atomic<bool> _running{false};  ///< Set to true once the server is running.
 };
 
 }  // namespace control

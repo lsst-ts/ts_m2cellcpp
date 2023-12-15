@@ -1,5 +1,9 @@
 # Version History
 
+0.3.7
+
+ - Added cmd_power and integration test.
+
 0.3.6
 
  - Reworked the Model state machine. 

@@ -58,7 +58,8 @@ public:
     /// Model::changeStateVI(ReadyIdle)
     void startVI();
 
-    /// &&& doc
+    /// Turn the power for the indicated power subsystem on or off.
+    /// @see state::State::cmdPowerBase(control::PowerSystemType powerType, bool on)
     bool cmdPower(control::PowerSystemType powerType, bool on) override;
 
 private:

@@ -19,14 +19,12 @@
  * see <http://www.lsstcorp.org/LegalNotices/>.
  */
 
-
 #include "control/ControlMain.h"
 #include "system/Config.h"
 #include "util/Log.h"
 
 using namespace std;
 using namespace LSST::m2cellcpp;
-
 
 int main(int argc, const char* argv[]) {
     // Store log messages and send to cout until the logfile is setup.

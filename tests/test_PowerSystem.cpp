@@ -86,8 +86,6 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
     // At this point, MotionCtrl and FpgaCtrl should be configured. Start the control loops
     context->model.ctrlStart();
 
-
-
     while (simCore->getIterations() < 1) {
         this_thread::sleep_for(0.1s);
     }
@@ -119,7 +117,6 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(motorSubSys.getTargPowerState() == PowerState::OFF);
         simCore->waitForUpdate(telemWait);
         REQUIRE(motorSubSys.getActualPowerState() == PowerState::OFF);
-
 
         // Try to turn power on with any network connections
         LDEBUG("Turn motor power on, expected failure due to no network connections");
@@ -207,8 +204,6 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
         REQUIRE(sInfo.commVoltage < voltageOffLevel);  // _voltageOffLevel
         REQUIRE(commSubSys.getActualPowerState() == PowerState::OFF);
-
-
 
         // comm,  turn power on as motor power tests require comm power on.
         LDEBUG("Turn comm power on so motor breakers can be tested");

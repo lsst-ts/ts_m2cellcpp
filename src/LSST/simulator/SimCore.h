@@ -134,7 +134,7 @@ private:
 
     util::CLOCK::time_point _prevTimeStamp;  ///< Last time through the `_simRun` loop.
 
-    std::atomic<bool> _joined{false}; ///< Latch for `join()` function.
+    std::atomic<bool> _joined{false};  ///< Latch for `join()` function.
 };
 
 }  // namespace simulator

@@ -73,12 +73,10 @@ SimCore::SimCore() {
     _inputPort->setBitAtPos(control::InputPortBits::POWER_SUPPLY_2_CURRENT_OK, true);
 }
 
-
 SimCore::~SimCore() {
     stop();
     join();
 }
-
 
 void SimCore::_simRun() {
     control::OutputPortBits prevOutput = *_outputPort;

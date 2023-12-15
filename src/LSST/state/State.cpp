@@ -82,7 +82,6 @@ void State::onExitState(State::Ptr const& newState) {
     exitState(newState);
 }
 
-
 bool State::cmdPowerBase(control::PowerSystemType powerType, bool on) {
     bool result = false;
     auto powerSys = modelPtr->getPowerSystem();
@@ -90,15 +89,15 @@ bool State::cmdPowerBase(control::PowerSystemType powerType, bool on) {
         return false;
     }
     switch (powerType) {
-    case control::MOTOR:
-        result = powerSys->powerMotor(on);
-        break;
-    case control::COMM:
-        result = powerSys->powerComm(on);
-        break;
-    default:
-        LERROR("State::cmdPowerBase unknown _powerType=", powerType);
-        return false;
+        case control::MOTOR:
+            result = powerSys->powerMotor(on);
+            break;
+        case control::COMM:
+            result = powerSys->powerComm(on);
+            break;
+        default:
+            LERROR("State::cmdPowerBase unknown _powerType=", powerType);
+            return false;
     }
     return result;
 }

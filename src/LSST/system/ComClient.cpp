@@ -120,14 +120,14 @@ int ComClient::readWelcomeMsg() {
     return count;
 }
 
-tuple<nlohmann::json, nlohmann::json> ComClient::cmdSendRecv(string const& jStr, uint seqId, string const& note) {
+tuple<nlohmann::json, nlohmann::json> ComClient::cmdSendRecv(string const& jStr, uint seqId,
+                                                             string const& note) {
     writeCommand(jStr);
     LDEBUG(note, "cmdSendRecv:wrote jStr=", jStr);
     auto ackJ = cmdRecvSeqId(seqId, "cmdSendRecv");
     auto finJ = cmdRecvSeqId(seqId, "cmdSendRecv");
     return {ackJ, finJ};
 }
-
 
 nlohmann::json ComClient::cmdRecvSeqId(uint seqId, string const& note) {
     bool found = false;
@@ -169,7 +169,6 @@ nlohmann::json ComClient::cmdRecvId(string const& targetId, string const& note) 
     return js;
 }
 
-
 JsonMsgMap::JsonDeque ComClient::recvDequeForId(string const& key, string const& note) {
     // Check if it is in the map
     JsonMsgMap::JsonDeque jDeque = _jMsgMap.getDequeFor(key);
@@ -182,12 +181,9 @@ JsonMsgMap::JsonDeque ComClient::recvDequeForId(string const& key, string const&
     return jDeque;
 }
 
-
-
 void JsonMsgMap::insert(string const& key, nlohmann::json const& js) {
     LTRACE("JsonMsgMap::insert js", to_string(js));
     (*_msgMap)[key].push_back(js);
-
 }
 
 JsonMsgMap::JsonDeque JsonMsgMap::getDequeFor(std::string const& key) {
@@ -201,7 +197,6 @@ JsonMsgMap::JsonDeque JsonMsgMap::getDequeFor(std::string const& key) {
     jd.clear();
     return jDeque;
 }
-
 
 }  // namespace system
 }  // namespace m2cellcpp

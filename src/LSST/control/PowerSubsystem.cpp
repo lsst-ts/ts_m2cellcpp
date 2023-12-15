@@ -295,10 +295,7 @@ PowerSubsystem::PowerSubsystem(PowerSystemType sysType)
     _reportStateChange();
 }
 
-void PowerSubsystem::setContext(std::shared_ptr<Context> const& context) {
-    _context = context;
-}
-
+void PowerSubsystem::setContext(std::shared_ptr<Context> const& context) { _context = context; }
 
 double PowerSubsystem::getVoltage() const {
     switch (_systemType) {

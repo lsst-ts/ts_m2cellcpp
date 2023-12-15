@@ -59,7 +59,8 @@ public:
     std::shared_ptr<control::PowerSystem> getPowerSystem() { return _powerSystem; }
 
     /// Shutdown the entire system.
-    /// &&& doc
+    /// This function will first turn off power and then attempt
+    /// to shutdown the rest of the system in an orderly manner.
     void systemShutdown();
 
     /// Read configuration files that haven't yet been read and use those
@@ -109,7 +110,8 @@ public:
     /// @param systemType - the type of the power subsytem reporting a state change.
     /// @param `targePowerState` - the new target state for the subsystem (should be ON of OFF).
     /// @param `actualPowerState` - the current state for the subsystem.
-    void reportPowerSystemStateChange(control::PowerSystemType systemType, control::PowerState targPowerState, control::PowerState actualPowerState);
+    void reportPowerSystemStateChange(control::PowerSystemType systemType, control::PowerState targPowerState,
+                                      control::PowerState actualPowerState);
 
     /// Accessors
     // VI-PH readApplicationElementsVI  // can probably skip this one

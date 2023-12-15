@@ -49,11 +49,9 @@ NCmdSwitchCommandSource::Ptr NCmdSwitchCommandSource::create(JsonPtr const& inJs
 NCmdSwitchCommandSource::NCmdSwitchCommandSource(JsonPtr const& inJson) : NetCommand(inJson) {
     try {
         _isRemote = inJson->at("isRemote");
-        LDEBUG(__func__, " ", getCommandName()," seqId=", getSeqId(), " isRemote=", _isRemote);
+        LDEBUG(__func__, " ", getCommandName(), " seqId=", getSeqId(), " isRemote=", _isRemote);
     } catch (json::exception const& ex) {
-        string eMsg = string(__func__) + " constructor error in " + inJson->dump() + " what=" + ex.what();
-        LERROR(eMsg);
-        throw NetCommandException(ERR_LOC, eMsg);
+        throwNetCommandException(ERR_LOC, __func__,inJson, ex);
     }
 
     ackJson["id"] = "ack";
@@ -76,7 +74,6 @@ bool NCmdSwitchCommandSource::action() {
     return result;
 }
 
-
 NCmdPower::Ptr NCmdPower::create(JsonPtr const& inJson_) {
     auto cmd = Ptr(new NCmdPower(inJson_));
     return cmd;
@@ -87,29 +84,27 @@ NCmdPower::NCmdPower(JsonPtr const& inJson) : NetCommand(inJson) {
     try {
         int powerType = inJson->at("powerType");
         switch (powerType) {
-        case MOTOR:
-            _powerType = MOTOR;
-            break;
-        case COMM:
-            _powerType = COMM;
-            break;
-        default:
-            throw NetCommandException(ERR_LOC, "unknown powerType=" + to_string(powerType) + " in " + inJson->dump());
+            case MOTOR:
+                _powerType = MOTOR;
+                break;
+            case COMM:
+                _powerType = COMM;
+                break;
+            default:
+                throw NetCommandException(
+                        ERR_LOC, "unknown powerType=" + to_string(powerType) + " in " + inJson->dump());
         }
         _status = inJson->at("status");
-        LDEBUG(__func__, " ", getCommandName()," seqId=", getSeqId(), " powerType=", _powerType, " ", getPowerSystemTypeStr(_powerType), " status=", _status);
+        LDEBUG(__func__, " ", getCommandName(), " seqId=", getSeqId(), " powerType=", _powerType, " ",
+               getPowerSystemTypeStr(_powerType), " status=", _status);
     } catch (json::exception const& ex) {
-        string eMsg = string(__func__) + " constructor error in " + inJson->dump() + " what=" + ex.what();
-        LERROR(eMsg);
-        throw NetCommandException(ERR_LOC, eMsg); // &&& make a base class function to do this
+        throwNetCommandException(ERR_LOC, __func__,inJson, ex);
     }
     ackJson["id"] = "ack";
     ackJson["user_info"] = getCommandName() + " " + getPowerSystemTypeStr(_powerType) + to_string(_status);
 }
 
-NetCommand::Ptr NCmdPower::createNewNetCommand(JsonPtr const& inJson) {
-    return NCmdPower::create(inJson);
-}
+NetCommand::Ptr NCmdPower::createNewNetCommand(JsonPtr const& inJson) { return NCmdPower::create(inJson); }
 
 bool NCmdPower::action() {
     auto context = Context::get();
@@ -137,7 +132,6 @@ NCmdSystemShutdown::Ptr NCmdSystemShutdown::create(JsonPtr const& inJson_) {
 }
 
 NCmdSystemShutdown::NCmdSystemShutdown(JsonPtr const& inJson) : NetCommand(inJson) {
-
     ackJson["id"] = "ack";
     ackJson["user_info"] = getCommandName();
 }
@@ -148,18 +142,17 @@ NetCommand::Ptr NCmdSystemShutdown::createNewNetCommand(JsonPtr const& inJson) {
 
 bool NCmdSystemShutdown::action() {
     LINFO("NCmdSystemShutdown");
-    thread thrd([]{
-            sleep(1);
-            LINFO("NCmdSystemShutdown shutting down");
-            auto context = Context::get();
-            context->model.systemShutdown();
-            sleep(1);
-            exit(0); //FUTURE: exit() should not be needed. // &&&
+    thread thrd([] {
+        sleep(1);
+        LINFO("NCmdSystemShutdown shutting down");
+        auto context = Context::get();
+        context->model.systemShutdown();
+        sleep(1);
+        exit(0);  // FUTURE: exit() should not be needed. // &&&
     });
     thrd.detach();
     return true;
 }
-
 
 }  // namespace control
 }  // namespace m2cellcpp

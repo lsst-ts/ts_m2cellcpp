@@ -46,8 +46,10 @@
 using namespace std;
 using namespace LSST::m2cellcpp;
 
-/// Wait up to 5 seconds for `subsystem` to reach `targetState`, return true if that happens within the time limit.
-bool waitForPowerState(control::PowerState targetState, control::PowerSubsystem& subsystem, string const& note) {
+/// Wait up to 5 seconds for `subsystem` to reach `targetState`, return true if that happens within the time
+/// limit.
+bool waitForPowerState(control::PowerState targetState, control::PowerSubsystem& subsystem,
+                       string const& note) {
     auto waitStart = util::CLOCK::now();
     bool success = false;
     while (!success) {
@@ -55,7 +57,8 @@ bool waitForPowerState(control::PowerState targetState, control::PowerSubsystem&
         auto volts = subsystem.getVoltage();
         LDEBUG(note, " power=", control::getPowerStateStr(aPowerState), " volt=", volts);
         success = targetState == aPowerState;
-        string powMsg(note + " power=" + control::getPowerStateStr(aPowerState) + " volt=" + to_string(volts) + " success=" + to_string(success));
+        string powMsg(note + " power=" + control::getPowerStateStr(aPowerState) +
+                      " volt=" + to_string(volts) + " success=" + to_string(success));
         LDEBUG(powMsg);
         if (!success) {
             auto waitTimePassed = util::CLOCK::now() - waitStart;
@@ -69,14 +72,17 @@ bool waitForPowerState(control::PowerState targetState, control::PowerSubsystem&
     return success;
 }
 
-// Wait up to 1 second for the model state to reach `targetState`, return true if that happens within the time limit.
-bool waitForModelState(control::Context::Ptr const& context, state::State::StateEnum targetState, string const& note) {
+// Wait up to 1 second for the model state to reach `targetState`, return true if that happens within the time
+// limit.
+bool waitForModelState(control::Context::Ptr const& context, state::State::StateEnum targetState,
+                       string const& note) {
     auto waitStart = util::CLOCK::now();
     bool success = false;
     while (!success) {
         auto currentStateId = context->model.getCurrentState()->getId();
         success = currentStateId == targetState;
-        string stateMsg(note + " waitForModelState targ=" + state::State::getStateEnumStr(targetState) + " act=" + state::State::getStateEnumStr(currentStateId));
+        string stateMsg(note + " waitForModelState targ=" + state::State::getStateEnumStr(targetState) +
+                        " act=" + state::State::getStateEnumStr(currentStateId));
         LDEBUG(stateMsg);
         if (!success) {
             auto waitTimePassed = util::CLOCK::now() - waitStart;
@@ -90,15 +96,17 @@ bool waitForModelState(control::Context::Ptr const& context, state::State::State
     return success;
 }
 
-nlohmann::json waitForPowerSystemState(system::ComClient& client,control::PowerSystemType powType, control::PowerState targetState, string const& note) {
+nlohmann::json waitForPowerSystemState(system::ComClient& client, control::PowerSystemType powType,
+                                       control::PowerState targetState, string const& note) {
     // Check that the power message was received by the client
     // First check if it was already received, and would be found in the map.
     string const powerSysStateId("powerSystemState");
-    string lMsg("waitForPowerSystemState key=" + powerSysStateId + " type=" + control::getPowerSystemTypeStr(powType) + " " + to_string(powType)
-            + " targ=" + control::getPowerStateStr(targetState) + " " + to_string(targetState));
+    string lMsg("waitForPowerSystemState key=" + powerSysStateId +
+                " type=" + control::getPowerSystemTypeStr(powType) + " " + to_string(powType) +
+                " targ=" + control::getPowerStateStr(targetState) + " " + to_string(targetState));
     LDEBUG(lMsg);
     system::JsonMsgMap::JsonDeque jDeque = client.recvDequeForId(powerSysStateId, note);
-    for (auto const& js:jDeque) {
+    for (auto const& js : jDeque) {
         string jsStr = to_string(js);
         LDEBUG(waitForPowerSystemState, jsStr);
     }
@@ -109,9 +117,7 @@ nlohmann::json waitForPowerSystemState(system::ComClient& client,control::PowerS
     while (!found && !jDeque.empty()) {
         js = jDeque.back();
         jDeque.pop_back();
-        if (js["id"] == powerSysStateId
-                && js["powerType"] == powType
-                && js["state"] == targetState) {
+        if (js["id"] == powerSysStateId && js["powerType"] == powType && js["state"] == targetState) {
             found = true;
             LDEBUG("found in map ", lMsg);
         }
@@ -119,9 +125,7 @@ nlohmann::json waitForPowerSystemState(system::ComClient& client,control::PowerS
     auto waitStart = util::CLOCK::now();
     while (!found) {
         js = client.cmdRecvId(powerSysStateId, note);
-        if (js["id"] == powerSysStateId
-                && js["powerType"] == powType
-                && js["state"] == targetState) {
+        if (js["id"] == powerSysStateId && js["powerType"] == powType && js["state"] == targetState) {
             found = true;
             LDEBUG("found by cmdRecvId");
         } else {
@@ -139,9 +143,7 @@ nlohmann::json waitForPowerSystemState(system::ComClient& client,control::PowerS
 /// This is used where the test needs to wait for another iteration of the system for the
 /// status needs to be updated. It may be desirable to have the status update more quickly
 /// so using this to make it easy to locate where the tests would need to be updated.
-void shortSleep() {
-    this_thread::sleep_for(0.1s);
-}
+void shortSleep() { this_thread::sleep_for(0.1s); }
 
 TEST_CASE("Test startup shutdown", "[CSV]") {
     LSST::m2cellcpp::util::Log::getLog().useEnvironmentLogLvl();
@@ -230,7 +232,6 @@ TEST_CASE("Test startup shutdown", "[CSV]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(control::OutputPortBits::MOTOR_POWER_ON) == 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(control::OutputPortBits::ILC_COMM_POWER_ON) != 0);
 
-
         // wait up to 5 seconds for the comm power to rise to 'ON' level voltage
         bool onSuccess = waitForPowerState(control::PowerState::ON, powerSys->getComm(), "comm");
         REQUIRE(onSuccess);
@@ -239,10 +240,11 @@ TEST_CASE("Test startup shutdown", "[CSV]") {
         shortSleep();
 
         // comm power is now on. Verify the "powerSystemState" message.
-        nlohmann::json jsPowerSystemState = waitForPowerSystemState(client, control::PowerSystemType::COMM, control::PowerState::ON, "comm on");
+        nlohmann::json jsPowerSystemState = waitForPowerSystemState(client, control::PowerSystemType::COMM,
+                                                                    control::PowerState::ON, "comm on");
         REQUIRE(jsPowerSystemState["id"] == "powerSystemState");
-        REQUIRE(jsPowerSystemState["powerType"] == control::PowerSystemType::COMM); // 2
-        REQUIRE(jsPowerSystemState["state"] == control::PowerState::ON); // 5
+        REQUIRE(jsPowerSystemState["powerType"] == control::PowerSystemType::COMM);  // 2
+        REQUIRE(jsPowerSystemState["state"] == control::PowerState::ON);             // 5
         REQUIRE(jsPowerSystemState["status"] == true);
     }
 
@@ -271,10 +273,11 @@ TEST_CASE("Test startup shutdown", "[CSV]") {
         REQUIRE(onSuccess);
 
         // motor power is now on. Verify the "powerSystemState" message.
-        nlohmann::json jsPowerSystemState = waitForPowerSystemState(client, control::PowerSystemType::MOTOR, control::PowerState::ON, "motor on");
+        nlohmann::json jsPowerSystemState = waitForPowerSystemState(client, control::PowerSystemType::MOTOR,
+                                                                    control::PowerState::ON, "motor on");
         REQUIRE(jsPowerSystemState["id"] == "powerSystemState");
-        REQUIRE(jsPowerSystemState["powerType"] == control::PowerSystemType::MOTOR); // 1
-        REQUIRE(jsPowerSystemState["state"] == control::PowerState::ON); // 5
+        REQUIRE(jsPowerSystemState["powerType"] == control::PowerSystemType::MOTOR);  // 1
+        REQUIRE(jsPowerSystemState["state"] == control::PowerState::ON);              // 5
         REQUIRE(jsPowerSystemState["status"] == true);
 
         // verify model state should switch to IDLESTATE once all power is on
@@ -311,13 +314,13 @@ TEST_CASE("Test startup shutdown", "[CSV]") {
         REQUIRE(onSuccess);
 
         // motor power is now off. Verify the "powerSystemState" message.
-        nlohmann::json jsPowerSystemState = waitForPowerSystemState(client, control::PowerSystemType::MOTOR, control::PowerState::OFF, "motor off");
+        nlohmann::json jsPowerSystemState = waitForPowerSystemState(client, control::PowerSystemType::MOTOR,
+                                                                    control::PowerState::OFF, "motor off");
         REQUIRE(jsPowerSystemState["id"] == "powerSystemState");
-        REQUIRE(jsPowerSystemState["powerType"] == control::PowerSystemType::MOTOR); // 1
-        REQUIRE(jsPowerSystemState["state"] == control::PowerState::OFF); // 2
+        REQUIRE(jsPowerSystemState["powerType"] == control::PowerSystemType::MOTOR);  // 1
+        REQUIRE(jsPowerSystemState["state"] == control::PowerState::OFF);             // 2
         REQUIRE(jsPowerSystemState["status"] == false);
     }
-
 
     {
         seqId++;
@@ -333,7 +336,6 @@ TEST_CASE("Test startup shutdown", "[CSV]") {
         REQUIRE(finJ["id"] == "success");
         REQUIRE(finJ["user_info"] == "");
 
-
         // verify comm power bit is off
         shortSleep();
         auto sInfo = simCore->getSysInfo();
@@ -345,13 +347,13 @@ TEST_CASE("Test startup shutdown", "[CSV]") {
         REQUIRE(inStandby);
 
         // comm power is now on. Verify the "powerSystemState" message.
-        nlohmann::json jsPowerSystemState = waitForPowerSystemState(client, control::PowerSystemType::COMM, control::PowerState::OFF, "comm off");
+        nlohmann::json jsPowerSystemState = waitForPowerSystemState(client, control::PowerSystemType::COMM,
+                                                                    control::PowerState::OFF, "comm off");
         REQUIRE(jsPowerSystemState["id"] == "powerSystemState");
-        REQUIRE(jsPowerSystemState["powerType"] == control::PowerSystemType::COMM); // 2
-        REQUIRE(jsPowerSystemState["state"] == control::PowerState::OFF); // 2
+        REQUIRE(jsPowerSystemState["powerType"] == control::PowerSystemType::COMM);  // 2
+        REQUIRE(jsPowerSystemState["state"] == control::PowerState::OFF);            // 2
         REQUIRE(jsPowerSystemState["status"] == false);
     }
-
 
     {
         seqId++;

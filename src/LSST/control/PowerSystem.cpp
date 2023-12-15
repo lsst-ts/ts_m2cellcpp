@@ -57,7 +57,6 @@ PowerSystem::PowerSystem() : _motor(MOTOR), _comm(COMM) {
 void PowerSystem::setContext(std::shared_ptr<Context> const& context) {
     _comm.setContext(context);
     _motor.setContext(context);
-
 }
 
 PowerSystem::~PowerSystem() {
@@ -125,7 +124,6 @@ bool PowerSystem::_checkTimeout(double diffInSeconds) {
     return timedOut;
 }
 
-
 bool PowerSystem::powerMotor(bool on) {
     bool target = on;
     if (on && _comm.getActualPowerState() != PowerState::ON) {
@@ -141,7 +139,6 @@ bool PowerSystem::powerMotor(bool on) {
     }
 }
 
-
 bool PowerSystem::powerComm(bool on) {
     auto actualMotorState = _motor.getActualPowerState();
     if (!on && actualMotorState != PowerState::OFF) {
@@ -154,7 +151,6 @@ bool PowerSystem::powerComm(bool on) {
         return true;
     }
 }
-
 
 void PowerSystem::_processDaq(SysInfo info) {
     faultmgr::FaultStatusBits currentFaults;
@@ -239,10 +235,10 @@ void PowerSystem::_processDaqHealthTelemetry(SysInfo sInfo, faultmgr::FaultStatu
 
 nlohmann::json PowerSystem::getPowerSystemStateJson(PowerSystemType powerType) const {
     switch (powerType) {
-    case MOTOR:
-        return _motor.getPowerSystemStateJson();
-    case COMM:
-        return _comm.getPowerSystemStateJson();
+        case MOTOR:
+            return _motor.getPowerSystemStateJson();
+        case COMM:
+            return _comm.getPowerSystemStateJson();
     }
     throw util::Bug(ERR_LOC, "unexpected powerType=" + to_string(powerType));
 }

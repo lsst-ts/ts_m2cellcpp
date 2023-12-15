@@ -84,9 +84,7 @@ void ComServer::run() {
     int threadCount = Config::get().getControlServerThreads();
     vector<shared_ptr<thread>> threads(threadCount);
     for (auto&& ptr : threads) {
-        ptr = shared_ptr<thread>(new thread([&]() {
-            _ioContext->run();
-        }));
+        ptr = shared_ptr<thread>(new thread([&]() { _ioContext->run(); }));
     }
     _state = RUNNING;
     LDEBUG("ComServer::run() RUNNING threads=", threadCount);

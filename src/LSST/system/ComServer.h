@@ -94,7 +94,6 @@ public:
     /// Async write the `msg` to all existing ComConnections for this ComServer.
     void asyncWriteToAllComConn(std::string const& msg);
 
-
 protected:
     /// Protected constructor to force use of create().
     ComServer(IoContextPtr const& ioContext, int port);
@@ -106,8 +105,7 @@ private:
     /// Handle a connection request.
     void _handleAccept(ComConnection::Ptr const& connection, boost::system::error_code const& ec);
 
-
-    IoContextPtr _ioContext;  ///< Pointer to the asio io_context
+    IoContextPtr _ioContext;             ///< Pointer to the asio io_context
     std::atomic<State> _state{CREATED};  ///< Current state of the machine.
     int _port;
     boost::asio::ip::tcp::acceptor _acceptor;
