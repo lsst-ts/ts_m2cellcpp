@@ -28,6 +28,7 @@
 #include <memory>
 
 // Project headers
+#include "control/control_defs.h"
 #include "util/Bug.h"
 
 namespace LSST {
@@ -137,10 +138,11 @@ public:
 
     /// Return true if power could be set to 'on'.
     /// VI-PH  setPowerVI;
-    virtual bool setPower(bool on) {
-        errorWrongStateMsg("setPower");
+    virtual bool cmdPower(control::PowerSystemType powerType, bool on) {
+        errorWrongStateMsg("cmdPower");
         return false;
     }
+
     // VI-PH  setSlewingStateVI; // ??? if case with no effect
     // VI-PH  shutdownCellCommVI; // ??? if case with no effect
     // VI-PH  shutdownLoggerVI; // Nada
@@ -164,6 +166,13 @@ public:
 protected:
     /// Constant pointer to the model, which can be nullptr in unit tests.
     Model* const modelPtr;
+
+
+    /// &&& doc - the rules for turning power on and off are icky, need separate on off functions in different states.
+    bool cmdPowerBase(control::PowerSystemType powerType, bool on);
+
+    /// &&& doc
+    std::string  enterStateBase(State::Ptr const& oldName);
 
 private:
     StateEnum const _stateId;  ///< The type of this state.

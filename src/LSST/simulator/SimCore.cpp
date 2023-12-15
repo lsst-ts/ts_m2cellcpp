@@ -73,10 +73,17 @@ SimCore::SimCore() {
     _inputPort->setBitAtPos(control::InputPortBits::POWER_SUPPLY_2_CURRENT_OK, true);
 }
 
+
+SimCore::~SimCore() {
+    stop();
+    join();
+}
+
+
 void SimCore::_simRun() {
     control::OutputPortBits prevOutput = *_outputPort;
     while (_simLoop) {
-        util::CLOCK::time_point timestamp = util::CLOCK::now();
+        util::TIMEPOINT timestamp = util::CLOCK::now();
         // Read in new outputPorts set elsewhere. Keep the lock short.
         {
             lock_guard<mutex> lg(_mtx);
@@ -135,12 +142,13 @@ void SimCore::start() {
     _simThread = std::move(thrd);
 }
 
-bool SimCore::join() {
+void SimCore::join() {
+    if (_joined.exchange(true) == true) {
+        return;
+    }
     if (_simThread.joinable()) {
         _simThread.join();
-        return true;
     }
-    return false;
 }
 
 void SimCore::writeNewOutputPortBit(int pos, bool set) {

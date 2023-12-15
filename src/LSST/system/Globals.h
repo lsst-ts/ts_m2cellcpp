@@ -130,6 +130,9 @@ public:
         return true;
     }
 
+    /// Return true if "user_info" elements are being sent to clients in json messages.
+    bool isSendUserInfo() const { return true; }
+
     /// Reset the global Ptr to Globals. PLACEHOLDER
     /// This should only be called at termination or unit testing.
     void reset();

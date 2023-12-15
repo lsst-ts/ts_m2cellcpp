@@ -66,7 +66,7 @@ public:
     // VI-PH  resumeScriptVI // calls Model::resumeScriptVI
 
     /// VI setPowerVI // calls Model::setPowerVI(CommPowerControl, MotorPowerControl)
-    bool setPower(bool on) override;
+    bool cmdPower(control::PowerSystemType powerType, bool on) override;
 
     // VI-PH  shutdownCellCommVI // calls Model::shutdownCellComm VI-PH
     // shutdownMotionEngineVI   // calls Model::shutdownMotionEngine VI-PH  shutdownNetworkInterfaceVI  //

@@ -35,6 +35,7 @@
 #include "control/Context.h"
 #include "control/FpgaIo.h"
 #include "control/MotionEngine.h"
+#include "control/PowerSystem.h"
 #include "faultmgr/FaultMgr.h"
 #include "simulator/SimCore.h"
 #include "system/Config.h"
@@ -58,6 +59,12 @@ TEST_CASE("Test Com echo", "[Com]") {
     control::FpgaIo::setup(simCore);
     control::MotionEngine::setup();
     control::Context::setup();
+
+    // Power system and FpgaIo timeouts are not useful in this, turn them off.
+    control::Context::Ptr context = control::Context::get();
+    context->model.getPowerSystem()->stopTimeoutLoop();
+    control::FpgaIo::getPtr()->stopLoop();
+    control::MotionEngine::getPtr()->engineStop();
 
     REQUIRE(ComServer::prettyState(ComServer::CREATED) == "CREATED");
     REQUIRE(ComServer::prettyState(ComServer::RUNNING) == "RUNNING");

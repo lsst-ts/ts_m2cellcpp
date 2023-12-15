@@ -28,6 +28,9 @@
 #include <string>
 #include <vector>
 
+// Third party headers
+#include <nlohmann/json.hpp>
+
 // Project headers
 #include "control/control_defs.h"
 #include "control/InputPortBits.h"
@@ -42,6 +45,7 @@ namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
+class Context;
 class FpgaIo;
 
 /* PowerSubsystemConfig values based on this.
@@ -331,10 +335,6 @@ private:
 /// unit tests: test_PowerSystem.cpp
 class PowerSubsystem {
 public:
-    enum PowerState { OFF, TURNING_OFF, TURNING_ON, ON, RESET, UNKNOWN };
-
-    /// Return an appropraite string representation of `powerState`.
-    static std::string getPowerStateStr(PowerState powerState);
 
     PowerSubsystem() = delete;
     PowerSubsystem(PowerSubsystem const&) = delete;
@@ -345,6 +345,11 @@ public:
 
     /// `sysType` must be `MOTOR` or `COMM`.
     PowerSubsystem(PowerSystemType sysType);
+
+    /// Set `_context` to the global Context instance. This can't be done
+    /// in the contructor due to construction order and this is also not
+    /// used in most unit tests.
+    void setContext(std::shared_ptr<Context> const& context);
 
     /// Return the name of the class and systemType string.
     std::string getClassName() const { return "PowerSubsystem " + getPowerSystemTypeStr(_systemType); }
@@ -388,6 +393,9 @@ public:
 
     /// Return the target power state.
     PowerState getTargPowerState() const;
+
+    /// &&& doc
+    nlohmann::json getPowerSystemStateJson() const;
 
 private:
     /// If there are no related problems, turn power on by setting the
@@ -442,6 +450,12 @@ private:
     /// Return true if the FaultMgr has any faults that affect this PowerSubsystem.
     bool _checkForFaults();
 
+    /// &&& doc
+    void _reportStateChange() const;
+
+    /// &&& doc
+    nlohmann::json _getPowerSystemStateJson() const;
+
     PowerSystemType _systemType;  ///< indicates if this is the MOTOR or COMM system.
 
     PowerSubsystemConfig _psCfg;  ///< Configuration values for this PowerSubsystem.
@@ -472,6 +486,8 @@ private:
     PowerState _actualPowerStatePrev = UNKNOWN;  ///< Previous value of `_actualPowerState`
 
     std::shared_ptr<FpgaIo> _fpgaIo;  ///< pointer to the global FpgaIo instance.
+
+    std::weak_ptr<Context> _context;  ///< pointer to the global Context instance.
 };
 
 }  // namespace control

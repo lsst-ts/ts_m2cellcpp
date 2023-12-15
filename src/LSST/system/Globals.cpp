@@ -25,6 +25,7 @@
 // System headers
 
 // Project headers
+#include "control/Context.h"
 #include "system/Config.h"
 #include "util/Log.h"
 
@@ -66,6 +67,7 @@ Globals& Globals::get() {
 /// Increase the the number of connections when `connecting` is true, decrease when false;
 void Globals::setTcpIpConnected(bool connecting) {
     lock_guard<mutex> lock(_tcpIpConnectedMtx);
+    auto originalCount = _tcpIpConnectedCount;
     if (connecting) {
         ++_tcpIpConnectedCount;
     } else {
@@ -73,7 +75,13 @@ void Globals::setTcpIpConnected(bool connecting) {
     }
     if (_tcpIpConnectedCount <= 0) {
         // FUTURE: change state to SAFE MODE - power off ILC communication and actuator motor
-        LCRITICAL("PLACEHOLDER - set system to safe mode");
+        LWARN("No TCP/IP connections, going to OFFLINESTATE");
+        auto& model = control::Context::get()->model;
+        model.changeState(model.getState(state::State::StateEnum::OFFLINESTATE));
+    } else if (originalCount <= 0 && _tcpIpConnectedCount > 0) {
+        LWARN("Went from 0 to at least 1 TCP/IP connections, going to STANDBYSTATE");
+        auto& model = control::Context::get()->model;
+        model.changeState(model.getState(state::State::StateEnum::STANDBYSTATE));
     }
 }
 

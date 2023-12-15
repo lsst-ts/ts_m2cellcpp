@@ -31,7 +31,7 @@
 #include <string>
 
 // project headers
-
+#include "control/Context.h"
 #include "control/FpgaIo.h"
 #include "util/Bug.h"
 #include "util/Log.h"
@@ -39,6 +39,7 @@
 #include "faultmgr/FaultMgr.h"
 
 using namespace std;
+using json = nlohmann::json;
 
 namespace LSST {
 namespace m2cellcpp {
@@ -286,32 +287,18 @@ double PowerSubsystemConfig::outputOffMaxDelay() const {
     throw util::Bug(ERR_LOC, "PowerSubsystemConfig unexpected _systemType=" + to_string(_systemType));
 }
 
-std::string PowerSubsystem::getPowerStateStr(PowerState powerState) {
-    int val = powerState;
-    string valStr = string(" ") + to_string(val);
-    switch (powerState) {
-        case ON:
-            return "ON" + valStr;
-        case TURNING_ON:
-            return "TURNING_ON" + valStr;
-        case TURNING_OFF:
-            return "TURNING_OFF" + valStr;
-        case OFF:
-            return "OFF" + valStr;
-        case RESET:
-            return "RESET" + valStr;
-        case UNKNOWN:
-            return "UNKNOWN" + valStr;
-    }
-    return "unknown" + valStr;
-};
-
 PowerSubsystem::~PowerSubsystem() { setPowerOff(__func__); }
 
 PowerSubsystem::PowerSubsystem(PowerSystemType sysType)
         : _systemType(sysType), _psCfg(_systemType), _fpgaIo(FpgaIo::getPtr()) {
     setPowerOff(__func__);
+    _reportStateChange();
 }
+
+void PowerSubsystem::setContext(std::shared_ptr<Context> const& context) {
+    _context = context;
+}
+
 
 double PowerSubsystem::getVoltage() const {
     switch (_systemType) {
@@ -396,13 +383,13 @@ string PowerSubsystem::_getPowerShouldBeOnStr() {
     return str;
 }
 
-PowerSubsystem::PowerState PowerSubsystem::getActualPowerState() const {
+PowerState PowerSubsystem::getActualPowerState() const {
     VMUTEX_NOT_HELD(_powerStateMtx);
     lock_guard<util::VMutex> lg(_powerStateMtx);
     return _actualPowerState;
 }
 
-PowerSubsystem::PowerState PowerSubsystem::getTargPowerState() const {
+PowerState PowerSubsystem::getTargPowerState() const {
     VMUTEX_NOT_HELD(_powerStateMtx);
     lock_guard<util::VMutex> lg(_powerStateMtx);
     return _targPowerState;
@@ -410,14 +397,14 @@ PowerSubsystem::PowerState PowerSubsystem::getTargPowerState() const {
 
 bool PowerSubsystem::setPowerOn() {
     VMUTEX_NOT_HELD(_powerStateMtx);
-    auto outputPort = _fpgaIo->getOutputPort();
+
     lock_guard<util::VMutex> lg(_powerStateMtx);
     return _setPowerOn();
 }
 
 bool PowerSubsystem::_setPowerOn() {
     VMUTEX_HELD(_powerStateMtx);
-
+    LTRACE("PowerSubsystem::_setPowerOn()");
     if (_checkForFaults()) {
         LERROR(getClassName(), " _setPowerOn cannot turn on due to faults");
         // TODO: DM-41195 - get the error idnum and message from a configuration file.
@@ -463,6 +450,13 @@ void PowerSubsystem::_setPowerOff(string const& note) {
     }
 }
 
+void PowerSubsystem::_reportStateChange() const {
+    auto context = _context.lock();
+    if (context != nullptr) {
+        context->model.reportPowerSystemStateChange(_systemType, _targPowerState, _actualPowerState);
+    }
+}
+
 SysStatus PowerSubsystem::processDaq(SysInfo const& info, faultmgr::FaultStatusBits& faultsSet) {
     VMUTEX_NOT_HELD(_powerStateMtx);
     _sysInfo = info;
@@ -473,14 +467,20 @@ SysStatus PowerSubsystem::processDaq(SysInfo const& info, faultmgr::FaultStatusB
         setPowerOff("processDaq had system faults");
     }
 
+    bool reportStateChange = false;
     if (_targPowerStatePrev != _targPowerState || _actualPowerStatePrev != _actualPowerState) {
         LINFO(getClassName(), " power state change prev(targ=", getPowerStateStr(_targPowerStatePrev),
               " act=", getPowerStateStr(_actualPowerStatePrev),
               ") new(targ=", getPowerStateStr(_targPowerState), " act=", getPowerStateStr(_actualPowerState),
               ")");
+        reportStateChange = true;
     }
     _targPowerStatePrev = _targPowerState;
     _actualPowerStatePrev = _actualPowerState;
+    // don't actually report the state change until after the values have been set.
+    if (reportStateChange) {
+        _reportStateChange();
+    }
 
     lock_guard<util::VMutex> lg(_powerStateMtx);
     switch (_targPowerState) {
@@ -792,6 +792,23 @@ bool PowerSubsystem::_checkForFaults() {
     // and will turn off power when needed.
     mask.unsetBitAt(_psCfg.getBreakerFault());
     return faultmgr::FaultMgr::get().checkForPowerSubsystemFaults(mask, getClassName());
+}
+
+json PowerSubsystem::getPowerSystemStateJson() const {
+    VMUTEX_NOT_HELD(_powerStateMtx);
+    lock_guard<util::VMutex> lockG(_powerStateMtx);
+    return _getPowerSystemStateJson();
+}
+
+json PowerSubsystem::_getPowerSystemStateJson() const {
+    VMUTEX_HELD(_powerStateMtx);
+    json js;
+    js["id"] = "powerSystemState";
+    js["powerType"] = static_cast<int>(_systemType);
+    bool status = (_targPowerState == ON);
+    js["status"] = (status) ? true : false;
+    js["state"] = static_cast<int>(_actualPowerState);
+    return js;
 }
 
 }  // namespace control

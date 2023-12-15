@@ -232,7 +232,7 @@ FaultStatusBits FaultMgr::getFaultEnableMask() const {
 
 void FaultMgr::_updateTelemetryCom(BasicFaultMgr const& newFsbSummary) {
     // TODO: DM-41751 send information to telemetry TCP/IP server
-    LCRITICAL("FaultMgr::_updateTelemetry NEEDS CODE");
+    LDEBUG("FaultMgr::_updateTelemetry NEEDS CODE");
 }
 
 void FaultMgr::faultMsg(int errId, std::string const& eMsg) {

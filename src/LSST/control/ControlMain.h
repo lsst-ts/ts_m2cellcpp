@@ -31,6 +31,15 @@
 
 namespace LSST {
 namespace m2cellcpp {
+
+namespace simulator {
+class SimCore;
+}
+
+namespace system {
+class ComControlServer;
+}
+
 namespace control {
 
 /// PLACEHOLDER This class will contain a thread running the main instance of the program.
@@ -47,13 +56,30 @@ public:
     /// Verify threads are stopped and joined.
     ~ControlMain();
 
-    /// Return a reference to the global ControlMain instance.
-    /// @throws `ConfigException` if `setup` has not already been called.
-    static ControlMain& get();
-
     /// Return a shared pointer to the global ControlMain instance.
     /// @throws `ConfigException` if `setup` has not already been called.
     static Ptr getPtr();
+
+    /// &&& doc
+    void run(int argc, const char* argv[]);
+
+    /// Returns true once the server is running.
+    bool getRunning() { return _running; }
+
+    /// Return a pointer to `_simCore`.
+    std::shared_ptr<simulator::SimCore> getSimCore() { return _simCore; }
+
+
+    /// &&& doc
+    void stop();
+
+    /// &&& doc
+    void join();
+
+    /// &&& doc
+    std::shared_ptr<system::ComControlServer> getComServer() {
+        return _comServer;
+    }
 
 private:
     static Ptr _thisPtr;            ///< Pointer to the global instance of ControlMain.
@@ -61,6 +87,21 @@ private:
 
     /// Private constructor to force the use of `setup()`.
     ControlMain();
+
+    /// &&& doc
+    void _cMain(int argc, const char* argv[]);
+
+    std::thread _mainThrd; ///< &&& doc
+
+    /// Pointer to the system ComControllServer.
+    std::shared_ptr<system::ComControlServer> _comServer;
+
+    /// Point to the simulator instance, if there is one.
+    /// This is only used for testing.
+    std::shared_ptr<simulator::SimCore> _simCore;
+
+    std::atomic<bool> _running{false}; ///< Set to true once the server is running.
+
 };
 
 }  // namespace control

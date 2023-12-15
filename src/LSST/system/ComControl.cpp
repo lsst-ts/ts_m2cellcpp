@@ -53,6 +53,8 @@ void ComControl::setupNormalFactory(control::NetCommandFactory::Ptr const& cmdFa
     cmdFactory->addNetCommand(control::NCmdNoAck::createFactoryVersion());
     cmdFactory->addNetCommand(control::NCmdEcho::createFactoryVersion());
     cmdFactory->addNetCommand(control::NCmdSwitchCommandSource::createFactoryVersion());
+    cmdFactory->addNetCommand(control::NCmdPower::createFactoryVersion());
+    cmdFactory->addNetCommand(control::NCmdSystemShutdown::createFactoryVersion());
 }
 
 std::tuple<std::string, util::Command::Ptr> ComControl::interpretCommand(std::string const& commandStr) {

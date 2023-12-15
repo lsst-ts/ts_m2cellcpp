@@ -25,6 +25,7 @@
 // System headers
 
 // Project headers
+#include "control/PowerSystem.h"
 #include "util/Log.h"
 
 using namespace std;
@@ -38,12 +39,15 @@ Context::Ptr Context::_thisPtr;
 std::mutex Context::_thisMtx;
 
 void Context::setup() {
-    lock_guard<mutex> lock(_thisMtx);
-    if (_thisPtr) {
-        LERROR("Config already setup");
-        return;
+    {
+        lock_guard<mutex> lock(_thisMtx);
+        if (_thisPtr) {
+            LERROR("Config already setup");
+            return;
+        }
+        _thisPtr = Ptr(new Context());
     }
-    _thisPtr = Ptr(new Context());
+    _thisPtr->model.getPowerSystem()->setContext(_thisPtr);
 }
 
 Context::Ptr Context::get() {

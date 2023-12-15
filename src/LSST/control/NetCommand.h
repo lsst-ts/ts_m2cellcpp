@@ -238,17 +238,17 @@ public:
 
     virtual ~NCmdEcho() = default;
 
-    /// @return a version of NCmdAck to be used to generate commands.
+    /// @return a version of NCmdEcho to be used to generate commands.
     static Ptr createFactoryVersion() { return Ptr(new NCmdEcho()); }
 
     /// @return the name of the command this specific class handles.
     std::string getCommandName() const override { return "cmd_echo"; }
 
-    /// @return a new NCmdNoAck object using the parameters in 'inJson'
+    /// @return a new NCmdEcho object using the parameters in 'inJson'
     NetCommand::Ptr createNewNetCommand(JsonPtr const& inJson) override;
 
 protected:
-    // NCmdNoAck always fails
+    /// NCmdEcho echo back the message.
     bool action() override;
 
 private:

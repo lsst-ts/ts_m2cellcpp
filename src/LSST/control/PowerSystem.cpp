@@ -54,8 +54,14 @@ PowerSystem::PowerSystem() : _motor(MOTOR), _comm(COMM) {
     _timeoutThread = move(tThrd);
 }
 
+void PowerSystem::setContext(std::shared_ptr<Context> const& context) {
+    _comm.setContext(context);
+    _motor.setContext(context);
+
+}
+
 PowerSystem::~PowerSystem() {
-    _timeoutLoop = false;
+    stopTimeoutLoop();
     _motor.setPowerOff(__func__);
     _comm.setPowerOff(__func__);
     _eThrd.queEnd();
@@ -119,6 +125,37 @@ bool PowerSystem::_checkTimeout(double diffInSeconds) {
     return timedOut;
 }
 
+
+bool PowerSystem::powerMotor(bool on) {
+    bool target = on;
+    if (on && _comm.getActualPowerState() != PowerState::ON) {
+        target = false;
+        LWARN("PowerSystem::powerMotor cannot be turned on while COMM is not ON");
+        return false;
+    }
+    if (target) {
+        return _motor.setPowerOn();
+    } else {
+        _motor.setPowerOff("PowerSystem::powerMotor");
+        return true;
+    }
+}
+
+
+bool PowerSystem::powerComm(bool on) {
+    auto actualMotorState = _motor.getActualPowerState();
+    if (!on && actualMotorState != PowerState::OFF) {
+        _motor.setPowerOff("PowerSystem::powerComm");
+    }
+    if (on) {
+        return _comm.setPowerOn();
+    } else {
+        _comm.setPowerOff("PowerSystem::powerComm");
+        return true;
+    }
+}
+
+
 void PowerSystem::_processDaq(SysInfo info) {
     faultmgr::FaultStatusBits currentFaults;
 
@@ -127,6 +164,14 @@ void PowerSystem::_processDaq(SysInfo info) {
     // can be turned off as soon as possible.
     if (currentFaults.getBitmap() != 0) {
         faultmgr::FaultMgr::get().updatePowerFaults(currentFaults, faultmgr::BasicFaultMgr::POWER_SUBSYSTEM);
+    }
+
+    // If Motor power is ON, or TURNING_ON, but Comm power is not ON, turn off Motor power.
+    bool motorPowerOn = info.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON);
+    bool commPowerOn = info.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON);
+    if (motorPowerOn && !commPowerOn) {
+        LERROR("Motor power bit on while comm power bit is off, turning off motor power.");
+        _motor.setPowerOff("PowerSystem::_processDaq - comm power on");
     }
 
     SysStatus motorStat = _motor.processDaq(info, currentFaults);
@@ -177,18 +222,29 @@ void PowerSystem::_processDaqHealthTelemetry(SysInfo sInfo, faultmgr::FaultStatu
         currentFaults.setBitAt(faultmgr::FaultStatusBits::POWER_SUPPLY_LOAD_SHARE_ERR);
     }
 
+    bool localBoostCurrentFaultEnabled = _boostCurrentFaultEnabled;
     bool anyBoostCurrentOnAndFaultEnabled =
-            _boostCurrentFaultEnabled && (powerSupply1BoostCurrentOn || powerSupply2BoostCurrentOn);
+            localBoostCurrentFaultEnabled && (powerSupply1BoostCurrentOn || powerSupply2BoostCurrentOn);
     bool allDcOk = powerSupply1DcOk && powerSupply2DcOk;
     bool powerSupplyOk = allDcOk && !anyBoostCurrentOnAndFaultEnabled;
 
     if (!powerSupplyOk) {
-        LERROR("POWER_HEALTH_FAULT _boostCurrentFaultEnabled=", _boostCurrentFaultEnabled,
+        LERROR("POWER_HEALTH_FAULT _boostCurrentFaultEnabled=", localBoostCurrentFaultEnabled,
                " powerSupply1BoostCurrentOn=", powerSupply1BoostCurrentOn,
                " powerSupply2BoostCurrentOn=", powerSupply2BoostCurrentOn,
                " powerSupply1DcOk=", powerSupply1DcOk, " powerSupply2DcOk=", powerSupply2DcOk);
         currentFaults.setBitAt(faultmgr::FaultStatusBits::POWER_HEALTH_FAULT);  // "power supply health fault"
     }
+}
+
+nlohmann::json PowerSystem::getPowerSystemStateJson(PowerSystemType powerType) const {
+    switch (powerType) {
+    case MOTOR:
+        return _motor.getPowerSystemStateJson();
+    case COMM:
+        return _comm.getPowerSystemStateJson();
+    }
+    throw util::Bug(ERR_LOC, "unexpected powerType=" + to_string(powerType));
 }
 
 }  // namespace control

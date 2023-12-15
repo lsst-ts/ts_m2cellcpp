@@ -22,6 +22,7 @@
 #define LSST_M2CELLCPP_SYSTEM_COMCLIENT_H
 
 // System headers
+#include <deque>
 #include <memory>
 #include <string>
 
@@ -30,10 +31,41 @@
 
 // Third party headers
 #include <boost/asio.hpp>
+#include <nlohmann/json.hpp>
 
 namespace LSST {
 namespace m2cellcpp {
 namespace system {
+
+/// &&& doc
+class JsonMsgMap {
+public:
+    typedef std::deque<nlohmann::json> JsonDeque;
+    typedef std::map<std::string, JsonDeque> JdMap;
+
+    JsonMsgMap() = default;
+    JsonMsgMap(JsonMsgMap const&) = default;
+    ~JsonMsgMap() = default;
+
+    /// &&& doc
+    void insert(std::string const& key, nlohmann::json const& js);
+
+    /// &&& doc Return the JsonDeque for `key` using move.
+    JsonDeque getDequeFor(std::string const& key);
+
+    /// Returns the current `_msgMap` and replaces `_msgMap` with a new empty one.
+    std::shared_ptr<JdMap> getMsgMap() {
+        std::shared_ptr<JdMap> ret = _msgMap;
+        _msgMap.reset(new JdMap());
+        return ret;
+    }
+
+private:
+    /// Map of messages read that were not part of a request
+    /// made by the client.
+    std::shared_ptr<JdMap> _msgMap{new JdMap()};
+};
+
 
 /// A class used for testing ComServer by making a connection to the server
 /// and running commands.
@@ -63,6 +95,18 @@ public:
     ///  A negative value indicates failure.
     int readWelcomeMsg();
 
+    /// &&& doc
+    std::tuple<nlohmann::json, nlohmann::json> cmdSendRecv(std::string const& jStr, uint seqId, std::string const& note);
+
+    /// &&& doc
+    nlohmann::json cmdRecvId(std::string const& targetId, std::string const& note);
+
+    /// &&& doc
+    nlohmann::json cmdRecvSeqId(uint seqId, std::string const& note);
+
+    /// &&& doc
+    JsonMsgMap::JsonDeque recvDequeForId(std::string const& key, std::string const& note);
+
     /// Close the connection.
     void close();
 
@@ -77,6 +121,9 @@ private:
     /// the same buffer needs to be used repeatedly.
     boost::asio::streambuf _readStream;
     std::mutex _readStreamMtx;  ///< Protects `_readStream`
+
+    /// &&& doc
+    JsonMsgMap _jMsgMap;
 };
 
 }  // namespace system

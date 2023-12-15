@@ -29,6 +29,9 @@
 #include <thread>
 #include <vector>
 
+// Third party headers
+#include <nlohmann/json.hpp>
+
 // Project headers
 #include "control/FpgaIo.h"
 #include "control/InputPortBits.h"
@@ -42,7 +45,10 @@ namespace control {
 
 /// Class is used to contain both the `MOTOR` `PowerSubsystem` and
 /// the `COMM` `PowerSubsystem`.
-/// Synchronization is largely provided by this being an event driven thread.
+/// Synchronization is largely provided by this being an event driven thread,
+/// where the primary event is `queueDaqInfoRead()`.
+/// `_comm` and `_motor` have their own mutexes for synchronization
+/// and contain most of the data.
 /// unit tests: test_PowerSystem.cpp
 //
 // DM-40694 set from config file,
@@ -70,6 +76,9 @@ public:
     /// Try to turn off power and stop the event thread.
     virtual ~PowerSystem();
 
+    /// &&& doc
+    void setContext(std::shared_ptr<Context> const& context);
+
     /// Called when new system information is available so this
     /// class can get a copy and process it.
     void queueDaqInfoRead();
@@ -82,11 +91,28 @@ public:
     /// If `set` is true, enable the interlock, otherwise disable it.
     void writeCrioInterlockEnable(bool set);
 
+    /// &&& doc
+    /// Motor power can only be turned on if Comm power is already ON.
+    bool powerMotor(bool on);
+
+    /// &&& doc
+    /// If comm power is being turned off, then motor power must also be
+    /// turned off.
+    bool powerComm(bool on);
+
     /// Return a reference to the MOTOR PowerSubSystem.
     PowerSubsystem& getMotor() { return _motor; }
 
     /// Return a reference to the COMM PowerSubSystem.
     PowerSubsystem& getComm() { return _comm; }
+
+    /// &&& doc
+    nlohmann::json getPowerSystemStateJson(PowerSystemType powerType) const;
+
+    /// &&& doc
+    void stopTimeoutLoop() {
+        _timeoutLoop = false;
+    }
 
 private:
     /// Read SysInfo from the FPGA and call `_processDaq`
@@ -127,7 +153,7 @@ private:
 
     /// If true, boost current indicators from the power supplies will cause faults.
     /// DM-40694 set from config file
-    bool _boostCurrentFaultEnabled = true;
+    std::atomic<bool> _boostCurrentFaultEnabled{true};
 
     std::thread _timeoutThread;            ///< calls _checkTimeout on a regular basis.
     std::atomic<bool> _timeoutLoop{true};  ///< set to false to end _timeoutThread.

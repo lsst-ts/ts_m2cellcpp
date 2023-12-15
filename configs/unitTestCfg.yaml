@@ -10,7 +10,7 @@ Log:
 ControlServer:
   host: "127.0.0.1"
   port: 12678
-  threads: 1
+  threads: 3
 
 # Acceptable values for the telemetry server.
 TelemetryServer:

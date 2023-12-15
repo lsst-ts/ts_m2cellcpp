@@ -84,10 +84,12 @@ void ComServer::run() {
     int threadCount = Config::get().getControlServerThreads();
     vector<shared_ptr<thread>> threads(threadCount);
     for (auto&& ptr : threads) {
-        ptr = shared_ptr<thread>(new thread([&]() { _ioContext->run(); }));
+        ptr = shared_ptr<thread>(new thread([&]() {
+            _ioContext->run();
+        }));
     }
     _state = RUNNING;
-    LDEBUG("ComServer::run() RUNNING");
+    LDEBUG("ComServer::run() RUNNING threads=", threadCount);
 
     // Wait for all threads in the pool to exit.
     for (auto&& ptr : threads) {
@@ -108,6 +110,7 @@ void ComServer::_beginAccept() {
 }
 
 void ComServer::_handleAccept(ComConnection::Ptr const& connection, boost::system::error_code const& ec) {
+    LINFO("ComServer::_handleAccept");
     if (_state == STOPPED || _shutdown) {
         return;
     }
@@ -148,6 +151,7 @@ void ComServer::shutdown() {
             conn->shutdown();
         }
     }
+    LINFO("ComServer::shutdown end");
 }
 
 void ComServer::eraseConnection(uint64_t connId) {

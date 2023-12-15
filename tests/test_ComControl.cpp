@@ -28,6 +28,7 @@
 #include "control/Context.h"
 #include "control/FpgaIo.h"
 #include "control/MotionEngine.h"
+#include "control/PowerSystem.h"
 #include "faultmgr/FaultMgr.h"
 #include "simulator/SimCore.h"
 #include "system/ComClient.h"
@@ -41,17 +42,6 @@ using namespace std;
 using namespace LSST::m2cellcpp::system;
 using namespace LSST::m2cellcpp;
 
-tuple<nlohmann::json, nlohmann::json> comTest(string const& jStr, ComClient& client, string const& note) {
-    client.writeCommand(jStr);
-    LDEBUG(note, ":wrote jStr=", jStr);
-    auto ack = client.readCommand();
-    LDEBUG(note, ":read ack=", ack);
-    auto ackJ = nlohmann::json::parse(ack);
-    auto fin = client.readCommand();
-    LDEBUG(note, ":read fin=", fin);
-    auto finJ = nlohmann::json::parse(fin);
-    return {ackJ, finJ};
-}
 
 TEST_CASE("Test ComControl", "[ComControl]") {
     util::Log::getLog().useEnvironmentLogLvl();
@@ -64,6 +54,12 @@ TEST_CASE("Test ComControl", "[ComControl]") {
     control::FpgaIo::setup(simCore);
     control::MotionEngine::setup();
     control::Context::setup();
+
+    // Power system and FpgaIo timeouts are not useful in this, turn them off.
+    control::Context::Ptr context = control::Context::get();
+    context->model.getPowerSystem()->stopTimeoutLoop();
+    control::FpgaIo::getPtr()->stopLoop();
+    control::MotionEngine::getPtr()->engineStop();
 
     // Start a ComControlServer
     IoContextPtr ioContext = make_shared<boost::asio::io_context>();
@@ -98,7 +94,7 @@ TEST_CASE("Test ComControl", "[ComControl]") {
             LDEBUG(note);
             string jStr = R"({"id":"cmd_ack","sequence_id": 1 })";
             int seqId = 1;
-            auto [ackJ, finJ] = comTest(jStr, client, note);
+            auto [ackJ, finJ] = client.cmdSendRecv(jStr, seqId, note);
             REQUIRE(ackJ["sequence_id"] == seqId);
             REQUIRE(ackJ["id"] == "ack");
             REQUIRE(finJ["sequence_id"] == seqId);
@@ -110,7 +106,7 @@ TEST_CASE("Test ComControl", "[ComControl]") {
             LDEBUG(note);
             string jStr = R"({"id":"cmd_echo","sequence_id": 2, "msg":"This is an echomsg" })";
             int seqId = 2;
-            auto [ackJ, finJ] = comTest(jStr, client, note);
+            auto [ackJ, finJ] = client.cmdSendRecv(jStr, seqId, note);
             REQUIRE(ackJ["sequence_id"] == seqId);
             REQUIRE(ackJ["id"] == "ack");
             REQUIRE(finJ["sequence_id"] == seqId);
@@ -122,7 +118,7 @@ TEST_CASE("Test ComControl", "[ComControl]") {
             LDEBUG(note);
             string jStr = R"({"id":"cmd_ak","sequence_id": 3 })";
             int seqId = 3;
-            auto [ackJ, finJ] = comTest(jStr, client, note);
+            auto [ackJ, finJ] = client.cmdSendRecv(jStr, seqId, note);
             REQUIRE(ackJ["sequence_id"] == seqId);
             REQUIRE(ackJ["id"] == "noack");
             REQUIRE(finJ["sequence_id"] == seqId);
