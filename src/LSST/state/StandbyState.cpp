@@ -41,6 +41,12 @@ StandbyState::Ptr StandbyState::create(StateMap& stateMap, Model* const model) {
     return state;
 }
 
+void StandbyState::enterState(State::Ptr const& oldState) { enterStateBase(oldState); }
+
+bool StandbyState::cmdPower(control::PowerSystemType powerType, bool on) {
+    return cmdPowerBase(powerType, on);
+}
+
 }  // namespace state
 }  // namespace m2cellcpp
 }  // namespace LSST

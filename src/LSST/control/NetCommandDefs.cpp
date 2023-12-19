@@ -27,6 +27,9 @@
 // Third party headers
 
 // Project headers
+#include "control/Context.h"
+#include "control/PowerSystem.h"
+#include "state/Model.h"
 #include "system/ComControlServer.h"
 #include "system/Globals.h"
 #include "util/Log.h"
@@ -46,31 +49,98 @@ NCmdSwitchCommandSource::Ptr NCmdSwitchCommandSource::create(JsonPtr const& inJs
 NCmdSwitchCommandSource::NCmdSwitchCommandSource(JsonPtr const& inJson) : NetCommand(inJson) {
     try {
         _isRemote = inJson->at("isRemote");
-        LDEBUG("NCmdSwitchCommandSource seqId=", getSeqId(), " isRemote=", _isRemote);
+        LDEBUG(__func__, " ", getCommandName(), " seqId=", getSeqId(), " isRemote=", _isRemote);
     } catch (json::exception const& ex) {
-        string eMsg = string("NCmdEcho constructor error in ") + inJson->dump() + " what=" + ex.what();
-        LERROR(eMsg);
-        throw NetCommandException(ERR_LOC, eMsg);
+        throwNetCommandException(ERR_LOC, __func__, inJson, ex);
     }
 
     ackJson["id"] = "ack";
-    ackJson["user_info"] = "switchCommandSource " + to_string(_isRemote);
+    ackJson["user_info"] = getCommandName() + " " + to_string(_isRemote);
 }
 
 NetCommand::Ptr NCmdSwitchCommandSource::createNewNetCommand(JsonPtr const& inJson) {
-    NCmdSwitchCommandSource::Ptr cmd = NCmdSwitchCommandSource::create(inJson);
-    return cmd;
+    return NCmdSwitchCommandSource::create(inJson);
 }
 
 bool NCmdSwitchCommandSource::action() {
     bool result = system::Globals::get().setCommandSourceIsRemote(_isRemote);
     // This sets the CommandableByDds global, which needs to be broadcast.
+    // This could be a duplicate broadcast, which is expected to be harmless.
     string msg = to_string(system::Globals::get().getCommandableByDdsJson());
     auto comServ = system::ComControlServer::get().lock();
     if (comServ != nullptr) {
         comServ->asyncWriteToAllComConn(msg);
     }
     return result;
+}
+
+NCmdPower::Ptr NCmdPower::create(JsonPtr const& inJson_) {
+    auto cmd = Ptr(new NCmdPower(inJson_));
+    return cmd;
+}
+
+NCmdPower::NCmdPower(JsonPtr const& inJson) : NetCommand(inJson) {
+    LTRACE("NCmdPower::NCmdPower ", to_string(*inJson));
+    try {
+        int powerVal = inJson->at("powerType");
+        _powerType = intToPowerSystemType(powerVal);
+        _status = inJson->at("status");
+    } catch (json::exception const& ex) {
+        throwNetCommandException(ERR_LOC, __func__, inJson, ex);
+    }
+    if (_powerType == UNKNOWNPOWERSYSTEM) {
+        throw NetCommandException(ERR_LOC, "unknown powerType in " + inJson->dump());
+    }
+    LDEBUG(__func__, " ", getCommandName(), " seqId=", getSeqId(),
+           " powerType=", getPowerSystemTypeStr(_powerType), " status=", _status);
+    ackJson["id"] = "ack";
+    ackJson["user_info"] = getCommandName() + " " + getPowerSystemTypeStr(_powerType) + to_string(_status);
+}
+
+NetCommand::Ptr NCmdPower::createNewNetCommand(JsonPtr const& inJson) { return NCmdPower::create(inJson); }
+
+bool NCmdPower::action() {
+    auto context = Context::get();
+    bool result = context->model.getCurrentState()->cmdPower(_powerType, _status);
+
+    // Message that looks something like this needs to be broadcast
+    // {'powerType': 2, 'status': True, 'id': 'cmd_power', 'sequence_id': 123}
+    // {'id': 'powerSystemState', 'powerType': 2, 'status': true, 'state': 3 }
+    // {'id': 'powerSystemState', 'powerType': 2, 'status': true, 'state': 5}
+    // This is a duplicate broadcast and can probably be removed, but it may
+    // be useful as without this motor state is only broadcast on change.
+    json js = context->model.getPowerSystem()->getPowerSystemStateJson(_powerType);
+    string msg = js.dump();
+    auto comServ = system::ComControlServer::get().lock();
+    if (comServ != nullptr) {
+        comServ->asyncWriteToAllComConn(msg);
+    }
+    return result;
+}
+
+NCmdSystemShutdown::Ptr NCmdSystemShutdown::create(JsonPtr const& inJson_) {
+    return Ptr(new NCmdSystemShutdown(inJson_));
+}
+
+NCmdSystemShutdown::NCmdSystemShutdown(JsonPtr const& inJson) : NetCommand(inJson) {
+    ackJson["id"] = "ack";
+    ackJson["user_info"] = getCommandName();
+}
+
+NetCommand::Ptr NCmdSystemShutdown::createNewNetCommand(JsonPtr const& inJson) {
+    return NCmdSystemShutdown::create(inJson);
+}
+
+bool NCmdSystemShutdown::action() {
+    LINFO("NCmdSystemShutdown");
+    thread thrd([] {
+        sleep(1);
+        LINFO("NCmdSystemShutdown shutting down");
+        auto context = Context::get();
+        context->model.systemShutdown();
+    });
+    thrd.detach();
+    return true;
 }
 
 }  // namespace control

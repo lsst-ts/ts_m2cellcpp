@@ -29,6 +29,9 @@
 #include <thread>
 #include <vector>
 
+// Third party headers
+#include <nlohmann/json.hpp>
+
 // Project headers
 #include "control/FpgaIo.h"
 #include "control/InputPortBits.h"
@@ -42,7 +45,10 @@ namespace control {
 
 /// Class is used to contain both the `MOTOR` `PowerSubsystem` and
 /// the `COMM` `PowerSubsystem`.
-/// Synchronization is largely provided by this being an event driven thread.
+/// Synchronization is largely provided by this being an event driven thread,
+/// where the primary event is `queueDaqInfoRead()`.
+/// `_comm` and `_motor` have their own mutexes for synchronization
+/// and contain most of the data.
 /// unit tests: test_PowerSystem.cpp
 //
 // DM-40694 set from config file,
@@ -70,6 +76,10 @@ public:
     /// Try to turn off power and stop the event thread.
     virtual ~PowerSystem();
 
+    /// Use this to set this object's pointer to context to the global `context` instance.
+    /// In some unit tests, there may be no `Context` instance.
+    void setContext(std::shared_ptr<Context> const& context);
+
     /// Called when new system information is available so this
     /// class can get a copy and process it.
     void queueDaqInfoRead();
@@ -82,11 +92,37 @@ public:
     /// If `set` is true, enable the interlock, otherwise disable it.
     void writeCrioInterlockEnable(bool set);
 
+    /// Turn motor power on or off.
+    /// Motor power can only be turned on if Comm power is already ON.
+    /// @param on - Turn power on if true, or off if it is false.
+    /// @return true if there wasn't anything preventing power from being changed.
+    ///   This only indicates that the power bit could be set. There may be
+    ///   other issue that prevent power from reaching the `ON` state.
+    bool powerMotor(bool on);
+
+    /// Turn comm power on or off.
+    /// @param on - Turn power on if true, or off if it is false.
+    /// @return true if there wasn't anything preventing power from being changed.
+    ///   This only indicates that the power bit could be set. There may be
+    ///   other issue that prevent power from reaching the `ON` state.
+    /// If comm power is being turned off, then motor power should already be
+    /// turned off. In any case, if the comm power bit is turned off,
+    /// `PowerSystem` will try to turn off motor power.
+    bool powerComm(bool on);
+
     /// Return a reference to the MOTOR PowerSubSystem.
     PowerSubsystem& getMotor() { return _motor; }
 
     /// Return a reference to the COMM PowerSubSystem.
     PowerSubsystem& getComm() { return _comm; }
+
+    /// Provide a json message containting the state of a `PowerSubsystem`.
+    /// @param powerType - indicates which subsystem to generate a json message for.
+    /// @return a json message describing the state of the `PowerSubsystem` indicated by `powerType`.
+    nlohmann::json getPowerSystemStateJson(PowerSystemType powerType) const;
+
+    /// Calling this function will stop the timeout thread.
+    void stopTimeoutLoop() { _timeoutLoop = false; }
 
 private:
     /// Read SysInfo from the FPGA and call `_processDaq`
@@ -127,7 +163,7 @@ private:
 
     /// If true, boost current indicators from the power supplies will cause faults.
     /// DM-40694 set from config file
-    bool _boostCurrentFaultEnabled = true;
+    std::atomic<bool> _boostCurrentFaultEnabled{true};
 
     std::thread _timeoutThread;            ///< calls _checkTimeout on a regular basis.
     std::atomic<bool> _timeoutLoop{true};  ///< set to false to end _timeoutThread.

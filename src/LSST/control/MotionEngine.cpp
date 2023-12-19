@@ -46,7 +46,14 @@ void MotionEngine::setup() {
     _thisPtr = Ptr(new MotionEngine());
 }
 
+MotionEngine::~MotionEngine() {
+    engineStop();
+    engineJoin();
+}
+
 MotionEngine::Ptr MotionEngine::getPtr() {
+    // No mutex needed as once set by `setup()`, the value of _thisPtr
+    // cannot change.
     if (_thisPtr == nullptr) {
         throw system::ConfigException(ERR_LOC, "MotionEngine has not been setup.");
     }
@@ -93,6 +100,7 @@ void MotionEngine::waitForEngine() const {
 }
 
 bool MotionEngine::engineStop() {
+    LDEBUG("MotionEngine::engineStop _eStopCalled=", to_string(_eStopCalled));
     if (_eStopCalled.exchange(true) == true) {
         LWARN("MotionEngine::engineStop() has already been called");
         return false;
@@ -108,9 +116,12 @@ void MotionEngine::engineJoin() {
         LWARN("MotionEngine::engineJoin() has already been called");
         return;
     }
-
-    _eThrd.join();
-    _timeoutThread.join();
+    if (_eStarted) {
+        _eThrd.join();
+    }
+    if (_timeoutThread.joinable()) {
+        _timeoutThread.join();
+    }
 }
 
 void MotionEngine::queueTimeoutCheck() {

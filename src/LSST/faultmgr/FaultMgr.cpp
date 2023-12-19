@@ -55,6 +55,8 @@ void FaultMgr::setup() {
 }
 
 FaultMgr::Ptr FaultMgr::getPtr() {
+    // No mutex needed as once set by `setup()`, the value of _thisPtr
+    // cannot change.
     if (_thisPtr == nullptr) {
         throw system::ConfigException(ERR_LOC, "FaultMgr has not been setup.");
     }
@@ -232,7 +234,7 @@ FaultStatusBits FaultMgr::getFaultEnableMask() const {
 
 void FaultMgr::_updateTelemetryCom(BasicFaultMgr const& newFsbSummary) {
     // TODO: DM-41751 send information to telemetry TCP/IP server
-    LCRITICAL("FaultMgr::_updateTelemetry NEEDS CODE");
+    LDEBUG("FaultMgr::_updateTelemetry NEEDS CODE");
 }
 
 void FaultMgr::faultMsg(int errId, std::string const& eMsg) {

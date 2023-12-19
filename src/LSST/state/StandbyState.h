@@ -48,12 +48,19 @@ public:
     StandbyState& operator=(StandbyState const&) = delete;
     virtual ~StandbyState() = default;
 
+    /// Do not stop motion or turn off power when entering this state.
+    void enterState(State::Ptr const& oldName) override;
+
     /// VI-PH  exitVI // calls Model::changeStateVI(OfflineState)
     void exitVI();
 
     /// VI-PH  startVI // calls Model::startVI  then  Model::stopMotionVI  then
     /// Model::changeStateVI(ReadyIdle)
     void startVI();
+
+    /// Turn the power for the indicated power subsystem on or off.
+    /// @see state::State::cmdPowerBase(control::PowerSystemType powerType, bool on)
+    bool cmdPower(control::PowerSystemType powerType, bool on) override;
 
 private:
     StandbyState(Model* const model) : State(STANDBYSTATE, model) {}

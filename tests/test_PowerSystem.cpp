@@ -83,6 +83,9 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
     control::Context::Ptr context = control::Context::get();
     context->model.ctrlSetup();
 
+    // At this point, MotionCtrl and FpgaCtrl should be configured. Start the control loops
+    context->model.ctrlStart();
+
     while (simCore->getIterations() < 1) {
         this_thread::sleep_for(0.1s);
     }
@@ -91,6 +94,9 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         PowerSystem::Ptr powerSys = control::Context::get()->model.getPowerSystem();
         PowerSubsystem& motorSubSys = powerSys->getMotor();
         PowerSubsystem& commSubSys = powerSys->getComm();
+
+        // FUTURE: TODO: put this item into the configuration (or where does it really belong?)
+        powerSys->writeCrioInterlockEnable(true);
 
         REQUIRE(motorSubSys.getSystemType() == MOTOR);
         REQUIRE(commSubSys.getSystemType() == COMM);
@@ -108,15 +114,9 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON) == 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_COMM_BREAKERS) != 0);
         REQUIRE(sInfo.motorVoltage < voltageOffLevel);  // _voltageOffLevel
-        REQUIRE(motorSubSys.getTargPowerState() == PowerSubsystem::OFF);
+        REQUIRE(motorSubSys.getTargPowerState() == PowerState::OFF);
         simCore->waitForUpdate(telemWait);
-        REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::UNKNOWN);
-
-        // Register the PowerSystem with FpgaIo so that it gets updates.
-        FpgaIo::get().registerPowerSys(powerSys);
-        powerSys->writeCrioInterlockEnable(true);
-        simCore->waitForUpdate(telemWait);
-        REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::OFF);
+        REQUIRE(motorSubSys.getActualPowerState() == PowerState::OFF);
 
         // Try to turn power on with any network connections
         LDEBUG("Turn motor power on, expected failure due to no network connections");
@@ -129,46 +129,7 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         // power can be turned on.
         faultmgr::FaultMgr::get().reportComConnectionCount(1);
 
-        // turn power on
-        LDEBUG("Turn motor power on!!!");
-        motorSubSys.setPowerOn();
-        simCore->waitForUpdate(simWait);
-        sInfo = simCore->getSysInfo();
-        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) != 0);
-        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
-        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON) == 0);
-        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_COMM_BREAKERS) != 0);
-
-        // verify power on
-        simCore->waitForUpdate(telemWait);        // wait for telemetry count
-        this_thread::sleep_for(voltageRiseWait);  // Need to wait for voltage rise and phases.
-        sInfo = simCore->getSysInfo();
-        LDEBUG("Verify motor power on!!!");
-        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) != 0);
-        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
-        REQUIRE(sInfo.motorVoltage > approxMinVoltageFault);
-        LDEBUG("Test motor power on!!!");
-        REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::ON);
-
-        // turn power off
-        motorSubSys.setPowerOff("test motor power off");
-        simCore->waitForUpdate(5);
-        sInfo = simCore->getSysInfo();
-        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) == 0);
-        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
-        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON) == 0);
-        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_COMM_BREAKERS) != 0);
-
-        // verify power off
-        simCore->waitForUpdate(simWaitLong);  // need to wait for voltage fall
-        sInfo = simCore->getSysInfo();
-        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) == 0);
-        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
-        REQUIRE(sInfo.motorVoltage < voltageOffLevel);  // _voltageOffLevel
-        REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::OFF);
-
-        // comm
-        // turn power on
+        // comm,  turn power on
         LDEBUG("Turn comm power on!!!");
         commSubSys.setPowerOn();
         simCore->waitForUpdate(simWait);
@@ -178,16 +139,55 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON) != 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_COMM_BREAKERS) != 0);
 
-        // verify power on
+        // comm, verify power on
         simCore->waitForUpdate(telemWait);        // wait for telemetry count
         this_thread::sleep_for(voltageRiseWait);  // Need to wait for voltage rise and phases.
         sInfo = simCore->getSysInfo();
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON) != 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_COMM_BREAKERS) != 0);
         REQUIRE(sInfo.commVoltage > approxMinVoltageFault);  // approximate _minVoltageFault
-        REQUIRE(commSubSys.getActualPowerState() == PowerSubsystem::ON);
+        REQUIRE(commSubSys.getActualPowerState() == PowerState::ON);
 
-        // turn power off
+        // motor, turn power on
+        // motor power can only be turned on if comm power is already on.
+        LDEBUG("Turn motor power on!!!");
+        motorSubSys.setPowerOn();
+        simCore->waitForUpdate(simWait);
+        sInfo = simCore->getSysInfo();
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) != 0);
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON) != 0);
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_COMM_BREAKERS) != 0);
+
+        // motor, verify power on
+        simCore->waitForUpdate(telemWait);        // wait for telemetry count
+        this_thread::sleep_for(voltageRiseWait);  // Need to wait for voltage rise and phases.
+        sInfo = simCore->getSysInfo();
+        LDEBUG("Verify motor power on!!!");
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) != 0);
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
+        REQUIRE(sInfo.motorVoltage > approxMinVoltageFault);
+        LDEBUG("Test motor power on!!!");
+        REQUIRE(motorSubSys.getActualPowerState() == PowerState::ON);
+
+        // motor, turn power off
+        motorSubSys.setPowerOff("test motor power off");
+        simCore->waitForUpdate(5);
+        sInfo = simCore->getSysInfo();
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) == 0);
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON) != 0);
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_COMM_BREAKERS) != 0);
+
+        // verify power off
+        simCore->waitForUpdate(simWaitLong);  // need to wait for voltage fall
+        sInfo = simCore->getSysInfo();
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) == 0);
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
+        REQUIRE(sInfo.motorVoltage < voltageOffLevel);  // _voltageOffLevel
+        REQUIRE(motorSubSys.getActualPowerState() == PowerState::OFF);
+
+        // comm, turn power off
         commSubSys.setPowerOff("test comm power off");
         simCore->waitForUpdate(simWait);
         sInfo = simCore->getSysInfo();
@@ -195,7 +195,7 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON) == 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_COMM_BREAKERS) != 0);
-        REQUIRE(commSubSys.getTargPowerState() == PowerSubsystem::OFF);
+        REQUIRE(commSubSys.getTargPowerState() == PowerState::OFF);
 
         // verify power off
         simCore->waitForUpdate(simWaitLong);  // need to wait for voltage fall
@@ -203,7 +203,26 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON) == 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
         REQUIRE(sInfo.commVoltage < voltageOffLevel);  // _voltageOffLevel
-        REQUIRE(commSubSys.getActualPowerState() == PowerSubsystem::OFF);
+        REQUIRE(commSubSys.getActualPowerState() == PowerState::OFF);
+
+        // comm,  turn power on as motor power tests require comm power on.
+        LDEBUG("Turn comm power on so motor breakers can be tested");
+        commSubSys.setPowerOn();
+        simCore->waitForUpdate(simWait);
+        sInfo = simCore->getSysInfo();
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) == 0);
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON) != 0);
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_COMM_BREAKERS) != 0);
+
+        // comm, verify power on
+        simCore->waitForUpdate(telemWait);        // wait for telemetry count
+        this_thread::sleep_for(voltageRiseWait);  // Need to wait for voltage rise and phases.
+        sInfo = simCore->getSysInfo();
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON) != 0);
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_COMM_BREAKERS) != 0);
+        REQUIRE(sInfo.commVoltage > approxMinVoltageFault);  // approximate _minVoltageFault
+        REQUIRE(commSubSys.getActualPowerState() == PowerState::ON);
 
         // Test breaker reset
         // turn power on
@@ -220,7 +239,7 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) != 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
         REQUIRE(sInfo.motorVoltage > approxMinVoltageFault);
-        REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::ON);
+        REQUIRE(motorSubSys.getActualPowerState() == PowerState::ON);
 
         // Trip one breaker, power should remain on
         LINFO("Trip J2_W10_1_MTR_PWR_BRKR_OK=", control::InputPortBits::J2_W10_1_MTR_PWR_BRKR_OK);
@@ -233,7 +252,7 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) != 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
         REQUIRE(sInfo.motorVoltage > approxMinVoltageFault);  // approximate _minVoltageFault
-        REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::ON);
+        REQUIRE(motorSubSys.getActualPowerState() == PowerState::ON);
         // FUTURE: DM-40909 check for FaultMgr warning
 
         // Trip a second breaker, power should go off
@@ -246,7 +265,7 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) == 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
         REQUIRE(sInfo.motorVoltage < voltageOffLevel);  // _voltageOffLevel
-        REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::OFF);
+        REQUIRE(motorSubSys.getActualPowerState() == PowerState::OFF);
 
         // Try to turn on, this should result in reset logic being used
         LDEBUG("Turning on for RESET test");
@@ -271,7 +290,7 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) != 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
         REQUIRE(sInfo.motorVoltage > approxMinVoltageFault);  // approximate _minVoltageFault
-        REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::ON);
+        REQUIRE(motorSubSys.getActualPowerState() == PowerState::ON);
 
         // verify tripped breaker bit are back to ok
         REQUIRE(sInfo.inputPort.getBitAtPos(control::InputPortBits::J2_W10_3_MTR_PWR_BRKR_OK) == true);
@@ -288,17 +307,19 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) == 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
         REQUIRE(sInfo.motorVoltage < voltageOffLevel);  // _voltageOffLevel
-        REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::OFF);
+        REQUIRE(motorSubSys.getActualPowerState() == PowerState::OFF);
 
         /// Test for power off on over voltage.
         faultmgr::FaultMgr::get().reportComConnectionCount(1);  // need at least 1 TCP/IP
         LDEBUG("Turn power on for over voltage test.");
+        commSubSys.setPowerOn();
+        simCore->waitForUpdate(simWait);
         motorSubSys.setPowerOn();
         simCore->waitForUpdate(simWait);
         sInfo = simCore->getSysInfo();
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) != 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
-        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON) == 0);
+        REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::ILC_COMM_POWER_ON) != 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_COMM_BREAKERS) != 0);
 
         // verify power on
@@ -309,7 +330,7 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
         REQUIRE(sInfo.motorVoltage > approxMinVoltageFault);
         LDEBUG("Test motor power on");
-        REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::ON);
+        REQUIRE(motorSubSys.getActualPowerState() == PowerState::ON);
 
         // Let motor power run high
         LDEBUG("Motor voltage too high test");
@@ -326,7 +347,7 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) == 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
         REQUIRE(sInfo.motorVoltage < voltageOffLevel);  // _voltageOffLevel
-        REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::OFF);
+        REQUIRE(motorSubSys.getActualPowerState() == PowerState::OFF);
 
         // Reset fault
         simCore->getMotorSub()->forceOverVoltage(false);
@@ -350,7 +371,7 @@ TEST_CASE("Test PowerSystem", "[PowerSystem]") {
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::MOTOR_POWER_ON) == 0);
         REQUIRE(sInfo.outputPort.getBitAtPos(OutputPortBits::RESET_MOTOR_BREAKERS) != 0);
         REQUIRE(sInfo.motorVoltage < voltageOffLevel);  // _voltageOffLevel
-        REQUIRE(motorSubSys.getActualPowerState() == PowerSubsystem::OFF);
+        REQUIRE(motorSubSys.getActualPowerState() == PowerState::OFF);
 
         // Reset fault
         simCore->getMotorSub()->forceOverCurrent(false);

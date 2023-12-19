@@ -56,6 +56,12 @@ public:
     /// @throws `ConfigException` if `setup` has not already been called.
     static Ptr getPtr();
 
+    MotionEngine(MotionEngine const&) = delete;
+    MotionEngine& operator=(MotionEngine const&) = delete;
+
+    /// Shutdown the thread if needed.
+    ~MotionEngine();
+
     /// Start the event thread and timeout thread.
     void engineStart();
 

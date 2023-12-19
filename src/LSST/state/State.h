@@ -28,6 +28,7 @@
 #include <memory>
 
 // Project headers
+#include "control/control_defs.h"
 #include "util/Bug.h"
 
 namespace LSST {
@@ -137,10 +138,11 @@ public:
 
     /// Return true if power could be set to 'on'.
     /// VI-PH  setPowerVI;
-    virtual bool setPower(bool on) {
-        errorWrongStateMsg("setPower");
+    virtual bool cmdPower(control::PowerSystemType powerType, bool on) {
+        errorWrongStateMsg("cmdPower");
         return false;
     }
+
     // VI-PH  setSlewingStateVI; // ??? if case with no effect
     // VI-PH  shutdownCellCommVI; // ??? if case with no effect
     // VI-PH  shutdownLoggerVI; // Nada
@@ -164,6 +166,18 @@ public:
 protected:
     /// Constant pointer to the model, which can be nullptr in unit tests.
     Model* const modelPtr;
+
+    /// This function is called by child classes to turn power on or off for
+    /// `PowerSubsystem` instances.
+    /// Turn the power for the indicated power subsystem on or off.
+    /// Changes to the power states can result in system `State` changes.
+    /// @param powerType - subsystem to be turned on or off (MOTOR or COMM).
+    /// @param on - Turn power on if true, or off if false.
+    bool cmdPowerBase(control::PowerSystemType powerType, bool on);
+
+    /// This function contains default actions to do when entering a new state,
+    /// primarily associated with logging.
+    std::string enterStateBase(State::Ptr const& oldName);
 
 private:
     StateEnum const _stateId;  ///< The type of this state.

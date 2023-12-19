@@ -26,14 +26,17 @@
 // Third party headers
 
 // Project headers
+#include "control/control_defs.h"
 #include "control/NetCommand.h"
 
 namespace LSST {
 namespace m2cellcpp {
 namespace control {
 
-/// This class sends back the `inJson["msg"]` value in `respJson["msg"]`.
-/// `inJson["msg"]` is a required field for this command.
+/// This class is used to handle the "cmd_switchCommandSource" command.
+/// The "isRemote" item indicates that the GUI should be used when the value is `false`.
+/// `true` would indicate the use of SAL.
+/// For the purposes of m2cellcpp, "isRemote" should always be true.
 /// Expected message form is: {"isRemote": true, "id": "cmd_switchCommandSource", "sequence_id": 123}
 ///
 /// unit test: test_NetCommand.cpp
@@ -56,14 +59,91 @@ public:
     NetCommand::Ptr createNewNetCommand(JsonPtr const& inJson) override;
 
 protected:
-    // NCmdNoAck always fails
+    /// Set the value of `Globals::_commandableByDds` to the value of "isRemote",
+    /// and broadcasts the new value to all clients.
     bool action() override;
 
 private:
     NCmdSwitchCommandSource(JsonPtr const& json);
     NCmdSwitchCommandSource() : NetCommand() {}
 
-    bool _isRemote = 1;  ///< Value of "isRemote" section of message.
+    bool _isRemote = true;  ///< Value of "isRemote" section of message.
+};
+
+/// This class handles the "cmd_power" json message from a client.
+/// The json message requires:
+/// - "id" must be "cmd_power"
+/// - "powerType" must be `1` (for MOTOR) or `2` (for COMM) (see PowerSystemType).
+/// - "status" `true` indicates the "powerType" should be turned on, while `false` turns it off.
+/// - "sequence_id" integer that is unique to the client.
+/// - MOTOR power should never be on if COMM power is not on.
+/// Expected message form is: {'powerType': 2, 'status': true, 'id': 'cmd_power', 'sequence_id': 123}
+/// This would turn on COMM power.
+///
+/// unit test: test_startup_shutdown.cpp
+class NCmdPower : public NetCommand {
+public:
+    using Ptr = std::shared_ptr<NCmdPower>;
+
+    /// @return a new NCmdPower object based on inJson.
+    static Ptr create(JsonPtr const& inJson);
+
+    virtual ~NCmdPower() = default;
+
+    /// @return a version of NCmdPower to be used to generate commands.
+    static Ptr createFactoryVersion() { return Ptr(new NCmdPower()); }
+
+    /// @return the name of the command this specific class handles.
+    std::string getCommandName() const override { return "cmd_power"; }
+
+    /// @return a new NCmdPower object using the parameters in 'inJson'
+    NetCommand::Ptr createNewNetCommand(JsonPtr const& inJson) override;
+
+protected:
+    /// Turn the `MOTOR` or `COMM` power on or off.
+    bool action() override;
+
+private:
+    NCmdPower(JsonPtr const& json);
+    NCmdPower() : NetCommand() {}
+
+    /// Value of "powerType" section of message, where 1 is `MOTOR` and 2 is `COMM`.
+    PowerSystemType _powerType = PowerSystemType::MOTOR;
+    /// Value of "status" section of message, where `true` means turn on, and `false`
+    /// means turn off.
+    bool _status = false;
+};
+
+/// This class handles the "cmd_systemShutdown" message.
+/// Expected message form is: {'id': 'cmd_systemShutdown', 'sequence_id': 123}
+/// This would shutdown the entire system.
+///
+/// unit test: test_startup_shutdown.cpp
+class NCmdSystemShutdown : public NetCommand {
+public:
+    using Ptr = std::shared_ptr<NCmdSystemShutdown>;
+
+    /// @return a new NCmdSystemShutdown object based on inJson.
+    static Ptr create(JsonPtr const& inJson);
+
+    virtual ~NCmdSystemShutdown() = default;
+
+    /// @return a version of NCmdSystemShutdown to be used to generate commands.
+    static Ptr createFactoryVersion() { return Ptr(new NCmdSystemShutdown()); }
+
+    /// @return the name of the command this specific class handles.
+    std::string getCommandName() const override { return "cmd_systemShutdown"; }
+
+    /// @return a new NCmdSystemShutdown object using the parameters in 'inJson'
+    NetCommand::Ptr createNewNetCommand(JsonPtr const& inJson) override;
+
+protected:
+    /// Shutdown the entire system.
+    bool action() override;
+
+private:
+    NCmdSystemShutdown(JsonPtr const& json);
+    NCmdSystemShutdown() : NetCommand() {}
 };
 
 }  // namespace control

@@ -58,6 +58,12 @@ public:
 
     SimCore();
 
+    SimCore(SimCore const&) = delete;
+    SimCore& operator=(SimCore const&) = delete;
+
+    /// Destructor stop and join thread if not already done.
+    ~SimCore();
+
     /// Get a copy of the `_newOutputPort`
     control::OutputPortBits getNewOutputPort();
 
@@ -82,7 +88,7 @@ public:
     void stop() { _simLoop = false; }
 
     /// Join the simulation thread.
-    bool join();
+    void join();
 
     /// Write the value of `_inputPort` bit at `pos` to 1 if
     /// `set` is true or 0  if `set` is false.
@@ -127,6 +133,8 @@ private:
     std::atomic<uint64_t> _iterations{0};  ///< number of times through the `_simRun` loop.
 
     util::CLOCK::time_point _prevTimeStamp;  ///< Last time through the `_simRun` loop.
+
+    std::atomic<bool> _joined{false};  ///< Latch for `join()` function.
 };
 
 }  // namespace simulator

@@ -23,6 +23,7 @@
 #include "state/State.h"
 
 // Project headers
+#include "control/PowerSystem.h"
 #include "state/Model.h"
 #include "state/StateMap.h"
 #include "util/Bug.h"
@@ -63,8 +64,7 @@ void State::errorWrongStateMsg(std::string const& action) {
 }
 
 void State::enterState(State::Ptr const& oldState) {
-    string msg("State::enterState " + getName());
-    LINFO(msg);
+    string msg = enterStateBase(oldState);
     if (modelPtr == nullptr) {
         LERROR("State::enterState ignoring due to unit test.");
         return;
@@ -80,6 +80,36 @@ void State::onEnterState(State::Ptr const& oldState) {
 void State::onExitState(State::Ptr const& newState) {
     LINFO("Leaving state=", getName(), " to go to newState=", newState->getName());
     exitState(newState);
+}
+
+bool State::cmdPowerBase(control::PowerSystemType powerType, bool on) {
+    bool result = false;
+    auto powerSys = modelPtr->getPowerSystem();
+    if (powerSys == nullptr) {
+        return false;
+    }
+    switch (powerType) {
+        case control::MOTOR:
+            result = powerSys->powerMotor(on);
+            break;
+        case control::COMM:
+            result = powerSys->powerComm(on);
+            break;
+        default:
+            LERROR("State::cmdPowerBase unknown _powerType=", powerType);
+            return false;
+    }
+    return result;
+}
+
+string State::enterStateBase(State::Ptr const& oldState) {
+    string oldStateStr;
+    if (oldState != nullptr) {
+        oldStateStr = oldState->getName();
+    }
+    string msg("State::enterStateBase to " + getName() + " from " + oldStateStr);
+    LINFO(msg);
+    return msg;
 }
 
 }  // namespace state

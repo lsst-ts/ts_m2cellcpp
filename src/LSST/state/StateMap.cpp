@@ -94,6 +94,7 @@ bool StateMap::_changeState(State::Ptr const& newState) {
         LWARN("StateMap cannot change state to nullptr");
         return false;
     }
+    LDEBUG("StateMap::_changeState trying to change to ", newState->getName());
 
     // The new state should have been verified as being in the map.
     auto oldState = _currentState;

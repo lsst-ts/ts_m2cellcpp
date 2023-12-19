@@ -38,35 +38,29 @@ namespace control {
 enum SysStatus { CRITICAL = -3, FAULT = -2, WARN = -1, GOOD = 0, WAITING = 1 };
 
 /// Return a string representation of the SysStatus enum `sta`.
-inline std::string getSysStatusStr(SysStatus sta) {
-    switch (sta) {
-        case GOOD:
-            return "GOOD";
-        case WAITING:
-            return "WATIING";
-        case WARN:
-            return "WARN";
-        case FAULT:
-            return "FAULT";
-        case CRITICAL:
-            return "CRITICAL";
-    }
-    return "unknown";
-}
+std::string getSysStatusStr(SysStatus sta);
 
-/// Power system type enum.
-enum PowerSystemType { MOTOR = 0, COMM = 1 };
+/// Power system type enum, the values should match those used by "cmd_power".
+enum PowerSystemType { MOTOR = 1, COMM = 2, UNKNOWNPOWERSYSTEM = 3 };
 
 /// Return a string version of `sysT`.
-inline std::string getPowerSystemTypeStr(PowerSystemType sysT) {
-    switch (sysT) {
-        case MOTOR:
-            return "MOTOR";
-        case COMM:
-            return "COMM";
-    }
-    return "unknown ";
-}
+std::string getPowerSystemTypeStr(PowerSystemType sysT);
+
+/// Convert an integer to PowerSystemType, any value not `MOTOR` or `COMM`
+/// will be returned as `UNKNOWNPOWERSYSTEM`
+PowerSystemType intToPowerSystemType(int val);
+
+/// PowerSystemState, values must match lsst-ts/ts_xml/python/lsst/ts/xml/enums/MTM2.py
+// PowerSystemState { INIT = 1, POWEREDOFF = 2, POWERINGON = 3, RESETTINGBREAKERS = 4, POWEREDON = 5,
+// POWERINGOFF = 6 };
+enum PowerState { UNKNOWN = 1, OFF = 2, TURNING_ON = 3, RESET = 4, ON = 5, TURNING_OFF = 6 };
+
+/// Return a string version of `sysState` to be used in TCP/IP communications.
+std::string getPowerStateOldStr(PowerState sysState);
+
+/// Return a string version of PowerSystemState that matches the enum value and
+/// is similar to those found LabView code.
+std::string getPowerStateStr(PowerState powerState);
 
 }  // namespace control
 }  // namespace m2cellcpp

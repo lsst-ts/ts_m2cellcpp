@@ -136,6 +136,14 @@ protected:
     /// @return true if successful.
     virtual bool action() = 0;
 
+    /// Throw a `NetCommandException` using the parameters given.
+    /// @param errLoc - The location where the error was caught.
+    /// @param funcName - The name of function where the error was caught
+    /// @param inJson - The command being handled.
+    /// @param ex - The json exception that was caught.
+    void throwNetCommandException(util::Issue::Context const& errLoc, std::string const& funcName,
+                                  JsonPtr const& inJson, nlohmann::json::exception const& ex) const;
+
     /// This consturctor is ONLY to be used in createFactoryVersion()/
     /// This constructor makes a dummy version of the object that is only
     /// used to create new instances of that class.
@@ -238,17 +246,17 @@ public:
 
     virtual ~NCmdEcho() = default;
 
-    /// @return a version of NCmdAck to be used to generate commands.
+    /// @return a version of NCmdEcho to be used to generate commands.
     static Ptr createFactoryVersion() { return Ptr(new NCmdEcho()); }
 
     /// @return the name of the command this specific class handles.
     std::string getCommandName() const override { return "cmd_echo"; }
 
-    /// @return a new NCmdNoAck object using the parameters in 'inJson'
+    /// @return a new NCmdEcho object using the parameters in 'inJson'
     NetCommand::Ptr createNewNetCommand(JsonPtr const& inJson) override;
 
 protected:
-    // NCmdNoAck always fails
+    /// NCmdEcho echo back the message.
     bool action() override;
 
 private:

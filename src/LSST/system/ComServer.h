@@ -63,10 +63,6 @@ public:
     /// Run the server, this is a blocking opperation.
     void run();
 
-    /// Cause the server to stop responding to client requests.
-    /// This also shutsdown all connections using this server.
-    void shutdown();
-
     /// Remove 'connId' from the set of ComConnections.
     void eraseConnection(uint64_t connId);
 
@@ -94,6 +90,14 @@ public:
     /// Async write the `msg` to all existing ComConnections for this ComServer.
     void asyncWriteToAllComConn(std::string const& msg);
 
+    /// Cause the server to stop responding to client requests.
+    /// This also shutsdown all connections using this server.
+    void shutdown();
+
+    /// Destroy all communications channels associated with this server, including
+    /// `_ioContext`. This will essentially stop anything using `_ioContext`.
+    void destroy();
+
 protected:
     /// Protected constructor to force use of create().
     ComServer(IoContextPtr const& ioContext, int port);
@@ -105,12 +109,14 @@ private:
     /// Handle a connection request.
     void _handleAccept(ComConnection::Ptr const& connection, boost::system::error_code const& ec);
 
-    std::atomic<State> _state{CREATED};  ///< Current state of the machine.
     IoContextPtr _ioContext;             ///< Pointer to the asio io_context
+    std::atomic<State> _state{CREATED};  ///< Current state of the machine.
     int _port;
     boost::asio::ip::tcp::acceptor _acceptor;
 
     std::atomic<bool> _shutdown{false};  ///< set to true the first time shutdown is called.
+
+    std::atomic<bool> _destroyCalled{false};  ///< set to true the first time destroy is called.
 
     /// A map of all current connections made by this server.
     std::map<uint64_t, std::weak_ptr<ComConnection>> _connections;

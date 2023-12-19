@@ -31,6 +31,15 @@
 
 namespace LSST {
 namespace m2cellcpp {
+
+namespace simulator {
+class SimCore;
+}
+
+namespace system {
+class ComControlServer;
+}
+
 namespace control {
 
 /// PLACEHOLDER This class will contain a thread running the main instance of the program.
@@ -45,22 +54,51 @@ public:
     ControlMain& operator=(ControlMain const&) = delete;
 
     /// Verify threads are stopped and joined.
-    ~ControlMain();
-
-    /// Return a reference to the global ControlMain instance.
-    /// @throws `ConfigException` if `setup` has not already been called.
-    static ControlMain& get();
+    ~ControlMain() = default;
 
     /// Return a shared pointer to the global ControlMain instance.
     /// @throws `ConfigException` if `setup` has not already been called.
     static Ptr getPtr();
+
+    /// Run the main thread which starts the communication and other threads.
+    void run();
+
+    /// Returns true once the server is running.
+    bool isRunning() { return _running; }
+
+    /// Return a pointer to `_simCore`.
+    std::shared_ptr<simulator::SimCore> getSimCore() { return _simCore; }
+
+    /// Stop the communication server threads, which should stop the main thread.
+    void stop();
+
+    /// Join the main thread.
+    void join();
+
+    /// Return a pointer to the `_comServer`.
+    std::shared_ptr<system::ComControlServer> getComServer() { return _comServer; }
 
 private:
     static Ptr _thisPtr;            ///< Pointer to the global instance of ControlMain.
     static std::mutex _thisPtrMtx;  ///< Protects `_thisPtr`.
 
     /// Private constructor to force the use of `setup()`.
-    ControlMain();
+    ControlMain() = default;
+
+    /// The function that runs in the main thread.
+    void _cMain();
+
+    /// The main thread, which runs the `_cMain()` function.
+    std::thread _mainThrd;
+
+    /// Pointer to the system ComControllServer.
+    std::shared_ptr<system::ComControlServer> _comServer;
+
+    /// Point to the simulator instance, if there is one.
+    /// This is only used for testing.
+    std::shared_ptr<simulator::SimCore> _simCore;
+
+    std::atomic<bool> _running{false};  ///< Set to true once the server is running.
 };
 
 }  // namespace control

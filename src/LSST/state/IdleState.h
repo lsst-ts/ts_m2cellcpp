@@ -54,6 +54,11 @@ public:
     /// Do not stop motion or turn off power when entering this state.
     void enterState(State::Ptr const& oldName) override;
 
+    /// Turn the power for the indicated power subsystem on or off.
+    /// @see state::State::cmdPowerBase(control::PowerSystemType powerType, bool on)
+    /// VI setPowerVI // calls Model::setPowerVI(CommPowerControl, MotorPowerControl)
+    bool cmdPower(control::PowerSystemType powerType, bool on) override;
+
     // VI  goToInMotionVI // calls Model::changeStateVI(ReadyInMotion)
     // Handled by calling StateMap::changeState(StandbyState);
 
@@ -64,9 +69,6 @@ public:
     // VI-PH  loadScriptVI // calls Model::loadScriptVI(scriptFilename)
     // VI-PH  pauseScriptVI // calls Model::pauseScriptVI
     // VI-PH  resumeScriptVI // calls Model::resumeScriptVI
-
-    /// VI setPowerVI // calls Model::setPowerVI(CommPowerControl, MotorPowerControl)
-    bool setPower(bool on) override;
 
     // VI-PH  shutdownCellCommVI // calls Model::shutdownCellComm VI-PH
     // shutdownMotionEngineVI   // calls Model::shutdownMotionEngine VI-PH  shutdownNetworkInterfaceVI  //

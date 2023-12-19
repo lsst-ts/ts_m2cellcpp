@@ -90,10 +90,11 @@ string ComClient::readCommand() {
         throw boost::system::system_error(ec);
     }
     using boost::asio::buffers_begin;
-    // Copy the contents of _readStream upto, but not including the delimiter.
+    // Copy the contents of _readStream up to, but not including the delimiter.
     string outStr(buffers_begin(_readStream.data()), buffers_begin(_readStream.data()) + xfer - delimSz);
     // Remove the entire message, including delimiter, from _readStream so the next message is clean.
     _readStream.consume(xfer);
+    LTRACE("ComClient::readCommand() ", outStr);
     return outStr;
 }
 
@@ -117,6 +118,84 @@ int ComClient::readWelcomeMsg() {
         }
     }
     return count;
+}
+
+tuple<nlohmann::json, nlohmann::json> ComClient::cmdSendRecv(string const& jStr, uint seqId,
+                                                             string const& note) {
+    writeCommand(jStr);
+    LDEBUG(note, "cmdSendRecv:wrote jStr=", jStr);
+    auto ackJ = cmdRecvSeqId(seqId, "cmdSendRecv");
+    auto finJ = cmdRecvSeqId(seqId, "cmdSendRecv");
+    return {ackJ, finJ};
+}
+
+nlohmann::json ComClient::cmdRecvSeqId(uint seqId, string const& note) {
+    bool found = false;
+    nlohmann::json js;
+    while (!found) {
+        LDEBUG(note, "cmdRecvId waiting for ", seqId);
+        string inStr = readCommand();
+        LDEBUG(note, "cmdRecvId:read ", seqId, " ", inStr);
+        js = nlohmann::json::parse(inStr);
+        auto iter = js.find("sequence_id");
+        if (iter != js.end() && *iter == seqId) {
+            found = true;
+            LDEBUG(note, "cmdSendRecv:read ", seqId, "=", js);
+        } else {
+            LDEBUG(note, "cmdSendRecv:read not ", seqId, " storing ", js);
+            _jMsgMap.insert(js["id"], js);
+        }
+    }
+    return js;
+}
+
+nlohmann::json ComClient::cmdRecvId(string const& targetId, string const& note) {
+    bool found = false;
+    nlohmann::json js;
+    while (!found) {
+        LDEBUG(note, "cmdRecvId waiting for ", targetId);
+        string inStr = readCommand();
+        LDEBUG(note, "cmdRecvId:read ", targetId, " ", inStr);
+        js = nlohmann::json::parse(inStr);
+        auto& jsId = js["id"];
+        if (jsId == targetId) {
+            found = true;
+            LDEBUG(note, "cmdSendRecv:read ", targetId, "=", js);
+        } else {
+            LDEBUG(note, "cmdSendRecv:read not ", targetId, " storing ", js);
+            _jMsgMap.insert(jsId, js);
+        }
+    }
+    return js;
+}
+
+JsonMsgMap::JsonDeque ComClient::recvDequeForId(string const& key, string const& note) {
+    // Check if it is in the map
+    JsonMsgMap::JsonDeque jDeque = _jMsgMap.getDequeFor(key);
+    if (!jDeque.empty()) {
+        LTRACE("ComClient::recvDequeForId found ", key, " in map. ", note);
+        return jDeque;
+    }
+    auto js = cmdRecvId(key, note);
+    jDeque.push_back(js);
+    return jDeque;
+}
+
+void JsonMsgMap::insert(string const& key, nlohmann::json const& js) {
+    LTRACE("JsonMsgMap::insert js", to_string(js));
+    (*_msgMap)[key].push_back(js);
+}
+
+JsonMsgMap::JsonDeque JsonMsgMap::getDequeFor(std::string const& key) {
+    JsonDeque jDeque;
+    auto iter = _msgMap->find(key);
+    if (iter == _msgMap->end()) {
+        return jDeque;
+    }
+    JsonDeque& jd = iter->second;
+    jDeque = move(jd);
+    jd.clear();
+    return jDeque;
 }
 
 }  // namespace system

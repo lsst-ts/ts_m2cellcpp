@@ -89,6 +89,9 @@ public:
     /// Set the loop sleep time in seconds.
     void setLoopSleepSecs(double seconds) { _loopSleepSecs = seconds; }
 
+    /// Calling this function will stop the `_fpgaIoThrd` thread.
+    void stopLoop() { _loop = false; }
+
 private:
     static Ptr _thisPtr;            ///< Pointer to the global instance of FpgaIo.
     static std::mutex _thisPtrMtx;  ///< Protects `_thisPtr`.

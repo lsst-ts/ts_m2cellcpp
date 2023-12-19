@@ -48,6 +48,9 @@ public:
     InMotionState& operator=(InMotionState const&) = delete;
     virtual ~InMotionState() = default;
 
+    /// Do not stop motion or turn off power when entering this state.
+    void enterState(State::Ptr const& oldName) override;
+
     /// VI-PH  goToIdleReadyVI // calls Model::changeStateVI(ReadyIdle)
     void goToIdleReadyVI() override;
 

@@ -34,7 +34,7 @@ namespace control {
 /// This class represents Controller->startupCellCommunications and CellCommunications.vi.
 /// It is currently just a PLACEHOLDER for CellCommunication.vi, which is the major control loop
 /// for ILC control.
-/// CellCommunication.vi responsibilities.
+/// CellCommunications.vi responsibilities.
 ///   ILC control
 ///   Process the raw sensor telemetry to be physically meaningful values
 ///   feedforward and feedback control loops

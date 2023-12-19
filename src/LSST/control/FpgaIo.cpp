@@ -55,6 +55,8 @@ void FpgaIo::setup(std::shared_ptr<simulator::SimCore> const& simCore) {
 }
 
 FpgaIo::Ptr FpgaIo::getPtr() {
+    // No mutex needed as once set by `setup()`, the value of _thisPtr
+    // cannot change.
     if (_thisPtr == nullptr) {
         throw system::ConfigException(ERR_LOC, "FpgaIo has not been setup.");
     }

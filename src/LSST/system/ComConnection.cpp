@@ -89,9 +89,10 @@ void ComConnection::_syncWrite(string const& inMsg) {
 }
 
 void ComConnection::beginProtocol() {
+    LTRACE("ComConnection::beginProtocol()");
     _connectionActive = true;
-    Globals::get().setTcpIpConnected(
-            true);  // This seems a bit early to set this, but it's what the gui expects.
+    // This seems a bit early to set this, but it's what the gui expects.
+    Globals::get().setTcpIpConnected(true);
     _sendWelcomeMsg();
     _receiveCommand();
 }

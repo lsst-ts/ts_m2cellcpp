@@ -48,6 +48,9 @@ public:
     PauseState& operator=(PauseState const&) = delete;
     virtual ~PauseState() = default;
 
+    /// Do not turn off power when entering this state.
+    void enterState(State::Ptr const& oldName) override;
+
     /// VI-PH  goToIdleReadyVI // calls Model::changeStateVI(ReadyIdle)
     void goToIdleReadyVI() override;
 

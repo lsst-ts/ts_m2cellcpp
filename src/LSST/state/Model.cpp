@@ -20,14 +20,22 @@
  */
 
 // Class header
-#include "../state/Model.h"
+#include "state/Model.h"
 
+// third party headers
+#include <nlohmann/json.hpp>
+
+// project headers
+#include "control/ControlMain.h"
 #include "control/MotionEngine.h"
 #include "control/PowerSystem.h"
 #include "state/State.h"
+#include "system/ComControlServer.h"
+#include "system/Globals.h"
 #include "util/Log.h"
 
 using namespace std;
+using json = nlohmann::json;
 
 namespace LSST {
 namespace m2cellcpp {
@@ -38,6 +46,7 @@ Model::Model() {
     _powerSystem = control::PowerSystem::Ptr(new control::PowerSystem());
     _motionEngine = control::MotionEngine::getPtr();
     _fpgaCtrl = control::FpgaIo::getPtr();
+    _fpgaCtrl->registerPowerSys(_powerSystem);
 }
 
 state::State::Ptr Model::getCurrentState() {
@@ -55,6 +64,26 @@ bool Model::changeState(std::shared_ptr<state::State> const& newState) {
     return _stateMap.changeState(newState);
 }
 
+void Model::systemShutdown() {
+    VMUTEX_NOT_HELD(_mtx);
+    LCRITICAL("Model::systemShutdown() start");
+    // Going to OFFLINESTATE should prevent anything from being turned
+    // back on during shutdown.
+    changeState(getState(State::StateEnum::OFFLINESTATE));
+    {
+        std::lock_guard<util::VMutex> lockg(_mtx);
+        _turnOffAll("shutdown");
+    }
+    sleep(1);
+
+    control::FpgaIo::getPtr()->stopLoop();
+    control::MotionEngine::getPtr()->engineStop();
+
+    auto ctMain = control::ControlMain::getPtr();
+    ctMain->stop();
+    LCRITICAL("Model::systemShutdown() end");
+}
+
 bool Model::goToSafeMode(std::string const& note) {
     VMUTEX_NOT_HELD(_mtx);
     std::lock_guard<util::VMutex> lockg(_mtx);
@@ -63,6 +92,7 @@ bool Model::goToSafeMode(std::string const& note) {
 
 bool Model::_goToSafeMode(std::string const& note) {
     VMUTEX_HELD(_mtx);
+    _turnOffAll(note);
     return _stateMap.goToASafeState(State::STANDBYSTATE, note);
 }
 
@@ -81,21 +111,80 @@ bool Model::_turnOffAll(string const& note) {
     return true;
 }
 
-bool Model::_setPower(bool on) {
-    VMUTEX_HELD(_mtx);
-    if (_powerSystem == nullptr) {
-        LERROR("Model::", __func__, " _powerSystem is nullptr");
-        return false;
-    }
+void Model::reportPowerSystemStateChange(control::PowerSystemType systemType,
+                                         control::PowerState targPowerState,
+                                         control::PowerState actualPowerState) {
+    VMUTEX_NOT_HELD(_mtx);
+    LTRACE("Model::reportPowerSystemStateChange ", getPowerSystemTypeStr(systemType),
+           " targ=", getPowerStateStr(targPowerState), " act=", getPowerStateStr(actualPowerState));
+    {
+        std::lock_guard<util::VMutex> lockg(_mtx);
+        // Is a state change required?
+        // If inOfflineState, stay in OfflineState (turning off all power if needed)
+        auto currentState = _stateMap.getCurrentState();
+        auto currentStateId = currentState->getId();
+        auto comTargPower = _powerSystem->getComm().getTargPowerState();
+        auto motorTargPower = _powerSystem->getMotor().getTargPowerState();
+        auto comActPower = _powerSystem->getComm().getActualPowerState();
+        auto motorActPower = _powerSystem->getMotor().getActualPowerState();
+        LINFO("Model::reportPowerSystemStateChange com(targ=", comTargPower, " act=", comActPower,
+              ") motor(targ=", motorTargPower, " act=", motorActPower, ")");
+        switch (currentStateId) {
+            case State::STARTUPSTATE:
+                [[fallthrough]];
+            case State::OFFLINESTATE: {
+                /// Power should always be OFF in these states.
+                if (comTargPower != control::PowerState::OFF || motorTargPower != control::PowerState::OFF) {
+                    _turnOffAll("Model::reportPowerSystemStateChange state=" + currentState->getName());
+                }
+                break;
+            }
 
-    if (on) {
-        _powerSystem->getMotor().setPowerOn();
-        _powerSystem->getComm().setPowerOn();
-    } else {
-        _powerSystem->getMotor().setPowerOff(string(__func__));
-        _powerSystem->getComm().setPowerOff(string(__func__));
+            case State::IDLESTATE:
+                [[fallthrough]];
+            case State::INMOTIONSTATE:
+                [[fallthrough]];
+            case State::PAUSESTATE: {
+                // Power should always be ON in these states, if not go to STANDBYSTATE.
+                if (comTargPower != control::PowerState::ON || comActPower != control::PowerState::ON ||
+                    motorTargPower != control::PowerState::ON || motorActPower != control::PowerState::ON) {
+                    _stateMap.changeState(State::STANDBYSTATE);
+                }
+                break;
+            }
+
+            case State::STANDBYSTATE: {
+                // Power may be ON or OFF in this state.
+                // Normally, MOTOR power should only be on if COMM power is on, but that is tested elsewhere.
+                // If both COMM and MOTOR power are on, the state should change to IDLESTATE
+                if (comTargPower == control::PowerState::ON && comActPower == control::PowerState::ON &&
+                    motorTargPower == control::PowerState::ON && motorActPower == control::PowerState::ON) {
+                    LTRACE("Model::reportPowerSystemStateChange change to IDLESTATE");
+                    _stateMap.changeState(State::IDLESTATE);
+                }
+                break;
+            }
+        }
+    }  // No need to hold _mtx any longer.
+
+    // Make and broadcast the json message
+    auto comServ = system::ComControlServer::get().lock();
+    if (comServ != nullptr) {
+        json js;
+        js["id"] = "powerSystemState";
+        js["powerType"] = static_cast<int>(systemType);
+        js["state"] = static_cast<int>(actualPowerState);
+        bool targetOn = (targPowerState == control::PowerState::ON);
+        js["status"] = targetOn;
+        if (system::Globals::get().isSendUserInfo()) {
+            string infoStr = getPowerSystemTypeStr(systemType) + " is " +
+                             getPowerStateOldStr(actualPowerState) + " turning " +
+                             getPowerStateStr(targPowerState);
+            js["user_info"] = infoStr;
+        }
+        string msg = to_string(js);
+        comServ->asyncWriteToAllComConn(msg);
     }
-    return true;
 }
 
 void Model::ctrlSetup() {
@@ -186,6 +275,10 @@ void Model::ctrlStart() {
     // - _scriptEngine - Controller->startScriptEngine.vi - start the script engine - FUTURE-FAR
     // - _cellCtrlComm - Controller->startupCellCommunications
     // - Do not need to start - _faultMgr[no threads], _fpgaCtrl[started in constructor],
+
+    // Startup is finished at this point, advance to StandbyState.
+    auto newState = _stateMap.getStandbyState();
+    _stateMap.changeState(newState);
 }
 
 void Model::waitForCtrlReady() const {

@@ -23,6 +23,7 @@
 #include <memory>
 
 // Project headers
+#include "control/control_defs.h"
 #include "state/State.h"
 #include "state/StateMap.h"
 #include "util/VMutex.h"
@@ -57,6 +58,11 @@ public:
     /// Return a pointer to the `_powerSystem`.
     std::shared_ptr<control::PowerSystem> getPowerSystem() { return _powerSystem; }
 
+    /// Shutdown the entire system.
+    /// This function will first turn off power and then attempt
+    /// to shutdown the rest of the system in an orderly manner.
+    void systemShutdown();
+
     /// Read configuration files that haven't yet been read and use those
     /// values to setup various aspects of the system.
     void ctrlSetup();
@@ -78,7 +84,7 @@ public:
     /// Join threads started in `ctrlStart()`.
     void ctrlJoin();
 
-    /// Change the current state to `newState`, taking rquired actions.
+    /// Change the current state to `newState`, taking required actions.
     /// @return false in `newState` is invalid.
     bool changeState(std::shared_ptr<state::State> const& newState);
 
@@ -94,6 +100,18 @@ public:
     /// @param note - Description of reason for safe mode.
     /// @return true if the system was not already trying to reach.
     bool goToSafeMode(std::string const& note);
+
+    /// Return a pointer to the power system.
+    std::shared_ptr<control::PowerSystem> getPowerSystem() const;
+
+    /// This function allows PowerSubsytem instances to inform the model that their stat has changed.
+    /// The changes in the PowerSystem can result in changes being made to the overal system state in
+    /// `state::Model`.
+    /// @param systemType - the type of the power subsytem reporting a state change.
+    /// @param `targePowerState` - the new target state for the subsystem (should be ON of OFF).
+    /// @param `actualPowerState` - the current state for the subsystem.
+    void reportPowerSystemStateChange(control::PowerSystemType systemType, control::PowerState targPowerState,
+                                      control::PowerState actualPowerState);
 
     /// Accessors
     // VI-PH readApplicationElementsVI  // can probably skip this one
@@ -190,11 +208,6 @@ private:
     /// Stop motion and turn off all power that can be turned off.
     bool _turnOffAll(std::string const& note);
 
-    /// Return true if power could be set, this affects both MOTOR and COMM power.
-    /// This does not mean the power is completely on or off, just that the
-    /// process has started.
-    bool _setPower(bool on);
-
     /// `_stateMap` contains all possible system states and the current system state.
     /// This member serves a similar purpose to the LabView `_commandFactory` and `_state`.
     StateMap _stateMap{this};
@@ -214,8 +227,9 @@ private:
 
     // _cellCommRef // systemElement VI-PH
     // _powerStatus // systemElement  _commPowerOn, _motorPowerOn VI-PH
-    std::shared_ptr<control::PowerSystem>
-            _powerSystem;  ///< The PowerSystem control instance, contains power states.
+
+    /// The PowerSystem control instance, contains power states.
+    std::shared_ptr<control::PowerSystem> _powerSystem;
 
     std::shared_ptr<control::FpgaIo> _fpgaCtrl;  ///< pointer to the global instance of FpgaIo.
 

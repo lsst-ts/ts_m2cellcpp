@@ -42,6 +42,8 @@ class ComServer;
 /// io_context pointer definition.
 typedef std::shared_ptr<boost::asio::io_context> IoContextPtr;
 
+/// asio work guard definition to keep io_context run() from exiting early.
+
 /// This class is used to handle commands and responses over a connection
 /// until that connection is terminated.
 ///
