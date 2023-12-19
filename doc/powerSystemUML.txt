@@ -11,6 +11,9 @@ class PowerSubsystemConfig
 class BreakerFeedGroup
 class Feed
 
+class Context
+class Model
+
 
 class InputPortBits
 class OutputPortBits
@@ -40,10 +43,15 @@ PowerSystem .. FaultMgr : faults
 PowerSubsystem .. FaultMgr : faults
 ComControl .. FaultMgr : faults
 
+Context *-- Model
+
 
 FpgaIo o.. SysInfo
 FpgaIo o.. SimCore
 PowerSystem o.. SysInfo
+
+PowerSystem o.. Context : state changes
+Model *-- PowerSystem
 
 SysInfo *-- InputPortBits
 SysInfo *-- OutputPortBits
