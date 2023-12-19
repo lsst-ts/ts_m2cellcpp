@@ -57,7 +57,7 @@ int main(int argc, const char* argv[]) {
     /// Start the main thread
     control::ControlMain::setup();
     control::ControlMain::Ptr ctMain = control::ControlMain::getPtr();
-    ctMain->run(argc, argv);
+    ctMain->run();
     LINFO("ctrlMain started");
 
     ctMain->join();

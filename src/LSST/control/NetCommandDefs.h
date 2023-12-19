@@ -34,8 +34,8 @@ namespace m2cellcpp {
 namespace control {
 
 /// This class is used to handle the "cmd_switchCommandSource" command.
-/// The "isRemote" item indicates that the GUI should be used when the value is `true`.
-/// `false` would indicate the use of SAL.
+/// The "isRemote" item indicates that the GUI should be used when the value is `false`.
+/// `true` would indicate the use of SAL.
 /// For the purposes of m2cellcpp, "isRemote" should always be true.
 /// Expected message form is: {"isRemote": true, "id": "cmd_switchCommandSource", "sequence_id": 123}
 ///
@@ -67,7 +67,7 @@ private:
     NCmdSwitchCommandSource(JsonPtr const& json);
     NCmdSwitchCommandSource() : NetCommand() {}
 
-    bool _isRemote = true;  ///< Value of "isRemote" section of message. //&&&
+    bool _isRemote = true;  ///< Value of "isRemote" section of message.
 };
 
 /// This class handles the "cmd_power" json message from a client.
