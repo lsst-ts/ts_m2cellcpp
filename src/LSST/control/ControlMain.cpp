@@ -209,6 +209,7 @@ void ControlMain::stop() {
     // Stop the ComServer, which should cause `run(..)` to end.
     LINFO("ControlMain::stop() shutting down ComControlServer.");
     _comServer->shutdown();
+    _comServer->destroy();
 }
 
 void ControlMain::join() {

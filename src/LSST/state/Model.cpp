@@ -66,6 +66,7 @@ bool Model::changeState(std::shared_ptr<state::State> const& newState) {
 
 void Model::systemShutdown() {
     VMUTEX_NOT_HELD(_mtx);
+    LCRITICAL("Model::systemShutdown() start");
     // Going to OFFLINESTATE should prevent anything from being turned
     // back on during shutdown.
     changeState(getState(State::StateEnum::OFFLINESTATE));
@@ -73,8 +74,14 @@ void Model::systemShutdown() {
         std::lock_guard<util::VMutex> lockg(_mtx);
         _turnOffAll("shutdown");
     }
+    sleep(1);
+
+    control::FpgaIo::getPtr()->stopLoop();
+    control::MotionEngine::getPtr()->engineStop();
+
     auto ctMain = control::ControlMain::getPtr();
     ctMain->stop();
+    LCRITICAL("Model::systemShutdown() end");
 }
 
 bool Model::goToSafeMode(std::string const& note) {

@@ -57,21 +57,10 @@ ComServer::ComServer(IoContextPtr const& ioContext, int port)
 ComServer::~ComServer() {
     LDEBUG("ComServer::~ComServer()");
     if (!_shutdown) {
-        LERROR("ComServer::~ComServer() shudown wasn't called, calling now");
+        LERROR("ComServer::~ComServer() shutdown wasn't called, calling now");
         shutdown();
     }
-    // Start a client connection to this server to get the
-    // accept loop to move. Catch and ignore any problems
-    // as the `cmd` is expected to fail.
-    try {
-        // The server must be on this host.
-        ComClient client(_ioContext, "127.0.0.1", _port);
-        string cmd("ComServer destructor shutting down");
-        client.writeCommand(cmd);
-        LDEBUG("wrote cmd=", cmd);
-    } catch (std::exception const& ex) {
-        LWARN("Ignoring shutdown issue ", ex.what());
-    }
+    destroy();
 }
 
 void ComServer::run() {
@@ -149,7 +138,28 @@ void ComServer::shutdown() {
             conn->shutdown();
         }
     }
-    LINFO("ComServer::shutdown end");
+}
+
+void ComServer::destroy() {
+    LINFO("ComServer::destroy");
+    if (_destroyCalled.exchange(true) == true) {
+        return;
+    }
+
+    // Start a client connection to this server to get the
+    // accept loop to move. Catch and ignore any problems
+    // as the `cmd` is expected to fail.
+    try {
+        // The server must be on this host.
+        ComClient client(_ioContext, "127.0.0.1", _port);
+        string cmd("ComServer destructor shutting down");
+        client.writeCommand(cmd);
+        LDEBUG("wrote cmd=", cmd);
+    } catch (std::exception const& ex) {
+        LWARN("Ignoring shutdown issue ", ex.what());
+    }
+
+    _ioContext->stop();
 }
 
 void ComServer::eraseConnection(uint64_t connId) {

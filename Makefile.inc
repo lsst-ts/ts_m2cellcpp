@@ -18,7 +18,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 # The optimizer is doing somthing at -O3 that causes segfaults when -g is not used.
 ifdef DEBUG
-  c_opts := -g -O2
+  c_opts := -g
 else
   c_opts := -O2
 endif

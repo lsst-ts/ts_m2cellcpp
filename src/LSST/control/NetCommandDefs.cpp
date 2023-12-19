@@ -147,8 +147,6 @@ bool NCmdSystemShutdown::action() {
         LINFO("NCmdSystemShutdown shutting down");
         auto context = Context::get();
         context->model.systemShutdown();
-        sleep(1);
-        exit(0);  // FUTURE: exit() should not be needed. // &&&
     });
     thrd.detach();
     return true;

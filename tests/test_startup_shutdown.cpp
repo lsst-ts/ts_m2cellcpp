@@ -364,6 +364,9 @@ TEST_CASE("Test startup shutdown", "[CSV]") {
         auto [ackJ, finJ] = client.cmdSendRecv(jStr, seqId, note);
     }
 
+    LDEBUG("stopping local io");
+    ioContext->stop();
+
     // FUTURE: these should be shutdown properly elsewhere.
     context->model.getPowerSystem()->stopTimeoutLoop();
     control::FpgaIo::getPtr()->stopLoop();
@@ -371,9 +374,6 @@ TEST_CASE("Test startup shutdown", "[CSV]") {
 
     LDEBUG("Join main");
     ctMain->join();
-
-    LDEBUG("stopping local io");
-    ioContext->stop();
 
     LINFO("Done");
 }
