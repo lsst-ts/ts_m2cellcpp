@@ -67,12 +67,15 @@ private:
     NCmdSwitchCommandSource(JsonPtr const& json);
     NCmdSwitchCommandSource() : NetCommand() {}
 
-    bool _isRemote = 1;  ///< Value of "isRemote" section of message.
+    bool _isRemote = true;  ///< Value of "isRemote" section of message. //&&&
 };
 
-/// This class handles the "cmd_power" message.
+/// This class handles the "cmd_power" json message from a client.
+/// The json message requires:
+/// - "id" must be "cmd_power"
 /// - "powerType" must be `1` (for MOTOR) or `2` (for COMM) (see PowerSystemType).
 /// - "status" `true` indicates the "powerType" should be turned on, while `false` turns it off.
+/// - "sequence_id" integer that is unique to the client.
 /// - MOTOR power should never be on if COMM power is not on.
 /// Expected message form is: {'powerType': 2, 'status': true, 'id': 'cmd_power', 'sequence_id': 123}
 /// This would turn on COMM power.

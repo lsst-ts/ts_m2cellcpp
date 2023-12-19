@@ -60,18 +60,16 @@ void ControlMain::setup() {
 }
 
 ControlMain::Ptr ControlMain::getPtr() {
+    // No mutex needed as once set by `setup()`, the value of _thisPtr
+    // cannot change.
     if (_thisPtr == nullptr) {
         throw system::ConfigException(ERR_LOC, "ControlMain has not been setup.");
     }
     return _thisPtr;
 }
 
-ControlMain::ControlMain() {}
-
-ControlMain::~ControlMain() {}
-
-void ControlMain::run(int argc, const char* argv[]) {
-    thread t(&ControlMain::_cMain, this, argc, argv);
+void ControlMain::run() {
+    thread t(&ControlMain::_cMain, this);
     _mainThrd = move(t);
 }
 
@@ -84,7 +82,7 @@ void signalHandler(int sig) {
     exit(sig);
 }
 
-void ControlMain::_cMain(int argc, const char* argv[]) {
+void ControlMain::_cMain() {
     LINFO("starting main");
     util::Log& log = util::Log::getLog();
 
@@ -121,18 +119,16 @@ void ControlMain::_cMain(int argc, const char* argv[]) {
     // until it gets an explicit command to do something else.
 
     // Start the telemetry server
-    // FUTURE: Telemetry for the GUI requires the ComControlServer->ComConnection::welcomeMsg to
-    //         work properly. Those elements should be in the telemetry so there's no need for a
-    //         ComControlServer connection for Telemetry. This has to wait until the existing
-    //         controller is no longer used.
     LINFO("Starting Telemetry Server");
-    // FUTURE: get the correct entries into `system::Config`.
+    // DM-39974 FUTURE: get the correct entries into `system::Config`.
     int const telemPort = 50001;
     auto servTelemetryMap = system::TelemetryMap::Ptr(new system::TelemetryMap());
     auto telemetryServ = system::TelemetryCom::create(servTelemetryMap, telemPort);
 
     telemetryServ->startServer();
-    if (!telemetryServ->waitForServerRunning(5)) {
+    int const secondsToWait = 5;
+    if (!telemetryServ->waitForServerRunning(secondsToWait)) {
+        // If it wasn't ready in 5 seconds, something is very wrong.
         LCRITICAL("Telemetry server failed to start.");
         exit(-1);  // change to powerdown and exit
     }
@@ -164,12 +160,13 @@ void ControlMain::_cMain(int argc, const char* argv[]) {
 
     // wait for the server to be running
     {
-        int j = 0;
-        int const maxSeconds = 30;
-        for (; (cServ->getState() != LSST::m2cellcpp::system::ComServer::RUNNING) && j < maxSeconds; ++j) {
-            sleep(1);
+        int secCounter = 0;
+        int const maxSeconds = 15;
+        for (; (cServ->getState() != LSST::m2cellcpp::system::ComServer::RUNNING) && secCounter < maxSeconds;
+             ++secCounter) {
+            this_thread::sleep_for(1s);
         }
-        if (j >= maxSeconds) {
+        if (secCounter >= maxSeconds) {
             throw util::Bug(ERR_LOC,
                             "ControlMain server did not start within " + to_string(maxSeconds) + " seconds");
         }
@@ -182,15 +179,15 @@ void ControlMain::_cMain(int argc, const char* argv[]) {
     // to shutdown in an orderly manner.
     LINFO("ComControlServer is running, waiting for server shutdown");
     while (_comServer->getState() != system::ComServer::STOPPED) {
-        sleep(1);
+        this_thread::sleep_for(1s);
     }
     LINFO("ComControlServer has been shutdown");
 
     // This will terminate all TCP/IP communication.
     LINFO("ioContext->stop();");
     ioContext->stop();
-    for (int j = 0; !comServerDone && j < 10; ++j) {
-        sleep(1);
+    for (int secCounter = 0; !comServerDone && secCounter < 10; ++secCounter) {
+        this_thread::sleep_for(1s);
         bool d = comServerDone;
         LINFO("server wait ", d);
     }

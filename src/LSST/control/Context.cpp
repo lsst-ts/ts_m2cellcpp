@@ -42,7 +42,7 @@ void Context::setup() {
     {
         lock_guard<mutex> lock(_thisMtx);
         if (_thisPtr) {
-            LERROR("Config already setup");
+            LERROR("Context already setup");
             return;
         }
         _thisPtr = Ptr(new Context());

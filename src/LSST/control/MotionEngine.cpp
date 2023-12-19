@@ -52,6 +52,8 @@ MotionEngine::~MotionEngine() {
 }
 
 MotionEngine::Ptr MotionEngine::getPtr() {
+    // No mutex needed as once set by `setup()`, the value of _thisPtr
+    // cannot change.
     if (_thisPtr == nullptr) {
         throw system::ConfigException(ERR_LOC, "MotionEngine has not been setup.");
     }

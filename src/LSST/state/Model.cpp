@@ -122,7 +122,6 @@ void Model::reportPowerSystemStateChange(control::PowerSystemType systemType,
         // Is a state change required?
         // If inOfflineState, stay in OfflineState (turning off all power if needed)
         auto currentState = _stateMap.getCurrentState();
-        ;
         auto currentStateId = currentState->getId();
         auto comTargPower = _powerSystem->getComm().getTargPowerState();
         auto motorTargPower = _powerSystem->getMotor().getTargPowerState();

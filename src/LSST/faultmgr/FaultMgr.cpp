@@ -55,6 +55,8 @@ void FaultMgr::setup() {
 }
 
 FaultMgr::Ptr FaultMgr::getPtr() {
+    // No mutex needed as once set by `setup()`, the value of _thisPtr
+    // cannot change.
     if (_thisPtr == nullptr) {
         throw system::ConfigException(ERR_LOC, "FaultMgr has not been setup.");
     }

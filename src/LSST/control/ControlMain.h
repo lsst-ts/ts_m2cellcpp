@@ -54,17 +54,17 @@ public:
     ControlMain& operator=(ControlMain const&) = delete;
 
     /// Verify threads are stopped and joined.
-    ~ControlMain();
+    ~ControlMain() = default;
 
     /// Return a shared pointer to the global ControlMain instance.
     /// @throws `ConfigException` if `setup` has not already been called.
     static Ptr getPtr();
 
     /// Run the main thread which starts the communication and other threads.
-    void run(int argc, const char* argv[]);
+    void run();
 
     /// Returns true once the server is running.
-    bool getRunning() { return _running; }
+    bool isRunning() { return _running; }
 
     /// Return a pointer to `_simCore`.
     std::shared_ptr<simulator::SimCore> getSimCore() { return _simCore; }
@@ -83,12 +83,10 @@ private:
     static std::mutex _thisPtrMtx;  ///< Protects `_thisPtr`.
 
     /// Private constructor to force the use of `setup()`.
-    ControlMain();
+    ControlMain() = default;
 
     /// The function that runs in the main thread.
-    /// @param argc - unused
-    /// @param argv - unused
-    void _cMain(int argc, const char* argv[]);
+    void _cMain();
 
     /// The main thread, which runs the `_cMain()` function.
     std::thread _mainThrd;

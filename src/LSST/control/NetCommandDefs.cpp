@@ -82,24 +82,17 @@ NCmdPower::Ptr NCmdPower::create(JsonPtr const& inJson_) {
 NCmdPower::NCmdPower(JsonPtr const& inJson) : NetCommand(inJson) {
     LTRACE("NCmdPower::NCmdPower ", to_string(*inJson));
     try {
-        int powerType = inJson->at("powerType");
-        switch (powerType) {
-            case MOTOR:
-                _powerType = MOTOR;
-                break;
-            case COMM:
-                _powerType = COMM;
-                break;
-            default:
-                throw NetCommandException(
-                        ERR_LOC, "unknown powerType=" + to_string(powerType) + " in " + inJson->dump());
-        }
+        int powerVal = inJson->at("powerType");
+        _powerType = intToPowerSystemType(powerVal);
         _status = inJson->at("status");
-        LDEBUG(__func__, " ", getCommandName(), " seqId=", getSeqId(), " powerType=", _powerType, " ",
-               getPowerSystemTypeStr(_powerType), " status=", _status);
     } catch (json::exception const& ex) {
         throwNetCommandException(ERR_LOC, __func__, inJson, ex);
     }
+    if (_powerType == UNKNOWNPOWERSYSTEM) {
+        throw NetCommandException(ERR_LOC, "unknown powerType in " + inJson->dump());
+    }
+    LDEBUG(__func__, " ", getCommandName(), " seqId=", getSeqId(),
+           " powerType=", getPowerSystemTypeStr(_powerType), " status=", _status);
     ackJson["id"] = "ack";
     ackJson["user_info"] = getCommandName() + " " + getPowerSystemTypeStr(_powerType) + to_string(_status);
 }
@@ -109,26 +102,24 @@ NetCommand::Ptr NCmdPower::createNewNetCommand(JsonPtr const& inJson) { return N
 bool NCmdPower::action() {
     auto context = Context::get();
     bool result = context->model.getCurrentState()->cmdPower(_powerType, _status);
-    {
-        // Message that looks something like this needs to be broadcast
-        // {'powerType': 2, 'status': True, 'id': 'cmd_power', 'sequence_id': 123}
-        // {'id': 'powerSystemState', 'powerType': 2, 'status': true, 'state': 3 }
-        // {'id': 'powerSystemState', 'powerType': 2, 'status': true, 'state': 5}
-        // This is a duplicate broadcast and can probably be removed, but it may
-        // be useful as without this motor state is only broadcast on change.
-        json js = context->model.getPowerSystem()->getPowerSystemStateJson(_powerType);
-        string msg = to_string(js);
-        auto comServ = system::ComControlServer::get().lock();
-        if (comServ != nullptr) {
-            comServ->asyncWriteToAllComConn(msg);
-        }
+
+    // Message that looks something like this needs to be broadcast
+    // {'powerType': 2, 'status': True, 'id': 'cmd_power', 'sequence_id': 123}
+    // {'id': 'powerSystemState', 'powerType': 2, 'status': true, 'state': 3 }
+    // {'id': 'powerSystemState', 'powerType': 2, 'status': true, 'state': 5}
+    // This is a duplicate broadcast and can probably be removed, but it may
+    // be useful as without this motor state is only broadcast on change.
+    json js = context->model.getPowerSystem()->getPowerSystemStateJson(_powerType);
+    string msg = js.dump();
+    auto comServ = system::ComControlServer::get().lock();
+    if (comServ != nullptr) {
+        comServ->asyncWriteToAllComConn(msg);
     }
     return result;
 }
 
 NCmdSystemShutdown::Ptr NCmdSystemShutdown::create(JsonPtr const& inJson_) {
-    auto cmd = Ptr(new NCmdSystemShutdown(inJson_));
-    return cmd;
+    return Ptr(new NCmdSystemShutdown(inJson_));
 }
 
 NCmdSystemShutdown::NCmdSystemShutdown(JsonPtr const& inJson) : NetCommand(inJson) {

@@ -239,8 +239,9 @@ nlohmann::json PowerSystem::getPowerSystemStateJson(PowerSystemType powerType) c
             return _motor.getPowerSystemStateJson();
         case COMM:
             return _comm.getPowerSystemStateJson();
+        default:
+            throw util::Bug(ERR_LOC, "unexpected powerType=" + to_string(powerType));
     }
-    throw util::Bug(ERR_LOC, "unexpected powerType=" + to_string(powerType));
 }
 
 }  // namespace control

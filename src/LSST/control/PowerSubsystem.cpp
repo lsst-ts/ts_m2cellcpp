@@ -303,10 +303,11 @@ double PowerSubsystem::getVoltage() const {
             return _sysInfo.motorVoltage;
         case COMM:
             return _sysInfo.commVoltage;
+        default:
+            LERROR(getClassName(), " getVoltage unexpected _systemType=", _systemType, " ",
+                   getPowerSystemTypeStr(_systemType));
+            return 0.0;
     }
-    LERROR(getClassName(), " getVoltage unexpected _systemType=", _systemType, " ",
-           getPowerSystemTypeStr(_systemType));
-    return 0.0;
 }
 
 double PowerSubsystem::getCurrent() const {
@@ -315,10 +316,11 @@ double PowerSubsystem::getCurrent() const {
             return _sysInfo.motorCurrent;
         case COMM:
             return _sysInfo.commCurrent;
+        default:
+            LERROR(getClassName(), " getCurrent unexpected _systemType=", _systemType, " ",
+                   getPowerSystemTypeStr(_systemType));
+            return 0.0;
     }
-    LERROR(getClassName(), " getCurrent unexpected _systemType=", _systemType, " ",
-           getPowerSystemTypeStr(_systemType));
-    return 0.0;
 }
 
 bool PowerSubsystem::_getRelayControlOutputOn() const {
@@ -338,8 +340,9 @@ bool PowerSubsystem::_getCrioReadyOutputOn() const {
         case COMM:
             // DAQ_to_comm_telemetry.vi
             return true;
+        default:
+            throw util::Bug(ERR_LOC, string(__func__) + " unexpected systemType");
     }
-    throw util::Bug(ERR_LOC, string(__func__) + " unexpected systemType");
 }
 
 bool PowerSubsystem::_getInterlockRelayControlOutputOn() const {
@@ -355,9 +358,9 @@ bool PowerSubsystem::_getInterlockRelayControlOutputOn() const {
         case COMM:
             // DAQ_to_comm_telemetry.vi
             return true;
-            break;
+        default:
+            throw util::Bug(ERR_LOC, string(__func__) + " unexpected systemType");
     }
-    throw util::Bug(ERR_LOC, string(__func__) + " unexpected systemType");
 }
 
 bool PowerSubsystem::_powerShouldBeOn(faultmgr::FaultStatusBits& faultsSet) {
@@ -464,20 +467,15 @@ SysStatus PowerSubsystem::processDaq(SysInfo const& info, faultmgr::FaultStatusB
         setPowerOff("processDaq had system faults");
     }
 
-    bool reportStateChange = false;
     if (_targPowerStatePrev != _targPowerState || _actualPowerStatePrev != _actualPowerState) {
         LINFO(getClassName(), " power state change prev(targ=", getPowerStateStr(_targPowerStatePrev),
               " act=", getPowerStateStr(_actualPowerStatePrev),
               ") new(targ=", getPowerStateStr(_targPowerState), " act=", getPowerStateStr(_actualPowerState),
               ")");
-        reportStateChange = true;
+        _reportStateChange();
     }
     _targPowerStatePrev = _targPowerState;
     _actualPowerStatePrev = _actualPowerState;
-    // don't actually report the state change until after the values have been set.
-    if (reportStateChange) {
-        _reportStateChange();
-    }
 
     lock_guard<util::VMutex> lg(_powerStateMtx);
     switch (_targPowerState) {

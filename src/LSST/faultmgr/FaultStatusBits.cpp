@@ -260,9 +260,10 @@ uint64_t FaultStatusBits::getMaskPowerSubsystemFaults(control::PowerSystemType s
             }
             return _maskSubsystemMotorFault->_bitmap;
         }
+        default:
+            throw util::Bug(ERR_LOC, string("FaultStatusBits::getMaskPowerSubsystemFaults ") +
+                                             getPowerSystemTypeStr(sysType) + " unexpected type");
     }
-    throw util::Bug(ERR_LOC, string("FaultStatusBits::getMaskPowerSubsystemFaults ") +
-                                     getPowerSystemTypeStr(sysType) + " unexpected type");
 }
 
 uint64_t FaultStatusBits::getTelemetryFaultManagerAffectedFaultMask() {

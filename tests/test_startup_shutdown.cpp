@@ -154,14 +154,10 @@ TEST_CASE("Test startup shutdown", "[CSV]") {
     /// Start the main thread
     control::ControlMain::setup();
     control::ControlMain::Ptr ctMain = control::ControlMain::getPtr();
-    int argc = 1;
-    string argv0("test_startup_shutdown");
-    const char* argv[argc];
-    argv[0] = argv0.c_str();
-    ctMain->run(argc, argv);
+    ctMain->run();
 
     // Wait a few seconds for ctMain to be running
-    for (int j = 0; !ctMain->getRunning() && j < 10; ++j) {
+    for (int j = 0; !ctMain->isRunning() && j < 10; ++j) {
         sleep(1);
     }
     simulator::SimCore::Ptr simCore = ctMain->getSimCore();
