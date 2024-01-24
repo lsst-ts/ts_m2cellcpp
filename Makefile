@@ -68,10 +68,10 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 #	$(MKDIR_P) $(dir $@)
 #	$(AS) $(ASFLAGS) -c $< -o $@
 
-# c source, kept for reference
-#$(BUILD_DIR)/%.c.o: %.c
-#	$(MKDIR_P) $(dir $@)
-#	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+# c source, needed for FPGA
+$(BUILD_DIR)/%.c.o: %.c
+	$(MKDIR_P) $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 # This helps the compiler out with dependancies.
 -include $(DEPS)

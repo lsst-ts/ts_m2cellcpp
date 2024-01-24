@@ -1,5 +1,9 @@
 # Version History
 
+0.3.8
+
+ - Added code to communicate with the cRIO.
+
 0.3.7
 
  - Added cmd_power and integration test.
